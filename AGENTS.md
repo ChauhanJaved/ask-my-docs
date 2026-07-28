@@ -1,0 +1,1 @@
+This project follows the roadmap in saas-learning-roadmap.md. We're working through it one day at a time. Always explain your reasoning and any new concept before writing code. Don't jump ahead to future days' features.
