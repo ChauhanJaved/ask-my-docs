@@ -1,0 +1,1995 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AskMyDocs — Day 3 Wireframes Showcase</title>
+  <!-- Google Fonts for professional B2B typography -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  
+  <style>
+    /* Styling variables and themes (neutral low-fidelity mockup colors with indigo highlights) */
+    :root {
+      --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+      --bg-app: #f8fafc;
+      --bg-panel: #ffffff;
+      --border-color: #e2e8f0;
+      
+      --text-primary: #0f172a;
+      --text-secondary: #64748b;
+      --text-muted: #94a3b8;
+      
+      --primary: #4f46e5;
+      --primary-hover: #4338ca;
+      --primary-soft: #e0e7ff;
+      
+      --success: #10b981;
+      --success-soft: #d1fae5;
+      
+      --warning: #f59e0b;
+      --warning-soft: #fef3c7;
+      
+      --danger: #ef4444;
+      --danger-soft: #fee2e2;
+      
+      --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+      --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+      --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+      --radius: 8px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background-color: var(--bg-app);
+      color: var(--text-primary);
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Showcase Banner Header */
+    .showcase-header {
+      background-color: #0f172a;
+      color: #ffffff;
+      padding: 12px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #1e293b;
+      z-index: 50;
+    }
+
+    .showcase-logo {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 700;
+      font-size: 1.1rem;
+      letter-spacing: -0.025em;
+    }
+
+    .showcase-logo svg {
+      width: 24px;
+      height: 24px;
+      fill: none;
+      stroke: var(--primary);
+      stroke-width: 2.5;
+    }
+
+    .showcase-badge {
+      background-color: #1e293b;
+      color: var(--text-muted);
+      font-size: 0.75rem;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-weight: 500;
+      border: 1px solid #334155;
+    }
+
+    .showcase-tabs {
+      display: flex;
+      background-color: #1e293b;
+      padding: 4px;
+      border-radius: 6px;
+      gap: 4px;
+    }
+
+    .showcase-tab {
+      background: none;
+      border: none;
+      color: #94a3b8;
+      padding: 6px 14px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .showcase-tab:hover {
+      color: #ffffff;
+    }
+
+    .showcase-tab.active {
+      background-color: var(--primary);
+      color: #ffffff;
+    }
+
+    /* Workspace Layout Container */
+    .app-container {
+      display: flex;
+      flex: 1;
+      position: relative;
+    }
+
+    /* Dashboard Sidebar */
+    .sidebar {
+      width: 240px;
+      background-color: var(--bg-panel);
+      border-right: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      padding: 24px 16px;
+      flex-shrink: 0;
+    }
+
+    .org-selector {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 12px;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius);
+      margin-bottom: 24px;
+      cursor: pointer;
+      background-color: var(--bg-app);
+      font-weight: 500;
+      font-size: 0.9rem;
+    }
+
+    .org-selector-name {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .org-avatar {
+      width: 24px;
+      height: 24px;
+      background-color: var(--primary-soft);
+      color: var(--primary);
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 0.75rem;
+    }
+
+    .nav-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .nav-item a {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 12px;
+      color: var(--text-secondary);
+      text-decoration: none;
+      font-size: 0.9rem;
+      font-weight: 500;
+      border-radius: var(--radius);
+      transition: all 0.2s ease;
+    }
+
+    .nav-item a:hover {
+      background-color: var(--bg-app);
+      color: var(--text-primary);
+    }
+
+    .nav-item.active a {
+      background-color: var(--primary-soft);
+      color: var(--primary);
+    }
+
+    .nav-item svg {
+      width: 18px;
+      height: 18px;
+      stroke-width: 2;
+    }
+
+    /* Main Area styling */
+    .main-viewport {
+      flex: 1;
+      padding: 32px;
+      overflow-y: auto;
+      max-width: 1200px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    .view-content {
+      display: none;
+    }
+
+    .view-content.active {
+      display: block;
+    }
+
+    /* Headings */
+    .view-header {
+      margin-bottom: 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+
+    .view-title {
+      font-size: 1.5rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 4px;
+    }
+
+    .view-subtitle {
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+    }
+
+    /* Upgrade Warning Banner */
+    .warning-banner {
+      background-color: var(--warning-soft);
+      border: 1px solid #fcd34d;
+      border-radius: var(--radius);
+      padding: 12px 16px;
+      margin-bottom: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      animation: fadeIn 0.3s ease-out;
+    }
+
+    .warning-banner-text {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      color: #92400e;
+      font-size: 0.875rem;
+      font-weight: 500;
+    }
+
+    .warning-banner-text svg {
+      width: 20px;
+      height: 20px;
+      stroke: var(--warning);
+      flex-shrink: 0;
+    }
+
+    .btn-upgrade-sm {
+      background-color: var(--primary);
+      color: white;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 4px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .btn-upgrade-sm:hover {
+      background-color: var(--primary-hover);
+    }
+
+    /* Metrics Cards Grid */
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 20px;
+      margin-bottom: 32px;
+    }
+
+    .metric-card {
+      background-color: var(--bg-panel);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius);
+      padding: 20px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .metric-label {
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: var(--text-secondary);
+      margin-bottom: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .metric-label svg {
+      width: 16px;
+      height: 16px;
+      stroke: var(--text-muted);
+    }
+
+    .metric-val {
+      font-size: 1.8rem;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      margin-bottom: 4px;
+    }
+
+    .metric-trend {
+      font-size: 0.75rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .trend-up { color: var(--success); }
+    .trend-neutral { color: var(--text-secondary); }
+
+    /* Dashboard Layout Grid split */
+    .dashboard-split {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 24px;
+      align-items: start;
+    }
+
+    /* Cards */
+    .panel-card {
+      background-color: var(--bg-panel);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-sm);
+      overflow: hidden;
+      margin-bottom: 24px;
+    }
+
+    .panel-card-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .panel-card-title {
+      font-size: 0.95rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .panel-card-title svg {
+      width: 18px;
+      height: 18px;
+      stroke: var(--text-secondary);
+    }
+
+    .panel-card-body {
+      padding: 20px;
+    }
+
+    /* Table styles */
+    .table-responsive {
+      overflow-x: auto;
+    }
+
+    .custom-table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 0.875rem;
+    }
+
+    .custom-table th {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border-color);
+      color: var(--text-secondary);
+      font-weight: 500;
+      background-color: var(--bg-app);
+    }
+
+    .custom-table td {
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--border-color);
+      vertical-align: middle;
+    }
+
+    .custom-table tr:last-child td {
+      border-bottom: none;
+    }
+
+    /* Badges */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: 500;
+      line-height: 1;
+    }
+
+    .badge-success { background-color: var(--success-soft); color: #065f46; }
+    .badge-warning { background-color: var(--warning-soft); color: #92400e; }
+    .badge-danger { background-color: var(--danger-soft); color: #991b1b; }
+    .badge-info { background-color: var(--primary-soft); color: #3730a3; }
+
+    /* Usage Meters List */
+    .quota-list {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .quota-item {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .quota-label-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.85rem;
+      font-weight: 500;
+    }
+
+    .quota-progress-container {
+      height: 8px;
+      background-color: #f1f5f9;
+      border-radius: 4px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .quota-progress-bar {
+      height: 100%;
+      background-color: var(--primary);
+      border-radius: 4px;
+      width: 40%;
+      transition: width 0.3s ease, background-color 0.3s ease;
+    }
+
+    .quota-progress-bar.warning {
+      background-color: var(--warning);
+    }
+
+    .quota-note {
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+    }
+
+    .simulation-control-card {
+      background-color: #f8fafc;
+      border: 1px dashed var(--border-color);
+      border-radius: var(--radius);
+      padding: 12px 16px;
+      margin-top: 16px;
+      font-size: 0.8rem;
+    }
+
+    .toggle-switch-label {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      font-weight: 500;
+    }
+
+    .toggle-checkbox {
+      cursor: pointer;
+    }
+
+    /* Page: Upload Documents Layout */
+    .upload-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      margin-bottom: 24px;
+      align-items: stretch;
+    }
+
+    /* Drag and Drop Zone */
+    .dropzone-container {
+      border: 2px dashed #cbd5e1;
+      border-radius: var(--radius);
+      padding: 40px 20px;
+      text-align: center;
+      background-color: var(--bg-panel);
+      cursor: pointer;
+      transition: border-color 0.2s, background-color 0.2s;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 200px;
+    }
+
+    .dropzone-container:hover {
+      border-color: var(--primary);
+      background-color: #f5f3ff;
+    }
+
+    .dropzone-icon {
+      width: 48px;
+      height: 48px;
+      stroke: var(--text-muted);
+      stroke-width: 1.5;
+      margin-bottom: 16px;
+    }
+
+    .dropzone-text {
+      font-size: 0.95rem;
+      font-weight: 500;
+      margin-bottom: 6px;
+    }
+
+    .dropzone-text span {
+      color: var(--primary);
+      text-decoration: underline;
+    }
+
+    .dropzone-subtext {
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+    }
+
+    .file-input {
+      display: none;
+    }
+
+    /* Crawler Card Form */
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    .form-label {
+      display: block;
+      font-size: 0.85rem;
+      font-weight: 500;
+      margin-bottom: 6px;
+      color: var(--text-primary);
+    }
+
+    .form-input-container {
+      display: flex;
+      gap: 8px;
+    }
+
+    .input-text {
+      flex: 1;
+      padding: 8px 12px;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      font-family: inherit;
+      font-size: 0.875rem;
+      outline: none;
+    }
+
+    .input-text:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 2px var(--primary-soft);
+    }
+
+    .select-dropdown {
+      padding: 8px 12px;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      font-family: inherit;
+      font-size: 0.875rem;
+      background-color: white;
+      outline: none;
+    }
+
+    .select-dropdown:focus {
+      border-color: var(--primary);
+    }
+
+    .btn-action {
+      background-color: var(--primary);
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-size: 0.875rem;
+      font-weight: 500;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn-action:hover {
+      background-color: var(--primary-hover);
+    }
+
+    /* Embeddable Chat Widget Section */
+    /* launcher bubble */
+    .widget-bubble {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background-color: var(--primary);
+      box-shadow: var(--shadow-lg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      z-index: 999;
+      transition: transform 0.2s ease, background-color 0.2s ease;
+    }
+
+    .widget-bubble:hover {
+      transform: scale(1.05);
+      background-color: var(--primary-hover);
+    }
+
+    .widget-bubble svg {
+      width: 28px;
+      height: 28px;
+      stroke: white;
+      stroke-width: 2;
+    }
+
+    .widget-unread-badge {
+      position: absolute;
+      top: -2px;
+      right: -2px;
+      background-color: var(--danger);
+      color: white;
+      font-size: 0.7rem;
+      font-weight: 700;
+      border-radius: 50%;
+      width: 20px;
+      height: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 2px solid var(--bg-app);
+    }
+
+    /* Main Widget Container */
+    .widget-window {
+      position: fixed;
+      bottom: 92px;
+      right: 24px;
+      width: 380px;
+      height: 600px;
+      max-height: calc(100vh - 120px);
+      background-color: var(--bg-panel);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      box-shadow: var(--shadow-lg);
+      display: flex;
+      flex-direction: column;
+      z-index: 999;
+      overflow: hidden;
+      font-size: 0.875rem;
+      transform: translateY(20px);
+      opacity: 0;
+      visibility: hidden;
+      transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease, visibility 0.3s;
+    }
+
+    .widget-window.open {
+      transform: translateY(0);
+      opacity: 1;
+      visibility: visible;
+    }
+
+    /* Widget Header */
+    .widget-header {
+      background-color: var(--primary);
+      color: white;
+      padding: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid rgba(0,0,0,0.05);
+    }
+
+    .widget-bot-info {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .widget-bot-avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background-color: rgba(255, 255, 255, 0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      border: 2px solid rgba(255, 255, 255, 0.4);
+    }
+
+    .widget-bot-details {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .widget-bot-name {
+      font-weight: 600;
+      font-size: 0.95rem;
+    }
+
+    .widget-bot-status {
+      font-size: 0.75rem;
+      opacity: 0.8;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .widget-bot-status::before {
+      content: '';
+      display: inline-block;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background-color: #10b981;
+    }
+
+    .widget-header-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .widget-header-tab-btn {
+      background: rgba(255, 255, 255, 0.15);
+      border: none;
+      color: white;
+      padding: 4px 8px;
+      font-size: 0.75rem;
+      font-weight: 500;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .widget-header-tab-btn:hover {
+      background: rgba(255, 255, 255, 0.25);
+    }
+
+    .widget-close-btn {
+      background: none;
+      border: none;
+      color: white;
+      cursor: pointer;
+      opacity: 0.8;
+      padding: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .widget-close-btn:hover {
+      opacity: 1;
+    }
+
+    .widget-close-btn svg {
+      width: 20px;
+      height: 20px;
+      stroke: white;
+    }
+
+    /* Widget Conversation view */
+    .widget-body {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .widget-scroll-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    /* Messages styles */
+    .msg {
+      display: flex;
+      flex-direction: column;
+      max-width: 85%;
+    }
+
+    .msg.bot {
+      align-self: flex-start;
+    }
+
+    .msg.user {
+      align-self: flex-end;
+    }
+
+    .msg-bubble {
+      padding: 10px 14px;
+      border-radius: 12px;
+      line-height: 1.4;
+      font-size: 0.85rem;
+    }
+
+    .msg.bot .msg-bubble {
+      background-color: var(--bg-app);
+      color: var(--text-primary);
+      border-bottom-left-radius: 2px;
+      border: 1px solid var(--border-color);
+    }
+
+    .msg.user .msg-bubble {
+      background-color: var(--primary);
+      color: white;
+      border-bottom-right-radius: 2px;
+    }
+
+    .msg-meta {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      margin-top: 4px;
+      padding: 0 4px;
+    }
+
+    .msg.user .msg-meta {
+      text-align: right;
+    }
+
+    /* Suggested starter questions pills */
+    .starter-queries {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 4px;
+    }
+
+    .starter-pill {
+      background-color: white;
+      border: 1px solid var(--border-color);
+      color: var(--text-secondary);
+      font-size: 0.8rem;
+      padding: 6px 12px;
+      border-radius: 16px;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-align: left;
+    }
+
+    .starter-pill:hover {
+      border-color: var(--primary);
+      color: var(--primary);
+      background-color: var(--primary-soft);
+    }
+
+    /* Inline Citation Tags */
+    .citation {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background-color: var(--primary-soft);
+      color: var(--primary);
+      font-size: 0.75rem;
+      font-weight: 600;
+      width: 16px;
+      height: 16px;
+      border-radius: 4px;
+      margin: 0 2px;
+      cursor: pointer;
+      position: relative;
+      user-select: none;
+      vertical-align: middle;
+    }
+
+    .citation:hover {
+      background-color: var(--primary);
+      color: white;
+    }
+
+    /* Typing Indicator animation */
+    .typing-indicator {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 8px;
+    }
+
+    .typing-dot {
+      width: 6px;
+      height: 6px;
+      background-color: var(--text-muted);
+      border-radius: 50%;
+      animation: pulse 1.2s infinite ease-in-out;
+    }
+
+    .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+    .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+
+    @keyframes pulse {
+      0%, 100% { transform: translateY(0); opacity: 0.4; }
+      50% { transform: translateY(-4px); opacity: 1; }
+    }
+
+    /* Widget Footer */
+    .widget-footer {
+      padding: 12px 16px;
+      border-top: 1px solid var(--border-color);
+      background-color: var(--bg-panel);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .widget-input-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .widget-textarea {
+      flex: 1;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 8px 12px;
+      font-family: inherit;
+      font-size: 0.85rem;
+      resize: none;
+      height: 36px;
+      outline: none;
+      line-height: 1.3;
+    }
+
+    .widget-textarea:focus {
+      border-color: var(--primary);
+    }
+
+    .widget-send-btn {
+      background-color: var(--primary);
+      color: white;
+      border: none;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+
+    .widget-send-btn:hover {
+      background-color: var(--primary-hover);
+    }
+
+    .widget-send-btn svg {
+      width: 16px;
+      height: 16px;
+      stroke: white;
+      fill: none;
+      stroke-width: 2.5;
+    }
+
+    .widget-branding {
+      text-align: center;
+      font-size: 0.7rem;
+      color: var(--text-muted);
+    }
+
+    .widget-branding a {
+      color: var(--text-secondary);
+      text-decoration: none;
+      font-weight: 500;
+    }
+
+    /* Widget Handoff Form View */
+    .handoff-container {
+      display: none;
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: white;
+      padding: 24px;
+      flex-direction: column;
+      overflow-y: auto;
+      z-index: 10;
+      animation: slideIn 0.25s ease-out;
+    }
+
+    .handoff-container.active {
+      display: flex;
+    }
+
+    .handoff-header {
+      font-size: 1.1rem;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .handoff-description {
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      margin-bottom: 20px;
+      line-height: 1.4;
+    }
+
+    .handoff-form {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .handoff-form .form-label {
+      font-size: 0.8rem;
+      margin-bottom: 4px;
+    }
+
+    .handoff-form .input-text {
+      padding: 8px;
+    }
+
+    .handoff-submit-btn {
+      background-color: var(--primary);
+      color: white;
+      border: none;
+      padding: 10px;
+      border-radius: 6px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 6px;
+    }
+
+    .handoff-submit-btn:hover {
+      background-color: var(--primary-hover);
+    }
+
+    .handoff-success {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      height: 100%;
+      padding: 20px;
+    }
+
+    .handoff-success.active {
+      display: flex;
+    }
+
+    .handoff-success-icon {
+      width: 48px;
+      height: 48px;
+      stroke: var(--success);
+      stroke-width: 2.5;
+      background-color: var(--success-soft);
+      padding: 8px;
+      border-radius: 50%;
+      margin-bottom: 16px;
+    }
+
+    /* Citation Popup Overlay */
+    .citation-popup {
+      position: absolute;
+      background-color: #0f172a;
+      color: white;
+      border-radius: 6px;
+      padding: 8px 12px;
+      font-size: 0.75rem;
+      max-width: 240px;
+      box-shadow: var(--shadow-lg);
+      z-index: 100;
+      display: none;
+      line-height: 1.35;
+      pointer-events: none;
+    }
+
+    .citation-popup-header {
+      font-weight: 600;
+      color: #38bdf8;
+      margin-bottom: 4px;
+      border-bottom: 1px solid #334155;
+      padding-bottom: 4px;
+    }
+
+    /* Animations */
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes slideIn {
+      from { transform: translateX(100%); }
+      to { transform: translateX(0); }
+    }
+
+    /* Standard utility classes */
+    .flex-center {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .text-right {
+      text-align: right;
+    }
+
+    .mt-4 { margin-top: 16px; }
+    .mb-2 { margin-bottom: 8px; }
+
+    /* Custom Scrollbars */
+    ::-webkit-scrollbar {
+      width: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 3px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+
+  </style>
+</head>
+<body>
+
+  <!-- Showcase Top Nav Control -->
+  <header class="showcase-header">
+    <div class="showcase-logo">
+      <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="currentColor"/></svg>
+      AskMyDocs Wireframes
+    </div>
+    <div class="showcase-tabs">
+      <button class="showcase-tab active" onclick="switchView('dashboard')">Dashboard Home</button>
+      <button class="showcase-tab" onclick="switchView('upload')">Upload Documents</button>
+    </div>
+    <div class="showcase-badge">Day 3 Wireframe Mockup</div>
+  </header>
+
+  <!-- App Workspace (Standard sidebar + viewport) -->
+  <div class="app-container">
+    
+    <!-- Sidebar Navigation -->
+    <aside class="sidebar">
+      <div class="org-selector">
+        <span class="org-selector-name">
+          <span class="org-avatar">AC</span>
+          Acme Corp
+        </span>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+      </div>
+
+      <nav>
+        <ul class="nav-list">
+          <li class="nav-item active" id="nav-item-overview">
+            <a href="#" onclick="switchView('dashboard')">
+              <svg fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>
+              Overview
+            </a>
+          </li>
+          <li class="nav-item" id="nav-item-upload">
+            <a href="#" onclick="switchView('upload')">
+              <svg fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>
+              Documents
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="#" onclick="alert('Wireframe Navigation: Chat logs screen placeholder')">
+              <svg fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+              Chat Logs
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="#" onclick="alert('Wireframe Navigation: Widget Configuration screen placeholder')">
+              <svg fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.1a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+              Widget Config
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="#" onclick="alert('Wireframe Navigation: Team settings screen placeholder')">
+              <svg fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+              Team Settings
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="#" onclick="alert('Wireframe Navigation: Billing settings screen placeholder')">
+              <svg fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><line x1="12" x2="12" y1="1" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+              Billing
+            </a>
+          </li>
+        </ul>
+      </nav>
+    </aside>
+
+    <!-- Main Viewport -->
+    <main class="main-viewport">
+      
+      <!-- VIEW 1: Dashboard Home -->
+      <section id="view-dashboard" class="view-content active">
+        <!-- Dashboard Header -->
+        <div class="view-header">
+          <div>
+            <h1 class="view-title">Overview</h1>
+            <p class="view-subtitle">High-level diagnostics and usage metrics for Acme Corp.</p>
+          </div>
+        </div>
+
+        <!-- Dynamic Warning Banner (Shown when usage simulation slider goes high) -->
+        <div class="warning-banner" id="dashboard-warning-banner" style="display: none;">
+          <div class="warning-banner-text">
+            <svg fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/></svg>
+            <span><strong>Usage Warning:</strong> You have consumed over 80% of your current plan's allowed document capacity.</span>
+          </div>
+          <button class="btn-upgrade-sm" onclick="alert('Wireframe Action: Redirecting to Upgrade/Billing Portal')">Upgrade Plan</button>
+        </div>
+
+        <!-- Metrics Grid -->
+        <div class="metrics-grid">
+          <div class="metric-card">
+            <div class="metric-label">
+              Total Chats (Month)
+              <svg fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            </div>
+            <div class="metric-val" id="metric-total-chats">142</div>
+            <div class="metric-trend trend-up">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 7-7 7 7"/><path d="M12 5v14"/></svg>
+              +12% vs last week
+            </div>
+          </div>
+          
+          <div class="metric-card">
+            <div class="metric-label">
+              Avg. Confidence Score
+              <svg fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="m9 12 2 2 4-4"/></svg>
+            </div>
+            <div class="metric-val">87.5%</div>
+            <div class="metric-trend trend-up">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 7-7 7 7"/><path d="M12 5v14"/></svg>
+              +2.1% this week
+            </div>
+          </div>
+
+          <div class="metric-card">
+            <div class="metric-label">
+              Active Documents
+              <svg fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            </div>
+            <div class="metric-val" id="metric-active-docs">2</div>
+            <div class="metric-trend trend-neutral">
+              No change today
+            </div>
+          </div>
+
+          <div class="metric-card">
+            <div class="metric-label">
+              Satisfaction Rate
+              <svg fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg>
+            </div>
+            <div class="metric-val">94.2%</div>
+            <div class="metric-trend trend-up">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 7-7 7 7"/><path d="M12 5v14"/></svg>
+              98 ratings total
+            </div>
+          </div>
+        </div>
+
+        <!-- Grid Split -->
+        <div class="dashboard-split">
+          
+          <!-- Recent Conversations Logs -->
+          <div class="panel-card">
+            <div class="panel-card-header">
+              <h2 class="panel-card-title">
+                <svg fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></svg>
+                Recent Chat Logs Activity
+              </h2>
+              <a href="#" onclick="alert('Wireframe Action: Navigate to Chats Analytics')" style="font-size: 0.8rem; color: var(--primary); text-decoration: none; font-weight: 500;">View All Logs &rarr;</a>
+            </div>
+            <div class="panel-card-body" style="padding: 0;">
+              <div class="table-responsive">
+                <table class="custom-table">
+                  <thead>
+                    <tr>
+                      <th>Time</th>
+                      <th>Last Message</th>
+                      <th>Resolution</th>
+                      <th>Satisfaction</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td style="color: var(--text-secondary);">10 mins ago</td>
+                      <td style="font-weight: 500;">"How do I set up billing?"</td>
+                      <td><span class="badge badge-success">Resolved by AI</span></td>
+                      <td>👍</td>
+                    </tr>
+                    <tr>
+                      <td style="color: var(--text-secondary);">42 mins ago</td>
+                      <td style="font-weight: 500;">"Do you have a Python SDK?"</td>
+                      <td><span class="badge badge-warning">Handoff Ticket</span></td>
+                      <td>—</td>
+                    </tr>
+                    <tr>
+                      <td style="color: var(--text-secondary);">1 hour ago</td>
+                      <td style="font-weight: 500;">"Is our data secure on Free tier?"</td>
+                      <td><span class="badge badge-success">Resolved by AI</span></td>
+                      <td>👍</td>
+                    </tr>
+                    <tr>
+                      <td style="color: var(--text-secondary);">3 hours ago</td>
+                      <td style="font-weight: 500;">"Can I connect Supabase DB?"</td>
+                      <td><span class="badge badge-danger">Unanswered</span></td>
+                      <td>👎 (No DB chunk)</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- Resource Quota Limits & Simulation Panel -->
+          <div>
+            <div class="panel-card">
+              <div class="panel-card-header">
+                <h2 class="panel-card-title">
+                  <svg fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><line x1="12" x2="12" y1="2" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                  Usage Quotas (Free Tier)
+                </h2>
+              </div>
+              <div class="panel-card-body">
+                <div class="quota-list">
+                  <div class="quota-item">
+                    <div class="quota-label-row">
+                      <span>Documents Uploaded</span>
+                      <span id="quota-docs-fraction">2 / 3 files</span>
+                    </div>
+                    <div class="quota-progress-container">
+                      <div class="quota-progress-bar" id="quota-docs-bar" style="width: 66.6%;"></div>
+                    </div>
+                    <span class="quota-note">Maximum file size: 10MB per file</span>
+                  </div>
+
+                  <div class="quota-item">
+                    <div class="quota-label-row">
+                      <span>Monthly Message Volume</span>
+                      <span id="quota-msgs-fraction">12 / 50 chats</span>
+                    </div>
+                    <div class="quota-progress-container">
+                      <div class="quota-progress-bar" id="quota-msgs-bar" style="width: 24%;"></div>
+                    </div>
+                    <span class="quota-note">Resets on Aug 15, 2026</span>
+                  </div>
+                </div>
+
+                <!-- Simulation Toggle to test UI Banner behavior -->
+                <div class="simulation-control-card">
+                  <label class="toggle-switch-label">
+                    <span>Simulate >80% limit warning</span>
+                    <input type="checkbox" class="toggle-checkbox" id="limit-sim-checkbox" onchange="toggleLimitSimulation(this)">
+                  </label>
+                  <p style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 6px; line-height: 1.3;">
+                    Toggling this simulates high usage (e.g. 5/5 files in professional scope) which shows an upgrade alert banner on top of the dashboard.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- VIEW 2: Upload Documents screen -->
+      <section id="view-upload" class="view-content">
+        <!-- View Header -->
+        <div class="view-header">
+          <div>
+            <h1 class="view-title">Documents Management</h1>
+            <p class="view-subtitle">Upload documentation files or trigger the web crawler to ingest database knowledge.</p>
+          </div>
+        </div>
+
+        <!-- Upper Panel Grid -->
+        <div class="upload-grid">
+          
+          <!-- Dropzone file upload -->
+          <div class="panel-card">
+            <div class="panel-card-header">
+              <h2 class="panel-card-title">
+                <svg fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>
+                Upload File Sources
+              </h2>
+            </div>
+            <div class="panel-card-body">
+              <div class="dropzone-container" onclick="document.getElementById('file-picker-input').click()">
+                <svg class="dropzone-icon" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>
+                <p class="dropzone-text">Drag and drop documents here, or <span>browse files</span></p>
+                <p class="dropzone-subtext">Supports PDF, MD, TXT, DOCX (Max size 10MB)</p>
+                <input type="file" id="file-picker-input" class="file-input" onchange="simulateFileUpload(this.files)">
+              </div>
+            </div>
+          </div>
+
+          <!-- Web Crawler scraper -->
+          <div class="panel-card">
+            <div class="panel-card-header">
+              <h2 class="panel-card-title">
+                <svg fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>
+                Web Scraper Crawler
+              </h2>
+              <span class="badge badge-info">Pro feature</span>
+            </div>
+            <div class="panel-card-body">
+              <div class="form-group">
+                <label class="form-label" for="crawler-url">Target Seed URL</label>
+                <div class="form-input-container">
+                  <input type="text" id="crawler-url" class="input-text" placeholder="https://docs.acme.com/introduction">
+                  <select class="select-dropdown" id="crawler-depth">
+                    <option value="1">Depth: 1 Page</option>
+                    <option value="2">Depth: Sublinks (Max 5)</option>
+                    <option value="3">Depth: Full Subdomain</option>
+                  </select>
+                </div>
+              </div>
+              
+              <div class="text-right mt-4">
+                <button class="btn-action" onclick="simulateUrlScrape()">
+                  <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+                  Trigger Scraper
+                </button>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Uploaded files status table -->
+        <div class="panel-card">
+          <div class="panel-card-header">
+            <h2 class="panel-card-title">
+              <svg fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
+              Ingested Knowledge Assets
+            </h2>
+          </div>
+          <div class="panel-card-body" style="padding: 0;">
+            <div class="table-responsive">
+              <table class="custom-table" id="documents-table">
+                <thead>
+                  <tr>
+                    <th>File Name</th>
+                    <th>Type</th>
+                    <th>Date Added</th>
+                    <th>Size</th>
+                    <th>Status</th>
+                    <th class="text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="documents-tbody">
+                  <!-- Row 1 -->
+                  <tr id="doc-row-1">
+                    <td style="font-weight: 500;">user_manual_v2.pdf</td>
+                    <td><span class="badge badge-info">PDF</span></td>
+                    <td style="color: var(--text-secondary);">July 28, 2026</td>
+                    <td>1.4 MB</td>
+                    <td><span class="badge badge-success" id="doc-status-1">Ready</span></td>
+                    <td class="text-right">
+                      <button onclick="alert('Wireframe View: Displaying vector chunks index modal')" style="background: none; border: none; color: var(--primary); cursor: pointer; font-size: 0.8rem; font-weight: 500; margin-right: 8px;">View Chunks</button>
+                      <button onclick="deleteDocRow('doc-row-1')" style="background: none; border: none; color: var(--danger); cursor: pointer; font-size: 0.8rem; font-weight: 500;">Delete</button>
+                    </td>
+                  </tr>
+                  <!-- Row 2 -->
+                  <tr id="doc-row-2">
+                    <td style="font-weight: 500;">faq_billing.md</td>
+                    <td><span class="badge badge-success">Markdown</span></td>
+                    <td style="color: var(--text-secondary);">July 29, 2026</td>
+                    <td>24 KB</td>
+                    <td><span class="badge badge-success" id="doc-status-2">Ready</span></td>
+                    <td class="text-right">
+                      <button onclick="alert('Wireframe View: Displaying vector chunks index modal')" style="background: none; border: none; color: var(--primary); cursor: pointer; font-size: 0.8rem; font-weight: 500; margin-right: 8px;">View Chunks</button>
+                      <button onclick="deleteDocRow('doc-row-2')" style="background: none; border: none; color: var(--danger); cursor: pointer; font-size: 0.8rem; font-weight: 500;">Delete</button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+      </section>
+
+    </main>
+  </div>
+
+  <!-- FLOATING CHAT WIDGET INTERACTION (Available on all pages) -->
+  <!-- Floating Launcher Bubble -->
+  <div class="widget-bubble" id="chat-widget-launcher" onclick="toggleChatWidget()">
+    <div class="widget-unread-badge" id="widget-unread">1</div>
+    <svg fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+  </div>
+
+  <!-- Chat Window -->
+  <div class="widget-window" id="chat-widget-window">
+    
+    <!-- Widget Header -->
+    <header class="widget-header">
+      <div class="widget-bot-info">
+        <div class="widget-bot-avatar">AI</div>
+        <div class="widget-bot-details">
+          <span class="widget-bot-name">DocsBot Assistant</span>
+          <span class="widget-bot-status">Online</span>
+        </div>
+      </div>
+      <div class="widget-header-actions">
+        <button class="widget-header-tab-btn" id="widget-tab-toggle" onclick="toggleHandoffView()">Contact Human</button>
+        <button class="widget-close-btn" onclick="toggleChatWidget()">
+          <svg fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><line x1="18" x2="6" y1="6" y2="18"/><line x1="6" x2="18" y1="6" y2="18"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- Widget Body (Conversational Area) -->
+    <div class="widget-body" id="widget-conversation-body">
+      <div class="widget-scroll-content" id="widget-chat-messages">
+        
+        <!-- Welcome Message -->
+        <div class="msg bot">
+          <div class="msg-bubble">
+            Hello! I am Acme Corp's AI documentation assistant. Ask me questions about our systems, products, or billing!
+            <div class="starter-queries mb-2" style="margin-top: 12px;">
+              <button class="starter-pill" onclick="postStarterQuestion('How do I upgrade?')">How do I upgrade?</button>
+              <button class="starter-pill" onclick="postStarterQuestion('What document types can I upload?')">What formats are supported?</button>
+              <button class="starter-pill" onclick="postStarterQuestion('How can I contact support?')">Contact support</button>
+            </div>
+          </div>
+          <div class="msg-meta">DocsBot • Just now</div>
+        </div>
+
+      </div>
+
+      <!-- Simulated Floating Citation Tooltip -->
+      <div class="citation-popup" id="citation-tooltip">
+        <div class="citation-popup-header" id="citation-tooltip-title">Source Excerpt</div>
+        <div id="citation-tooltip-text">Vector Chunk Content...</div>
+      </div>
+
+      <!-- STATE 3: Handoff Form (Overlay inside the widget) -->
+      <div class="handoff-container" id="widget-handoff-container">
+        <h3 class="handoff-header">Support Request</h3>
+        <p class="handoff-description">Our AI assistant couldn't find a confident answer. Fill in your details below and a member of our human team will reply shortly.</p>
+        
+        <form class="handoff-form" onsubmit="submitHandoffForm(event)">
+          <div>
+            <label class="form-label">Full Name</label>
+            <input type="text" class="input-text" required placeholder="Jane Doe" style="width: 100%;">
+          </div>
+          <div>
+            <label class="form-label">Email Address</label>
+            <input type="email" id="handoff-email-input" class="input-text" required placeholder="jane@company.com" style="width: 100%;">
+          </div>
+          <div>
+            <label class="form-label">Message Details</label>
+            <textarea class="input-text" id="handoff-msg-input" required placeholder="What was your query?" style="width: 100%; height: 80px; resize: none; font-family: inherit; font-size: 0.85rem;"></textarea>
+          </div>
+          
+          <button type="submit" class="handoff-submit-btn">Send Support Ticket</button>
+          <button type="button" class="handoff-submit-btn" style="background-color: transparent; border: 1px solid var(--border-color); color: var(--text-secondary); margin-top: 2px;" onclick="toggleHandoffView()">Back to AI Chat</button>
+        </form>
+      </div>
+
+      <!-- Handoff Success screen -->
+      <div class="handoff-success" id="widget-handoff-success">
+        <svg class="handoff-success-icon" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        <h3 class="handoff-header" style="color: var(--success);">Ticket Submitted</h3>
+        <p class="handoff-description" style="margin-top: 8px;">Thank you! We've forwarded your conversation history to support. A human agent will contact you at your email soon.</p>
+        <button class="btn-upgrade-sm" style="background-color: var(--primary); color: white;" onclick="resetHandoffSuccess()">New Question</button>
+      </div>
+
+    </div>
+
+    <!-- Widget Footer (Input Area) -->
+    <footer class="widget-footer" id="widget-chat-footer">
+      <div class="widget-input-row">
+        <textarea class="widget-textarea" id="widget-input-field" placeholder="Ask docs..." onkeydown="handleTextareaKey(event)"></textarea>
+        <button class="widget-send-btn" onclick="sendUserMessage()">
+          <svg fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><line x1="22" x2="11" y1="2" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+        </button>
+      </div>
+      <div class="widget-branding">
+        Powered by <a href="#" onclick="alert('AskMyDocs SaaS details link placeholder')">AskMyDocs</a>
+      </div>
+    </footer>
+
+  </div>
+
+
+  <!-- JAVASCRIPT STATE CONTROL LOGIC -->
+  <script>
+    // Tab switching controller
+    function switchView(viewId) {
+      // Deactivate all view content panels
+      document.querySelectorAll('.view-content').forEach(el => el.classList.remove('active'));
+      // Deactivate all sidebar items
+      document.querySelectorAll('.sidebar .nav-item').forEach(el => el.classList.remove('active'));
+      // Deactivate top control headers
+      document.querySelectorAll('.showcase-header .showcase-tab').forEach(el => el.classList.remove('active'));
+
+      if (viewId === 'dashboard') {
+        document.getElementById('view-dashboard').classList.add('active');
+        document.getElementById('nav-item-overview').classList.add('active');
+        document.querySelector('.showcase-header button[onclick="switchView(\'dashboard\')"]').classList.add('active');
+      } else if (viewId === 'upload') {
+        document.getElementById('view-upload').classList.add('active');
+        document.getElementById('nav-item-upload').classList.add('active');
+        document.querySelector('.showcase-header button[onclick="switchView(\'upload\')"]').classList.add('active');
+      }
+    }
+
+    // High Usage limit simulation checker
+    function toggleLimitSimulation(checkbox) {
+      const banner = document.getElementById('dashboard-warning-banner');
+      const docsQuotaFraction = document.getElementById('quota-docs-fraction');
+      const docsProgressBar = document.getElementById('quota-docs-bar');
+
+      const msgsQuotaFraction = document.getElementById('quota-msgs-fraction');
+      const msgsProgressBar = document.getElementById('quota-msgs-bar');
+
+      if (checkbox.checked) {
+        // High limit states (90% capacity, warning banner triggers)
+        banner.style.display = 'flex';
+        docsQuotaFraction.innerText = '5 / 5 files (Pro)';
+        docsProgressBar.style.width = '100%';
+        docsProgressBar.classList.add('warning');
+        
+        msgsQuotaFraction.innerText = '46 / 50 chats';
+        msgsProgressBar.style.width = '92%';
+        msgsProgressBar.classList.add('warning');
+      } else {
+        // Standard normal stats
+        banner.style.display = 'none';
+        docsQuotaFraction.innerText = '2 / 3 files';
+        docsProgressBar.style.width = '66.6%';
+        docsProgressBar.classList.remove('warning');
+        
+        msgsQuotaFraction.innerText = '12 / 50 chats';
+        msgsProgressBar.style.width = '24%';
+        msgsProgressBar.classList.remove('warning');
+      }
+    }
+
+    // Simulate Document Upload
+    let docIdCounter = 3;
+    function simulateFileUpload(files) {
+      if (files.length === 0) return;
+      const file = files[0];
+      const filename = file.name;
+      const sizeStr = (file.size / (1024 * 1024)).toFixed(2) + ' MB';
+      const fileType = filename.split('.').pop().toUpperCase();
+      
+      const newRowId = `doc-row-${docIdCounter}`;
+      const statusId = `doc-status-${docIdCounter}`;
+      
+      // Determine Badge style
+      let badgeClass = 'badge-info';
+      if (fileType === 'MD') badgeClass = 'badge-success';
+      if (fileType === 'TXT') badgeClass = 'badge-warning';
+
+      const tbody = document.getElementById('documents-tbody');
+      const tr = document.createElement('tr');
+      tr.id = newRowId;
+      tr.innerHTML = `
+        <td style="font-weight: 500;">${filename}</td>
+        <td><span class="badge ${badgeClass}">${fileType}</span></td>
+        <td style="color: var(--text-secondary);">Today (Simulation)</td>
+        <td>${sizeStr}</td>
+        <td><span class="badge badge-warning" id="${statusId}">Processing</span></td>
+        <td class="text-right">
+          <button style="background: none; border: none; color: var(--primary); cursor: pointer; font-size: 0.8rem; font-weight: 500; margin-right: 8px;" onclick="alert('Wireframe View: Ingesting chunks index. Chunks will be viewable when Ready.')">View Chunks</button>
+          <button onclick="deleteDocRow('${newRowId}')" style="background: none; border: none; color: var(--danger); cursor: pointer; font-size: 0.8rem; font-weight: 500;">Delete</button>
+        </td>
+      `;
+      tbody.appendChild(tr);
+
+      // Increment counters
+      docIdCounter++;
+      const currentActiveCount = document.querySelectorAll('#documents-tbody tr').length;
+      document.getElementById('metric-active-docs').innerText = currentActiveCount;
+
+      // Simulate parsing & chunk vector storage latency
+      setTimeout(() => {
+        const badge = document.getElementById(statusId);
+        if (badge) {
+          badge.classList.remove('badge-warning');
+          badge.classList.add('badge-success');
+          badge.innerText = 'Ready';
+        }
+      }, 3000);
+    }
+
+    // Simulate URL scraper crawling trigger
+    function simulateUrlScrape() {
+      const urlInput = document.getElementById('crawler-url');
+      const url = urlInput.value.trim();
+      if (!url) {
+        alert('Please paste a target website URL to crawl!');
+        return;
+      }
+      
+      // Add scraper mockup row
+      const newRowId = `doc-row-${docIdCounter}`;
+      const statusId = `doc-status-${docIdCounter}`;
+      const name = url.replace(/^https?:\/\//i, '');
+      const tbody = document.getElementById('documents-tbody');
+      const tr = document.createElement('tr');
+      tr.id = newRowId;
+      tr.innerHTML = `
+        <td style="font-weight: 500;">${name} (Crawl)</td>
+        <td><span class="badge badge-info">Link</span></td>
+        <td style="color: var(--text-secondary);">Just Scraped</td>
+        <td>32 KB (5 pages)</td>
+        <td><span class="badge badge-warning" id="${statusId}">Crawling</span></td>
+        <td class="text-right">
+          <button style="background: none; border: none; color: var(--primary); cursor: pointer; font-size: 0.8rem; font-weight: 500; margin-right: 8px;" onclick="alert('Wireframe View: Processing website nodes.')">View Chunks</button>
+          <button onclick="deleteDocRow('${newRowId}')" style="background: none; border: none; color: var(--danger); cursor: pointer; font-size: 0.8rem; font-weight: 500;">Delete</button>
+        </td>
+      `;
+      tbody.appendChild(tr);
+      
+      urlInput.value = '';
+      docIdCounter++;
+      const currentActiveCount = document.querySelectorAll('#documents-tbody tr').length;
+      document.getElementById('metric-active-docs').innerText = currentActiveCount;
+
+      // Processing state transitions (crawling -> chunking -> ready)
+      setTimeout(() => {
+        const badge = document.getElementById(statusId);
+        if (badge) {
+          badge.innerText = 'Chunking';
+        }
+        setTimeout(() => {
+          const badge2 = document.getElementById(statusId);
+          if (badge2) {
+            badge2.classList.remove('badge-warning');
+            badge2.classList.add('badge-success');
+            badge2.innerText = 'Ready';
+          }
+        }, 2000);
+      }, 2000);
+    }
+
+    // Delete document asset row
+    function deleteDocRow(rowId) {
+      if (confirm('Are you sure you want to delete this document from vector storage? This deletes all associated embeddings.')) {
+        const row = document.getElementById(rowId);
+        if (row) {
+          row.remove();
+          const currentActiveCount = document.querySelectorAll('#documents-tbody tr').length;
+          document.getElementById('metric-active-docs').innerText = currentActiveCount;
+        }
+      }
+    }
+
+    // Floating Widget state toggle (open/minimize)
+    function toggleChatWidget() {
+      const windowElement = document.getElementById('chat-widget-window');
+      const unreadBadge = document.getElementById('widget-unread');
+      windowElement.classList.toggle('open');
+      
+      // Hide unread notification badge once chat widget is opened
+      if (windowElement.classList.contains('open')) {
+        unreadBadge.style.display = 'none';
+      }
+    }
+
+    // Toggle between Conversational View and Support Form Handoff View
+    function toggleHandoffView() {
+      const handoffContainer = document.getElementById('widget-handoff-container');
+      const toggleBtn = document.getElementById('widget-tab-toggle');
+      
+      if (handoffContainer.classList.contains('active')) {
+        // Return to normal AI Chat
+        handoffContainer.classList.remove('active');
+        toggleBtn.innerText = 'Contact Human';
+      } else {
+        // Show Support Ticket Form
+        handoffContainer.classList.add('active');
+        toggleBtn.innerText = 'AI Chat';
+      }
+    }
+
+    // Textarea enter-key submit trigger
+    function handleTextareaKey(event) {
+      if (event.key === 'Enter' && !event.shiftKey) {
+        event.preventDefault();
+        sendUserMessage();
+      }
+    }
+
+    // Send customer query
+    function sendUserMessage() {
+      const textarea = document.getElementById('widget-input-field');
+      const queryText = textarea.value.trim();
+      if (!queryText) return;
+
+      // Add user message to scroll panel
+      appendChatMessage(queryText, 'user');
+      textarea.value = '';
+
+      // Trigger automatic metrics update
+      const totalChatsEl = document.getElementById('metric-total-chats');
+      totalChatsEl.innerText = parseInt(totalChatsEl.innerText) + 1;
+
+      // Simulate RAG pipeline delay + answer response
+      simulateRAGResponse(queryText);
+    }
+
+    // Click suggested pill question shortcut
+    function postStarterQuestion(question) {
+      appendChatMessage(question, 'user');
+      simulateRAGResponse(question);
+    }
+
+    // Helper: append conversation message bubble
+    function appendChatMessage(text, sender) {
+      const messagesContainer = document.getElementById('widget-chat-messages');
+      const msgDiv = document.createElement('div');
+      msgDiv.className = `msg ${sender}`;
+      
+      const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      const label = sender === 'user' ? 'You' : 'DocsBot';
+
+      msgDiv.innerHTML = `
+        <div class="msg-bubble">${text}</div>
+        <div class="msg-meta">${label} • ${timeStr}</div>
+      `;
+      messagesContainer.appendChild(msgDiv);
+      scrollToBottom();
+      return msgDiv;
+    }
+
+    // Scroll chat body to bottom
+    function scrollToBottom() {
+      const scrollContent = document.getElementById('widget-conversation-body');
+      scrollContent.scrollTop = scrollContent.scrollHeight;
+    }
+
+    // RAG Pipeline Simulation
+    function simulateRAGResponse(userQuery) {
+      const messagesContainer = document.getElementById('widget-chat-messages');
+      
+      // Append temporary typing indicator
+      const indicatorDiv = document.createElement('div');
+      indicatorDiv.className = 'msg bot typing-msg';
+      indicatorDiv.innerHTML = `
+        <div class="msg-bubble">
+          <div class="typing-indicator">
+            <span class="typing-dot"></span>
+            <span class="typing-dot"></span>
+            <span class="typing-dot"></span>
+          </div>
+        </div>
+      `;
+      messagesContainer.appendChild(indicatorDiv);
+      scrollToBottom();
+
+      setTimeout(() => {
+        // Remove typing indicator
+        indicatorDiv.remove();
+
+        let answer = '';
+        // Mock responses mapping
+        const queryLower = userQuery.toLowerCase();
+        if (queryLower.includes('upgrade') || queryLower.includes('pricing') || queryLower.includes('bill')) {
+          answer = `To upgrade your workspace subscription, navigate to the <strong>Billing Tab</strong> in the dashboard settings sidebar. From there you can click the Stripe upgrade option. Custom packages are handled via our support. <span class="citation" onmouseover="showCitation(this, 1)" onmouseout="hideCitation()">[1]</span>`;
+        } else if (queryLower.includes('format') || queryLower.includes('upload') || queryLower.includes('type') || queryLower.includes('pdf')) {
+          answer = `AskMyDocs allows you to upload file resources such as <strong>PDFs, Markdown (.md), plaintext (.txt), and Word documents (.docx)</strong>. File uploads are capped at 10MB per document on the Free Plan. <span class="citation" onmouseover="showCitation(this, 2)" onmouseout="hideCitation()">[2]</span>`;
+        } else if (queryLower.includes('support') || queryLower.includes('contact') || queryLower.includes('human')) {
+          answer = `If you need human assistance, click the <strong>"Contact Human"</strong> tab at the top of the chat panel. This will allow you to submit a ticket which forwards your chat context to the organization's customer support inbox.`;
+        } else {
+          // Default low-confidence result prompting human handoff
+          answer = `I am scanning the vector chunks in your databases, but I couldn't find a high-confidence match for that specific question in your files. <br/><br/>Would you like to forward this thread to our support team? Click <strong>"Contact Human"</strong> in the top menu to raise a ticket.`;
+        }
+
+        appendChatMessage(answer, 'bot');
+      }, 1500);
+    }
+
+    // Vector chunk citations popup coordinates
+    const citationsData = {
+      1: {
+        doc: "faq_billing.md",
+        text: "Subscriptions are billed through Stripe checkout. The billing dashboard handles upgrades, down-grades, and invoices securely."
+      },
+      2: {
+        doc: "user_manual_v2.pdf",
+        text: "Section 3.1: Data ingest pipelines accept standard formats: .pdf, .md, .txt, and .docx. Vectorization parses textual tokens into 500-character segments."
+      }
+    };
+
+    function showCitation(element, id) {
+      const tooltip = document.getElementById('citation-tooltip');
+      const tooltipTitle = document.getElementById('citation-tooltip-title');
+      const tooltipText = document.getElementById('citation-tooltip-text');
+
+      const data = citationsData[id];
+      if (!data) return;
+
+      tooltipTitle.innerText = `Citation from: ${data.doc}`;
+      tooltipText.innerText = `"${data.text}"`;
+
+      // Position tooltip relative to hovered element inside scroll box
+      const rect = element.getBoundingClientRect();
+      const parentRect = document.getElementById('chat-widget-window').getBoundingClientRect();
+      
+      tooltip.style.left = `${rect.left - parentRect.left - 60}px`;
+      tooltip.style.top = `${rect.top - parentRect.top - 80}px`;
+      tooltip.style.display = 'block';
+    }
+
+    function hideCitation() {
+      document.getElementById('citation-tooltip').style.display = 'none';
+    }
+
+    // Submit Contact Support / Handoff Form
+    function submitHandoffForm(event) {
+      event.preventDefault();
+      
+      const email = document.getElementById('handoff-email-input').value;
+      const details = document.getElementById('handoff-msg-input').value;
+
+      // Hide form container and show success feedback screen
+      document.getElementById('widget-handoff-container').classList.remove('active');
+      document.getElementById('widget-handoff-success').classList.add('active');
+      
+      // Hide chat input footer
+      document.getElementById('widget-chat-footer').style.display = 'none';
+
+      // Clear input fields
+      document.getElementById('handoff-email-input').value = '';
+      document.getElementById('handoff-msg-input').value = '';
+    }
+
+    function resetHandoffSuccess() {
+      // Toggle back from handoff states to AI Chat view
+      document.getElementById('widget-handoff-success').classList.remove('active');
+      document.getElementById('widget-tab-toggle').innerText = 'Contact Human';
+      
+      // Restore chat input footer
+      document.getElementById('widget-chat-footer').style.display = 'flex';
+      
+      // Scroll to bottom
+      scrollToBottom();
+    }
+  </script>
+</body>
+</html>

@@ -12,3 +12,7 @@
 - **What confused me:** Designing visual state mapping for the embeddable chat widget to maintain a clean layout while accommodating complex RAG-related states (like sources and handoff forms).
 - **What I'd do differently:** Design the database routing patterns in tandem with the page routes, as details like the organization UUID prefix will impact dashboard layout hierarchy.
 
+### Day 3
+- **What I built:** Designed and built a fully interactive mockup (`docs/wireframes.html`) representing the low-fidelity wireframes for the dashboard home, upload documents view, and chat widget (including conversational and support handoff states).
+- **What confused me:** Managing cross-component state updates (like triggering the global dashboard usage banner from a local checkbox control or updating statistics) in simple Vanilla JS without a framework.
+- **What I'd do differently:** Separate client-facing widget scripts from internal admin scripts early in the mockup file structure, as unified files can grow dense quickly.
