@@ -16,3 +16,9 @@
 - **What I built:** Designed and built a fully interactive mockup (`docs/wireframes.html`) representing the low-fidelity wireframes for the dashboard home, upload documents view, and chat widget (including conversational and support handoff states).
 - **What confused me:** Managing cross-component state updates (like triggering the global dashboard usage banner from a local checkbox control or updating statistics) in simple Vanilla JS without a framework.
 - **What I'd do differently:** Separate client-facing widget scripts from internal admin scripts early in the mockup file structure, as unified files can grow dense quickly.
+
+### Day 4
+- **What I built:** Designed a visual identity system and configured custom theme extensions (brand indigo palette, violet AI accents, modern font stacks, and custom animations) in a workspace-level `tailwind.config.js` file.
+- **What confused me:** Determining whether we should customize standard utility boundaries (like custom shadows or borders) early on or leave them as default until shadcn/ui sets them up in Day 5.
+- **What I'd do differently:** Drafted CSS variable bindings for the color tokens right away to ease the transition when setting up shadcn/ui themes later.
+
