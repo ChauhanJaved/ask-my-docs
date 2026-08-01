@@ -22,3 +22,9 @@
 - **What confused me:** Determining whether we should customize standard utility boundaries (like custom shadows or borders) early on or leave them as default until shadcn/ui sets them up in Day 5.
 - **What I'd do differently:** Drafted CSS variable bindings for the color tokens right away to ease the transition when setting up shadcn/ui themes later.
 
+### Day 5
+- **What I built:** Scaffolded a Next.js 15 App Router application with TypeScript, Tailwind CSS v4, and shadcn/ui. Configured route group layouts (`(marketing)`, `(onboarding)`, `(dashboard)`) and API stubs (`chat`, `documents`, `crawl`, `stripe`), integrating Day 4 visual identity design tokens directly inside Tailwind v4's CSS `@theme` block.
+- **What confused me:** The shadcn CLI's initial dependency verification failed due to local DNS resolution failures for `ui.shadcn.com` (ENOTFOUND). Bypassed this by writing a custom DNS resolver override preloaded via `NODE_OPTIONS` to intercept queries and target the correct Vercel IPs.
+- **What I'd do differently:** Declare the `"use client";` directive at the top of forms and settings pages right away, as Next 15 build worker validation throws errors on un-escaped JSX single/double quotes and un-declared client-side event handlers during static prerendering.
+
+
