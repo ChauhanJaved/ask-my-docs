@@ -27,4 +27,7 @@
 - **What confused me:** The shadcn CLI's initial dependency verification failed due to local DNS resolution failures for `ui.shadcn.com` (ENOTFOUND). Bypassed this by writing a custom DNS resolver override preloaded via `NODE_OPTIONS` to intercept queries and target the correct Vercel IPs.
 - **What I'd do differently:** Declare the `"use client";` directive at the top of forms and settings pages right away, as Next 15 build worker validation throws errors on un-escaped JSX single/double quotes and un-declared client-side event handlers during static prerendering.
 
-
+### Day 6
+- **What I built:** Designed and built a fully responsive high-fidelity marketing landing page for AskMyDocs featuring a sticky header, interactive mock chatbot simulator, features grid, How-It-Works interactive stepper, pricing plan toggle, and a stateful FAQ accordion.
+- **What confused me:** Next.js 15 build validation checking for unescaped apostrophes (`'`) in JSX text, which resulted in compiler errors for words like `isn't` and `bot's` inside our product copy.
+- **What I'd do differently:** Use HTML character entity codes (like `&apos;`) for copy blocks from the start to prevent compiler linter checks from blocking production builds.
