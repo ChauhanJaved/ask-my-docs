@@ -31,3 +31,9 @@
 - **What I built:** Designed and built a fully responsive high-fidelity marketing landing page for AskMyDocs featuring a sticky header, interactive mock chatbot simulator, features grid, How-It-Works interactive stepper, pricing plan toggle, and a stateful FAQ accordion.
 - **What confused me:** Next.js 15 build validation checking for unescaped apostrophes (`'`) in JSX text, which resulted in compiler errors for words like `isn't` and `bot's` inside our product copy.
 - **What I'd do differently:** Use HTML character entity codes (like `&apos;`) for copy blocks from the start to prevent compiler linter checks from blocking production builds.
+
+### Day 7
+- **What I built:** Designed a multi-tenant PostgreSQL database schema for AskMyDocs featuring tenant organization isolation, Supabase Auth user profile mappings, RAG document chunks with pgvector embeddings (1536 dimensions), conversational session history, and subscription usage tracking.
+- **What confused me:** Weighing normalized multi-table schema patterns against RLS query latency, and deciding to denormalize `organization_id` onto child tables (`chat_messages`, `document_chunks`) so row-level policies execute without expensive multi-table joins.
+- **What I'd do differently:** Define database column constraints and check enums in SQL upfront rather than relying solely on TypeScript application-level validations, ensuring data integrity at the database layer.
+
