@@ -1,6 +1,6 @@
-# AskMyDocs — Visual Identity & Design System
+# FTChat — Visual Identity & Design System
 
-This document outlines the visual identity, brand values, design tokens, and style choices for **AskMyDocs**. 
+This document outlines the visual identity, brand values, design tokens, and style choices for **FTChat**. 
 
 ---
 

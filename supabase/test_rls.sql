@@ -1,4 +1,4 @@
--- RLS (Row Level Security) Testing Script for AskMyDocs
+-- RLS (Row Level Security) Testing Script for FTChat
 -- This script verifies that users cannot access data from other organizations
 
 -- Note: To run these tests, you would need to:

@@ -1,7 +1,7 @@
-# Session Summary: AskMyDocs SaaS Development Progress
+# Session Summary: FTChat SaaS Development Progress
 
 ## Overview
-This session focused on implementing Days 7-12 of the "Build AskMyDocs — An AI Support Chatbot SaaS" 12-week learning roadmap. Significant progress was made on database setup, authentication, and multi-tenant architecture.
+This session focused on implementing Days 7-12 of the "Build FTChat — An AI Support Chatbot SaaS" 12-week learning roadmap. Significant progress was made on database setup, authentication, and multi-tenant architecture.
 
 ## Accomplished Tasks
 

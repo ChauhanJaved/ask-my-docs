@@ -1,12 +1,12 @@
-# AskMyDocs — Information Architecture & Sitemap
+# FTChat — Information Architecture & Sitemap
 
-This document maps out the Information Architecture (IA) for AskMyDocs, detailing the pages, routing, layouts, and key UI components for the marketing site, user dashboard, and chat widget.
+This document maps out the Information Architecture (IA) for FTChat, detailing the pages, routing, layouts, and key UI components for the marketing site, user dashboard, and chat widget.
 
 ---
 
 ## 1. Information Architecture Overview
 
-Here is the sitemap and primary user flow navigation structure for AskMyDocs:
+Here is the sitemap and primary user flow navigation structure for FTChat:
 
 ```mermaid
 graph TD
@@ -90,7 +90,7 @@ These pages are accessible publicly and designed to educate visitors, present th
   * **Auth Card Header:** Company Logo, form title.
   * **Social Logins:** "Continue with Google" OAuth button.
   * **Credential Form:** Email input, Password input, Password validation indicators (on signup), Password recovery link (on login).
-  * **Context Switcher:** "Already have an account? Log In" or "New to AskMyDocs? Sign Up".
+  * **Context Switcher:** "Already have an account? Log In" or "New to FTChat? Sign Up".
 
 ---
 
@@ -153,7 +153,7 @@ The dashboard is the central hub where organization admins manage their data, cu
   * **Widget Live Preview (Center/Right Column):**
     * A mock webpage displaying the chat widget reflecting design changes in real-time.
   * **Integration Snippet Card:**
-    * A copyable text box containing the `<script>` tag loader containing the client org ID (e.g., `<script src="https://widget.askmydocs.com/loader.js" data-org-id="12345"></script>`).
+    * A copyable text box containing the `<script>` tag loader containing the client org ID (e.g., `<script src="https://widget.ftchat.com/loader.js" data-org-id="12345"></script>`).
 
 ### 3.5. Chat Logs & Analytics (`/dashboard/chats`)
 * **Purpose:** Audit AI conversational quality, examine citations, and discover document coverage gaps.
@@ -205,7 +205,7 @@ The widget is loaded via an iframe or web component dynamically on the client's 
   * **Footer:**
     * Textarea field with "Press Enter to Send".
     * Send Button (Paper-airplane icon).
-    * Whitelabel signature: Small "Powered by AskMyDocs" link (removed on Pro/Business tiers).
+    * Whitelabel signature: Small "Powered by FTChat" link (removed on Pro/Business tiers).
 
 ### 4.3. State 3: Handoff / Contact Support Form
 * **Purpose:** Capture user details and query for human escalation when the AI hits a confidence threshold limit.

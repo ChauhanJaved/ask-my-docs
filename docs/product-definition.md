@@ -1,12 +1,12 @@
-# AskMyDocs — Product Definition & Strategy
+# FTChat — Product Definition & Strategy
 
-This document details the product design decisions for AskMyDocs, established on Day 1 of the SaaS learning roadmap.
+This document details the product design decisions for FTChat, established on Day 1 of the SaaS learning roadmap.
 
 ---
 
 ## 1. Target Customer (Ideal Customer Profile)
 
-AskMyDocs targets **Small and Medium Businesses (SMBs), customer support leads, and technical founders** who:
+FTChat targets **Small and Medium Businesses (SMBs), customer support leads, and technical founders** who:
 - Receive a high volume of repetitive customer support inquiries (e.g., pricing, installation, basic troubleshooting).
 - Have limited human support bandwidth, resulting in delayed response times or high support costs.
 - Already maintain some documentation, FAQ lists, markdown guides, or public-facing knowledge bases.
@@ -24,7 +24,7 @@ We focus on three primary user journeys covering the setup, usage, and optimizat
 
 ### User Story 1: Setup & Ingestion (The Business Admin)
 > **As a** startup support lead,
-> **I want to** upload our company's product documentation (PDF, TXT, MD format) into AskMyDocs,
+> **I want to** upload our company's product documentation (PDF, TXT, MD format) into FTChat,
 > **So that** the AI has a source of truth to answer incoming customer support questions accurately.
 
 ### User Story 2: Instant Customer Support (The End Customer)
@@ -63,7 +63,7 @@ We utilize a three-tier monthly subscription model designed around usage limits 
 - **Organizations/Bots:** 1 organization, 1 active bot.
 - **Knowledge Base:** Max 3 files uploaded (up to 2MB total).
 - **Usage Limits:** 50 chat messages/month.
-- **Branding:** Non-removable "Powered by AskMyDocs" badge.
+- **Branding:** Non-removable "Powered by FTChat" badge.
 - **Support:** Community/Self-serve.
 
 ### **Pro Tier ($29/month)**
@@ -71,7 +71,7 @@ We utilize a three-tier monthly subscription model designed around usage limits 
 - **Organizations/Bots:** 1 organization, 3 active bots.
 - **Knowledge Base:** Max 50 files uploaded (up to 50MB total).
 - **Usage Limits:** 1,500 chat messages/month.
-- **Branding:** Removable "Powered by AskMyDocs" badge (White-labeled).
+- **Branding:** Removable "Powered by FTChat" badge (White-labeled).
 - **Support:** Next-day email support.
 
 ### **Business Tier ($99/month)**

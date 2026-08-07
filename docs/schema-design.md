@@ -1,7 +1,7 @@
-# AskMyDocs — Database Architecture & Multi-Tenant Schema Design (Day 7)
+# FTChat — Database Architecture & Multi-Tenant Schema Design (Day 7)
 
 ## Overview
-This document outlines the multi-tenant PostgreSQL database architecture designed for AskMyDocs during Day 7 of the SaaS learning roadmap. 
+This document outlines the multi-tenant PostgreSQL database architecture designed for FTChat during Day 7 of the SaaS learning roadmap. 
 
 The schema is architected to support:
 - Multi-tenancy with strict organization isolation.

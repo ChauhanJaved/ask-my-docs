@@ -1,14 +1,14 @@
-# AskMyDocs — SaaS Learning Log
+# FTChat — SaaS Learning Log
 
 ## Week 1: Product Definition, UI/UX Design
 
 ### Day 1
-- **What I built:** Defined the core strategy of AskMyDocs, mapping out the Ideal Customer Profile (ICP), three foundational user stories, the feature matrix distinguishing MVP from post-MVP phases, and a three-tier SaaS monetization model.
+- **What I built:** Defined the core strategy of FTChat, mapping out the Ideal Customer Profile (ICP), three foundational user stories, the feature matrix distinguishing MVP from post-MVP phases, and a three-tier SaaS monetization model.
 - **What confused me:** Reading the UTF-16LE encoded `README.md` through standard file viewing tools caused an initial mime-type issue, which required falling back to a PowerShell read.
 - **What I'd do differently:** Define exact token limits for pricing tiers sooner, as having specific parameters early on will make backend limit-enforcement logic simpler to write.
 
 ### Day 2
-- **What I built:** Designed the comprehensive Information Architecture (IA) for AskMyDocs, outlining the structure, routing, and key UI components for the public marketing site, authenticated dashboard, and embeddable widget.
+- **What I built:** Designed the comprehensive Information Architecture (IA) for FTChat, outlining the structure, routing, and key UI components for the public marketing site, authenticated dashboard, and embeddable widget.
 - **What confused me:** Designing visual state mapping for the embeddable chat widget to maintain a clean layout while accommodating complex RAG-related states (like sources and handoff forms).
 - **What I'd do differently:** Design the database routing patterns in tandem with the page routes, as details like the organization UUID prefix will impact dashboard layout hierarchy.
 
@@ -28,12 +28,12 @@
 - **What I'd do differently:** Declare the `"use client";` directive at the top of forms and settings pages right away, as Next 15 build worker validation throws errors on un-escaped JSX single/double quotes and un-declared client-side event handlers during static prerendering.
 
 ### Day 6
-- **What I built:** Designed and built a fully responsive high-fidelity marketing landing page for AskMyDocs featuring a sticky header, interactive mock chatbot simulator, features grid, How-It-Works interactive stepper, pricing plan toggle, and a stateful FAQ accordion.
+- **What I built:** Designed and built a fully responsive high-fidelity marketing landing page for FTChat featuring a sticky header, interactive mock chatbot simulator, features grid, How-It-Works interactive stepper, pricing plan toggle, and a stateful FAQ accordion.
 - **What confused me:** Next.js 15 build validation checking for unescaped apostrophes (`'`) in JSX text, which resulted in compiler errors for words like `isn't` and `bot's` inside our product copy.
 - **What I'd do differently:** Use HTML character entity codes (like `&apos;`) for copy blocks from the start to prevent compiler linter checks from blocking production builds.
 
 ### Day 7
-- **What I built:** Designed a multi-tenant PostgreSQL database schema for AskMyDocs featuring tenant organization isolation, Supabase Auth user profile mappings, RAG document chunks with pgvector embeddings (1536 dimensions), conversational session history, and subscription usage tracking.
+- **What I built:** Designed a multi-tenant PostgreSQL database schema for FTChat featuring tenant organization isolation, Supabase Auth user profile mappings, RAG document chunks with pgvector embeddings (1536 dimensions), conversational session history, and subscription usage tracking.
 - **What confused me:** Weighing normalized multi-table schema patterns against RLS query latency, and deciding to denormalize `organization_id` onto child tables (`chat_messages`, `document_chunks`) so row-level policies execute without expensive multi-table joins.
 - **What I'd do differently:** Define database column constraints and check enums in SQL upfront rather than relying solely on TypeScript application-level validations, ensuring data integrity at the database layer.
 

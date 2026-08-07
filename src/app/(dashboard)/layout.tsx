@@ -12,7 +12,7 @@ export default function DashboardLayout({
         {/* Brand */}
         <div className="p-6 border-b border-neutral-200">
           <Link href="/dashboard" className="text-xl font-bold font-display text-brand-600 block">
-            AskMyDocs
+            FTChat
           </Link>
           <span className="text-xs text-neutral-500 font-medium">Dashboard Hub</span>
         </div>

@@ -18,7 +18,7 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "AskMyDocs | Turn your docs into an instant AI support chatbot",
+  title: "FTChat | Turn your docs into an instant AI support chatbot",
   description: "Businesses upload their docs, FAQs, and files, and get an embeddable AI chat widget for their website.",
 };
 

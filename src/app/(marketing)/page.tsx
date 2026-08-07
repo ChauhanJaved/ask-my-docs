@@ -44,7 +44,7 @@ const PRESETS = [
   },
   {
     question: "How do I embed the chat widget?",
-    answer: "You copy a single line of script tag from your AskMyDocs settings dashboard and paste it right before the closing </body> tag of your website. It loads asynchronously, meaning it won't impact your site's SEO or loading speeds.",
+    answer: "You copy a single line of script tag from your FTChat settings dashboard and paste it right before the closing </body> tag of your website. It loads asynchronously, meaning it won't impact your site's SEO or loading speeds.",
     citations: ["Widget_Embed.md (Line 12)"]
   }
 ];
@@ -58,7 +58,7 @@ export default function HomePage() {
     {
       id: "init",
       sender: "bot",
-      text: "Hi! I'm the AskMyDocs AI Assistant. Click one of the test questions below to see how I retrieve answers from your documentation in real-time!",
+      text: "Hi! I'm the FTChat AI Assistant. Click one of the test questions below to see how I retrieve answers from your documentation in real-time!",
       timestamp: "12:00 PM"
     }
   ]);
@@ -120,7 +120,7 @@ export default function HomePage() {
       {
         id: "init",
         sender: "bot",
-        text: "Hi! I'm the AskMyDocs AI Assistant. Click one of the test questions below to see how I retrieve answers from your documentation in real-time!",
+        text: "Hi! I'm the FTChat AI Assistant. Click one of the test questions below to see how I retrieve answers from your documentation in real-time!",
         timestamp: "12:00 PM"
       }
     ]);
@@ -144,7 +144,7 @@ export default function HomePage() {
         "Up to 5 documents (PDF, MD, TXT)",
         "100 chat messages / month",
         "Standard semantic search accuracy",
-        "AskMyDocs branding on widget",
+        "FTChat branding on widget",
         "Community support access"
       ],
       cta: "Get Started Free",
@@ -192,7 +192,7 @@ export default function HomePage() {
   const faqs = [
     {
       q: "Which file formats are supported for document ingestion?",
-      a: "AskMyDocs supports PDF files, Markdown (.md), plaintext (.txt), and Word documents (.docx). Additionally, we provide an automatic URL web crawler that scraps, cleans, and segments content directly from public documentation links."
+      a: "FTChat supports PDF files, Markdown (.md), plaintext (.txt), and Word documents (.docx). Additionally, we provide an automatic URL web crawler that scraps, cleans, and segments content directly from public documentation links."
     },
     {
       q: "Can I customize the look and feel of the widget?",
@@ -204,7 +204,7 @@ export default function HomePage() {
     },
     {
       q: "Is my customer data secure?",
-      a: "Absolutely. Security is central to AskMyDocs. All document contents are stored inside isolated Supabase databases with Row Level Security (RLS) policies. We do not use your proprietary documents to train public foundational LLM models."
+      a: "Absolutely. Security is central to FTChat. All document contents are stored inside isolated Supabase databases with Row Level Security (RLS) policies. We do not use your proprietary documents to train public foundational LLM models."
     },
     {
       q: "What happens if I exceed my monthly message limits?",
@@ -226,7 +226,7 @@ export default function HomePage() {
               <Bot className="w-5 h-5 text-white" />
             </div>
             <div className="flex flex-col">
-              <span className="text-lg font-bold font-display text-neutral-950 tracking-tight leading-none">AskMyDocs</span>
+              <span className="text-lg font-bold font-display text-neutral-950 tracking-tight leading-none">FTChat</span>
               <span className="text-[10px] text-neutral-500 font-medium tracking-wider uppercase mt-0.5">SaaS Platform</span>
             </div>
           </div>
@@ -407,7 +407,7 @@ export default function HomePage() {
                   AI
                 </div>
                 <div>
-                  <h4 className="text-sm font-bold leading-none">AskMyDocs Assistant</h4>
+                  <h4 className="text-sm font-bold leading-none">FTChat Assistant</h4>
                   <span className="text-[10px] text-brand-100 flex items-center mt-1">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 mr-1.5 animate-pulse" />
                     Answers from local documentation
@@ -659,7 +659,7 @@ export default function HomePage() {
                       Upload or Crawl Documentation
                     </h4>
                     <p className="text-neutral-500 text-xs mt-1.5 leading-relaxed">
-                      Upload PDFs, FAQs, or paste documentation website URLs. AskMyDocs auto-segments the content into vectorized context chunks.
+                      Upload PDFs, FAQs, or paste documentation website URLs. FTChat auto-segments the content into vectorized context chunks.
                     </p>
                   </div>
                 </div>
@@ -832,13 +832,13 @@ export default function HomePage() {
                       </span>
                     </div>
                     <code>
-                      {`<!-- AskMyDocs Chat Widget Loader -->`}
+                      {`<!-- FTChat Chat Widget Loader -->`}
                       <br />
                       {`<script`}
                       <br />
                       {`  async`}
                       <br />
-                      {`  src="https://cdn.askmydocs.com/widget.js"`}
+                      {`  src="https://cdn.ftchat.com/widget.js"`}
                       <br />
                       {`  data-org-id="org_8d5c2a19ff"`}
                       <br />
@@ -1036,7 +1036,7 @@ export default function HomePage() {
             Deploy Your AI Assistant in Minutes
           </h2>
           <p className="text-neutral-400 text-sm sm:text-base max-w-xl mx-auto leading-relaxed">
-            Join other software builders using AskMyDocs to automate customer FAQs, reduce ticket volume, and index code documentation.
+            Join other software builders using FTChat to automate customer FAQs, reduce ticket volume, and index code documentation.
           </p>
           <div className="pt-4 flex flex-col sm:flex-row space-y-3.5 sm:space-y-0 sm:space-x-4 justify-center">
             <Link href="/signup" className="w-full sm:w-auto">
@@ -1072,7 +1072,7 @@ export default function HomePage() {
               <div className="w-6 h-6 rounded bg-brand-600 flex items-center justify-center">
                 <Bot className="w-3.5 h-3.5 text-white" />
               </div>
-              <span>AskMyDocs</span>
+              <span>FTChat</span>
             </div>
             <p className="leading-relaxed">
               Automated RAG-powered customer chatbot generation for B2B SaaS organizations.
@@ -1112,7 +1112,7 @@ export default function HomePage() {
         </div>
 
         <div className="max-w-7xl mx-auto px-6 pt-8 border-t border-neutral-200 flex flex-col sm:flex-row items-center justify-between text-neutral-400">
-          <p>© {new Date().getFullYear()} AskMyDocs. All rights reserved.</p>
+          <p>© {new Date().getFullYear()} FTChat. All rights reserved.</p>
           <div className="flex space-x-4 mt-4 sm:mt-0">
             <a href="#" className="hover:text-neutral-600 transition-colors">Twitter / X</a>
             <a href="#" className="hover:text-neutral-600 transition-colors">GitHub Repository</a>

@@ -55,7 +55,7 @@ export default function SignupPage() {
       <div className="bg-white border border-neutral-200 rounded-lg shadow-sm p-8 w-full max-w-md">
         <div className="text-center mb-8">
           <Link href="/" className="text-2xl font-bold font-display text-brand-600">
-            AskMyDocs
+            FTChat
           </Link>
           <h2 className="mt-4 text-xl font-semibold text-neutral-900">Create your account</h2>
           <p className="text-xs text-neutral-500 mt-1">Start building your AI assistant today.</p>

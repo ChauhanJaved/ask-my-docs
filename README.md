@@ -1,6 +1,6 @@
-# AskMyDocs
+# FTChat
 
-AskMyDocs is an AI-powered support assistant that lets businesses turn their
+FTChat is an AI-powered support assistant that lets businesses turn their
 existing documentation, FAQs, and knowledge base content into an embeddable
 chat widget for their website. It uses retrieval-augmented generation (RAG)
 to answer customer questions accurately from a business's own content, with

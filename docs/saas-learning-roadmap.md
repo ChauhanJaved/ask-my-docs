@@ -1,4 +1,4 @@
-# Build "AskMyDocs" — An AI Support Chatbot SaaS
+# Build "FTChat" — An AI Support Chatbot SaaS
 ### 12-Week, Day-by-Day AI Prompt Curriculum
 Stack: Next.js (App Router) + Supabase (Postgres + pgvector + Auth + Storage) + Stripe + OpenAI/Claude API
 
@@ -18,7 +18,7 @@ Rules to actually learn (not just copy-paste):
 ## Week 1 — Product Definition, UI/UX Design
 
 **Day 1**
-> Act as a senior product designer. I'm building a SaaS called AskMyDocs — businesses upload their docs/FAQs and get an embeddable AI chat widget that answers customer questions from that content. Help me define: target customer, 3 core user stories, MVP feature list vs "later" features, and a simple monetization model (free/pro/business tiers).
+> Act as a senior product designer. I'm building a SaaS called FTChat — businesses upload their docs/FAQs and get an embeddable AI chat widget that answers customer questions from that content. Help me define: target customer, 3 core user stories, MVP feature list vs "later" features, and a simple monetization model (free/pro/business tiers).
 
 **Day 2**
 > Based on yesterday's MVP scope, design the information architecture: list every page/screen needed (marketing site + authenticated dashboard + embeddable widget), and for each, its purpose and key UI elements.
@@ -40,7 +40,7 @@ Rules to actually learn (not just copy-paste):
 ## Week 2 — Database Design & Auth
 
 **Day 7**
-> Act as a database architect. Design a multi-tenant Postgres schema for AskMyDocs: organizations, users, documents, document_chunks (with vector embeddings), chat_sessions, chat_messages, and usage/plan tracking. Explain your normalization and indexing choices.
+> Act as a database architect. Design a multi-tenant Postgres schema for FTChat: organizations, users, documents, document_chunks (with vector embeddings), chat_sessions, chat_messages, and usage/plan tracking. Explain your normalization and indexing choices.
 
 **Day 8**
 > Set up Supabase locally, enable the pgvector extension, and write the SQL migrations for the schema we designed. Include Row Level Security (RLS) policies so each organization can only see its own data.
@@ -84,7 +84,7 @@ Rules to actually learn (not just copy-paste):
 ## Week 4 — AI Integration Part 1: Embeddings & RAG
 
 **Day 19**
-> Explain how RAG (Retrieval-Augmented Generation) works and how it applies to AskMyDocs. Then implement an embedding pipeline: generate embeddings for each document chunk using an embeddings model and store them in pgvector.
+> Explain how RAG (Retrieval-Augmented Generation) works and how it applies to FTChat. Then implement an embedding pipeline: generate embeddings for each document chunk using an embeddings model and store them in pgvector.
 
 **Day 20**
 > Implement semantic search: given a user question, generate its embedding and retrieve the top-k most relevant chunks using pgvector similarity search. Test it manually with sample queries.

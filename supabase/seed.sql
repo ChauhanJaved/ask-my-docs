@@ -1,4 +1,4 @@
--- Seed data for AskMyDocs development
+-- Seed data for FTChat development
 -- This script populates sample data for testing
 
 -- Insert sample organizations

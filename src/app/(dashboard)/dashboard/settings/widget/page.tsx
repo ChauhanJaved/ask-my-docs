@@ -24,7 +24,7 @@ export default function WidgetSettingsPage() {
               <input
                 id="botName"
                 type="text"
-                defaultValue="AskMyDocs Assistant"
+                defaultValue="FTChat Assistant"
                 className="w-full border border-neutral-300 rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-brand-500"
               />
             </div>
@@ -67,7 +67,7 @@ export default function WidgetSettingsPage() {
               Copy and paste this HTML snippet before the closing <code>&lt;/body&gt;</code> tag on your website:
             </p>
             <div className="bg-neutral-900 text-neutral-100 p-4 rounded-md font-mono text-[10px] whitespace-pre-wrap select-all">
-              {`<script\n  src="https://widget.askmydocs.com/loader.js"\n  data-org-id="demo-org-12345"\n  defer\n></script>`}
+              {`<script\n  src="https://widget.ftchat.com/loader.js"\n  data-org-id="demo-org-12345"\n  defer\n></script>`}
             </div>
           </div>
           <Button variant="outline" className="text-xs mt-6 self-start">

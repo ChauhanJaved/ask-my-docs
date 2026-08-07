@@ -8,7 +8,7 @@ export default function OnboardingPage() {
     <div className="min-h-screen bg-neutral-50 flex flex-col justify-between p-6 font-sans">
       {/* Header */}
       <header className="max-w-4xl mx-auto w-full flex items-center justify-between py-4">
-        <span className="text-xl font-bold font-display text-brand-600">AskMyDocs</span>
+        <span className="text-xl font-bold font-display text-brand-600">FTChat</span>
         <span className="text-xs text-neutral-500 font-medium">Setup Wizard</span>
       </header>
 
@@ -53,7 +53,7 @@ export default function OnboardingPage() {
 
       {/* Footer */}
       <footer className="max-w-4xl mx-auto w-full text-center text-xs text-neutral-400 py-4">
-        <p>© {new Date().getFullYear()} AskMyDocs. All rights reserved.</p>
+        <p>© {new Date().getFullYear()} FTChat. All rights reserved.</p>
       </footer>
     </div>
   );

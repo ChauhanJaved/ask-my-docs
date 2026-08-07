@@ -8,7 +8,7 @@ export default function PricingPage() {
       <header className="border-b border-neutral-200 bg-white">
         <div className="container mx-auto px-6 py-4 flex items-center justify-between">
           <Link href="/" className="text-xl font-bold font-display text-brand-600">
-            AskMyDocs
+            FTChat
           </Link>
           <div className="flex items-center space-x-4">
             <Link href="/login">

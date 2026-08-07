@@ -43,7 +43,7 @@ export default function LoginPage() {
       <div className="bg-white border border-neutral-200 rounded-lg shadow-sm p-8 w-full max-w-md">
         <div className="text-center mb-8">
           <Link href="/" className="text-2xl font-bold font-display text-brand-600">
-            AskMyDocs
+            FTChat
           </Link>
           <h2 className="mt-4 text-xl font-semibold text-neutral-900">Sign in to your account</h2>
         </div>
@@ -113,7 +113,7 @@ export default function LoginPage() {
           </Button>
 
           <p className="text-xs text-neutral-600 mt-2">
-            New to AskMyDocs?{" "}
+            New to FTChat?{" "}
             <Link href="/signup" className="text-brand-600 hover:underline">
               Create an account
             </Link>
