@@ -15,7 +15,7 @@ export async function GET() {
     }
 
     // Transform data to match the expected format
-    const formattedDocuments = documents?.map(doc => ({
+    const formattedDocuments = documents?.map((doc: { id: string; name: string; size: number; type: string; status: string }) => ({
       id: doc.id,
       name: doc.name,
       size: doc.size,
