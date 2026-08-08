@@ -1,17 +1,24 @@
+"use client";
+
 import { Button } from "@/components/ui/button";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 
 export default function DocumentsPage() {
-  const [documents, setDocuments] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [uploading, setUploading] = useState(false);
+  interface Document {
+    id: string;
+    name: string;
+    size: number;
+    type: string;
+    status: string;
+    created_at: string;
+  }
 
-  useEffect(() => {
-    fetchDocuments();
-  }, []);
+  const [documents, setDocuments] = useState<Document[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+  const [uploading, setUploading] = useState<boolean>(false);
 
-  const fetchDocuments = async () => {
+  const fetchDocuments = useCallback(async () => {
     setLoading(true);
     try {
       const response = await fetch("/api/documents");
@@ -19,17 +26,21 @@ export default function DocumentsPage() {
         throw new Error("Failed to fetch documents");
       }
       const data = await response.json();
-      setDocuments(data.documents || []);
+      setDocuments(data.documents as Document[] || []);
     } catch (err) {
-      setError(err.message);
+      setError(err instanceof Error ? err.message : "An unknown error occurred");
       console.error("Error fetching documents:", err);
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchDocuments();
+  }, [fetchDocuments]);
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files[0];
+    const file = e.target.files?.[0];
     if (!file) return;
 
     setUploading(true);
@@ -52,7 +63,7 @@ export default function DocumentsPage() {
       // Refresh documents list
       await fetchDocuments();
     } catch (err) {
-      setError(err.message);
+      setError(err instanceof Error ? err.message : "An unknown error occurred");
       console.error("Error uploading file:", err);
     } finally {
       setUploading(false);
@@ -76,7 +87,7 @@ export default function DocumentsPage() {
       // Refresh documents list
       await fetchDocuments();
     } catch (err) {
-      setError(err.message);
+      setError(err instanceof Error ? err.message : "An unknown error occurred");
       console.error("Error deleting document:", err);
     }
   };
@@ -136,7 +147,7 @@ export default function DocumentsPage() {
         </div>
         {documents.length === 0 ? (
           <div className="text-center py-8 text-neutral-500">
-            No documents uploaded yet. Click "Ingest File" to get started.
+            No documents uploaded yet. Click &quot;Ingest File&quot; to get started.
           </div>
         ) : (
           <table className="w-full text-left border-collapse">

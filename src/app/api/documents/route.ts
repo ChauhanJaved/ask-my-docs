@@ -1,6 +1,16 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
-import { extractTextFromFile, chunkTextBySentences } from "@/lib/document-processing";
+import { extractTextFromFile, chunkTextBySentences, generateEmbedding } from "@/lib/document-processing";
+
+interface DocumentRow {
+  id: string;
+  name: string;
+  file_size: number;
+  mime_type: string;
+  status: string;
+  created_at: string;
+  updated_at: string;
+}
 
 export async function GET() {
   const supabase = createClient();
@@ -15,7 +25,7 @@ export async function GET() {
     }
 
     // Transform data to match the expected format
-    const formattedDocuments = documents?.map((doc: any) => ({
+    const formattedDocuments = documents?.map((doc: DocumentRow) => ({
       id: doc.id,
       name: doc.name,
       size: doc.file_size,
@@ -26,6 +36,7 @@ export async function GET() {
 
     return NextResponse.json({ documents: formattedDocuments });
   } catch (error) {
+    console.error(error);
     return NextResponse.json({ error: "Failed to fetch documents" }, { status: 500 });
   }
 }
@@ -68,7 +79,7 @@ export async function POST(request: Request) {
     const fileExt = file.name.split('.').pop();
     const filePath = `${crypto.randomUUID()}.${fileExt}`;
 
-    const { data: uploadData, error: uploadError } = await supabase
+    const { error: uploadError } = await supabase
       .storage
       .from('documents')
       .upload(filePath, file, {
@@ -80,9 +91,27 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: uploadError.message }, { status: 500 });
     }
 
-    // Get organization ID from the authenticated user (for now using hardcoded)
-    // In a real implementation, we would get this from the user's session
-    const organizationId = '11111111-1111-1111-1111-111111111111';
+    // Get organization ID from the authenticated user
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      // Clean up uploaded file on auth failure
+      await supabase.storage.from('documents').remove([filePath]);
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('organization_id')
+      .eq('id', user.id)
+      .single();
+
+    const organizationId = profile?.organization_id;
+
+    if (!organizationId) {
+      // Clean up uploaded file if no profile found
+      await supabase.storage.from('documents').remove([filePath]);
+      return NextResponse.json({ error: "Profile not found" }, { status: 400 });
+    }
 
     // Create document record with processing status
     const { data: document, error: dbError } = await supabase
@@ -118,26 +147,26 @@ export async function POST(request: Request) {
         overlap: 100     // 100 token overlap between chunks
       });
 
-      // TODO: Generate embeddings for each chunk using an embedding model
-      // For now, we'll use placeholder embeddings (all zeros)
-      // In a real implementation, you would call an embedding API like OpenAI's
-
-      const placeholderEmbedding = Array(1536).fill(0); // 1536-dimensional vector
+      // Generate embeddings for each chunk using NVIDIA NIM
+      const chunkRecords = [];
+      for (const [index, chunk] of chunks.entries()) {
+        const embedding = await generateEmbedding(chunk.content);
+        chunkRecords.push({
+          organization_id: organizationId,
+          document_id: document.id,
+          chunk_index: index,
+          content: chunk.content,
+          token_count: chunk.tokenCount,
+          embedding: embedding,
+          metadata: {
+            source: 'week4-nim-embedding',
+            model: 'nvidia/nv-embedqa-e5-v5',
+            processed_at: new Date().toISOString()
+          }
+        });
+      }
 
       // Insert chunks into the database
-      const chunkRecords = chunks.map((chunk, index) => ({
-        organization_id: organizationId,
-        document_id: document.id,
-        chunk_index: index,
-        content: chunk.content,
-        token_count: chunk.tokenCount,
-        embedding: placeholderEmbedding,
-        metadata: {
-          source: 'week3-implementation',
-          processing_date: new Date().toISOString()
-        }
-      }));
-
       const { error: chunksError } = await supabase
         .from('document_chunks')
         .insert(chunkRecords);
@@ -168,25 +197,29 @@ export async function POST(request: Request) {
         processingDetails: {
           textLength: text.length,
           chunksCreated: chunks.length,
-          avgChunkSize: chunks.reduce((sum, c) => sum + c.tokenCount, 0) / chunks.length
+          avgChunkSize: chunks.length > 0
+            ? chunks.reduce((sum, c) => sum + c.tokenCount, 0) / chunks.length
+            : 0
         }
       });
     } catch (processingError) {
       // If processing fails, update document status to failed
+      const message = processingError instanceof Error ? processingError.message : String(processingError);
       await supabase
         .from('documents')
         .update({
           status: 'failed',
-          error_message: processingError.message
+          error_message: message
         })
         .eq('id', document.id);
 
       return NextResponse.json(
-        { error: `File processing failed: ${processingError.message}` },
+        { error: `File processing failed: ${message}` },
         { status: 500 }
       );
     }
   } catch (error) {
+    console.error(error);
     return NextResponse.json({ error: "Upload failed" }, { status: 500 });
   }
 }
@@ -235,6 +268,7 @@ export async function DELETE(request: Request) {
 
     return NextResponse.json({ message: "Document deleted successfully" });
   } catch (error) {
+    console.error(error);
     return NextResponse.json({ error: "Failed to delete document" }, { status: 500 });
   }
 }

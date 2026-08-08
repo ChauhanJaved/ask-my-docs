@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
-import { chunkTextBySentences } from "@/lib/document-processing";
+import { chunkTextBySentences, generateEmbedding } from "@/lib/document-processing";
 
 export async function POST(request: Request) {
   try {
@@ -41,8 +41,24 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "No text content extracted from URL" }, { status: 400 });
     }
 
-    // Get organization ID (hardcoded for now)
-    const organizationId = '11111111-1111-1111-1111-111111111111';
+    // Get organization ID from authenticated user
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('organization_id')
+      .eq('id', user.id)
+      .single();
+
+    const organizationId = profile?.organization_id;
+
+    if (!organizationId) {
+      return NextResponse.json({ error: "Profile not found" }, { status: 400 });
+    }
 
     // Create a document record for the crawled content
     const { data: document, error: docError } = await supabase
@@ -71,44 +87,50 @@ export async function POST(request: Request) {
       overlap: 100
     });
 
-    // Generate placeholder embeddings (in reality, use an embedding model)
-    const placeholderEmbedding = Array(1536).fill(0);
-
-    // Insert chunks into the database
-    const chunkRecords = chunks.map((chunk, index) => ({
-      organization_id: organizationId,
-      document_id: document.id,
-      chunk_index: index,
-      content: chunk.content,
-      token_count: chunk.tokenCount,
-      embedding: placeholderEmbedding,
-      metadata: {
-        source: 'url-crawler',
-        sourceUrl: url,
-        crawlDate: new Date().toISOString()
+    // Generate embeddings for each chunk using NVIDIA NIM
+    const chunksWithEmbeddings = [];
+    for (const [index, chunk] of chunks.entries()) {
+      try {
+        const embedding = await generateEmbedding(chunk.content);
+        chunksWithEmbeddings.push({
+          organization_id: organizationId,
+          document_id: document.id,
+          chunk_index: index,
+          content: chunk.content,
+          token_count: chunk.tokenCount,
+          embedding: embedding,
+          metadata: {
+            source: 'url-crawler',
+            sourceUrl: url,
+            crawlDate: new Date().toISOString()
+          }
+        });
+      } catch (embedError) {
+        console.error(`Failed to embed chunk ${index}:`, embedError);
+        // Continue with other chunks - we'll mark document as partially failed later
       }
-    }));
-
-    const { error: chunksError } = await supabase
-      .from('document_chunks')
-      .insert(chunkRecords);
-
-    if (chunksError) {
-      // Clean up document if chunk insertion fails
-      await supabase.from('documents').delete().eq('id', document.id);
-      return NextResponse.json({ error: chunksError.message }, { status: 500 });
     }
 
-    // Update document status to ready
+    // Insert all chunks with embeddings
+    if (chunksWithEmbeddings.length > 0) {
+      const { error: chunksError } = await supabase
+        .from('document_chunks')
+        .insert(chunksWithEmbeddings);
+
+      if (chunksError) throw chunksError;
+    }
+
+    // Update document status based on processing success
+    const finalStatus = chunksWithEmbeddings.length > 0 ? 'ready' : 'failed';
     const { error: updateError } = await supabase
       .from('documents')
-      .update({ status: 'ready' })
+      .update({
+        status: finalStatus,
+        ...(finalStatus === 'failed' && { error_message: 'Failed to generate embeddings for any chunks' })
+      })
       .eq('id', document.id);
 
-    if (updateError) {
-      // Note: We don't delete chunks here as they might be useful for debugging
-      return NextResponse.json({ error: updateError.message }, { status: 500 });
-    }
+    if (updateError) throw updateError;
 
     return NextResponse.json({
       message: `Successfully crawled and processed "${url}"`,
@@ -116,12 +138,15 @@ export async function POST(request: Request) {
         id: document.id,
         name: document.name,
         url: document.source_url,
-        status: document.status
+        status: finalStatus
       },
       processingDetails: {
         textLength: text.length,
         chunksCreated: chunks.length,
-        avgChunkSize: chunks.reduce((sum, c) => sum + c.tokenCount, 0) / chunks.length
+        chunksWithEmbeddings: chunksWithEmbeddings.length,
+        avgChunkSize: chunksWithEmbeddings.length > 0
+          ? chunksWithEmbeddings.reduce((sum, c) => sum + c.token_count, 0) / chunksWithEmbeddings.length
+          : 0
       }
     });
   } catch (error) {

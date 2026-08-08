@@ -44,6 +44,7 @@ export default function SignupPage() {
         window.location.href = "/login";
       }
     } catch (err) {
+      console.error(err);
       setError("An unexpected error occurred");
     } finally {
       setLoading(false);

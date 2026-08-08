@@ -1,87 +1,179 @@
-import { Button } from "@/components/ui/button";
+"use client";
 
-export default function ChatsPage() {
+import { useEffect, useState, useCallback } from "react";
+import { createBrowserSupabaseClient } from "@/utils/supabase/client";
+
+export default function ChatHistoryPage() {
+  interface ChatMessage {
+    id: string;
+    senderType: string;
+    content: string;
+    tokens: number;
+    sources: { document_id: string }[];
+    timestamp: string;
+  }
+
+  interface ChatSession {
+    id: string;
+    createdAt: string;
+    topic: string | null;
+    sentiment: string;
+    messages: ChatMessage[];
+  }
+
+  const [chats, setChats] = useState<ChatSession[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchChatHistory = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const supabase = createBrowserSupabaseClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        setError("User not authenticated");
+        return;
+      }
+
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('organization_id')
+        .eq('id', user.id)
+        .single();
+
+      if (profileError) throw profileError;
+      if (!profile) {
+        setError("Profile not found");
+        return;
+      }
+
+      const { data: sessions, error: sessionsError } = await supabase
+        .from('chat_sessions')
+        .select(`
+          id,
+          created_at,
+          topic,
+          sentiment,
+          chat_messages (
+            id,
+            sender_type,
+            content,
+            tokens_used,
+            sources,
+            created_at
+          )
+        `)
+        .eq('organization_id', profile.organization_id)
+        .order('created_at', { ascending: false });
+
+      if (sessionsError) throw sessionsError;
+
+      // Format for UI
+      const formatted = sessions.map((session) => ({
+        id: session.id,
+        createdAt: session.created_at,
+        topic: session.topic,
+        sentiment: session.sentiment,
+        messages: session.chat_messages.map((msg) => ({
+          id: msg.id,
+          senderType: msg.sender_type,
+          content: msg.content,
+          tokens: msg.tokens_used,
+          sources: JSON.parse(msg.sources || '[]'),
+          timestamp: msg.created_at
+        }))
+      }));
+
+      setChats(formatted);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "An unknown error occurred");
+      console.error("Failed to fetch chat history:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchChatHistory();
+  }, [fetchChatHistory]);
+
+  if (loading) {
+    return <div className="flex min-h-[20vh] items-center justify-center">
+      <div className="text-center">
+        <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-brand-600"></div>
+        <p className="mt-2 text-sm text-neutral-500">Loading chat history...</p>
+      </div>
+    </div>;
+  }
+
+  if (error) {
+    return <div className="bg-rose-50 border-l-4 border-rose-400 text-rose-700 p-4">
+      <p>{error}</p>
+    </div>;
+  }
+
+  if (chats.length === 0) {
+    return <div className="flex min-h-[20vh] items-center justify-center">
+      <div className="text-center space-y-4">
+        <p className="text-neutral-500">No chat history yet</p>
+        <p className="text-sm">Start a conversation to see history here</p>
+      </div>
+    </div>;
+  }
+
   return (
-    <div className="space-y-8">
-      {/* Title */}
-      <div>
-        <h1 className="text-2xl font-bold font-display text-neutral-900">Chat History & Logs</h1>
-        <p className="text-sm text-neutral-500">Review user interactions, AI confidence ratings, and customer ratings.</p>
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <h1 className="text-2xl font-bold font-display text-neutral-900">Chat History</h1>
+        <div className="text-sm text-neutral-500">
+          {chats.reduce((sum, chat) => sum + chat.messages.length, 0)} total messages
+        </div>
       </div>
 
-      <div className="grid lg:grid-cols-3 gap-8">
-        {/* Left Column: Chats list */}
-        <div className="bg-white border border-neutral-200 rounded-lg overflow-hidden shadow-sm flex flex-col h-[500px]">
-          <div className="p-4 border-b border-neutral-200 bg-neutral-50/50">
-            <input
-              type="text"
-              placeholder="Search conversations..."
-              className="w-full border border-neutral-300 rounded-md px-3 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-brand-500"
-            />
-          </div>
-          <div className="flex-1 overflow-y-auto divide-y divide-neutral-200">
-            <div className="p-4 hover:bg-neutral-50 cursor-pointer bg-brand-50/20 border-l-2 border-brand-500">
-              <div className="flex justify-between items-center mb-1">
-                <span className="text-xs font-semibold text-neutral-800">Session #88392</span>
-                <span className="text-[10px] text-neutral-400">10 mins ago</span>
-              </div>
-              <p className="text-[11px] text-neutral-600 truncate">Customer: How do I reset my password?</p>
-              <div className="mt-2 flex space-x-2">
-                <span className="bg-emerald-100 text-emerald-800 text-[9px] font-medium px-2 py-0.5 rounded-full">
-                  Completed
-                </span>
-                <span className="bg-neutral-100 text-neutral-600 text-[9px] font-medium px-2 py-0.5 rounded-full">
-                  96% Confidence
-                </span>
+      <div className="space-y-4">
+        {chats.map((chat: ChatSession) => (
+          <div key={chat.id} className="border border-neutral-200 rounded-lg overflow-hidden shadow-sm">
+            <div className="bg-neutral-50 px-4 py-3 border-b border-neutral-200">
+              <div className="flex justify-between items-center">
+                <h3 className="font-semibold text-sm text-neutral-900">
+                  {chat.topic || 'Untitled Chat'}
+                </h3>
+                <div className="flex items-center space-x-2 text-xs">
+                  <span className="px-2 py-0.5 rounded-full
+                    {chat.sentiment === 'positive' ? 'bg-emerald-100 text-emerald-800' :
+                     chat.sentiment === 'negative' ? 'bg-rose-100 text-rose-800' :
+                     'bg-neutral-200 text-neutral-600'}"
+                  >
+                    {chat.sentiment}
+                  </span>
+                  <span className="text-neutral-400">
+                    • {new Date(chat.createdAt).toLocaleString()}
+                  </span>
+                </div>
               </div>
             </div>
 
-            <div className="p-4 hover:bg-neutral-50 cursor-pointer">
-              <div className="flex justify-between items-center mb-1">
-                <span className="text-xs font-semibold text-neutral-800">Session #88390</span>
-                <span className="text-[10px] text-neutral-400">1 hour ago</span>
-              </div>
-              <p className="text-[11px] text-neutral-600 truncate">Customer: Can you support billing custom tax?</p>
-              <div className="mt-2 flex space-x-2">
-                <span className="bg-amber-100 text-amber-800 text-[9px] font-medium px-2 py-0.5 rounded-full">
-                  Low Confidence
-                </span>
-              </div>
+            <div className="space-y-2 p-4">
+              {chat.messages.map((msg: ChatMessage) => (
+                <div key={msg.id} className={`flex ${msg.senderType === 'user' ? 'justify-end' : 'justify-start'} space-x-3`}>
+                  <div className={`max-w-[70%] px-3 py-2 rounded-lg ${
+                    msg.senderType === 'user'
+                      ? 'bg-brand-600 text-white'
+                      : 'bg-neutral-100 text-neutral-900'
+                  }`}>
+                    <p className="text-sm">{msg.content}</p>
+                    {msg.sources.length > 0 && (
+                      <div className="text-xs text-neutral-400 mt-1">
+                        Sources: {msg.sources.map((s: { document_id: string }) => s.document_id).join(', ')}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
-        </div>
-
-        {/* Right Columns: Thread transcript viewer */}
-        <div className="lg:col-span-2 bg-white border border-neutral-200 rounded-lg shadow-sm flex flex-col h-[500px]">
-          {/* Header */}
-          <div className="p-5 border-b border-neutral-200 flex justify-between items-center bg-neutral-50/30">
-            <div>
-              <h3 className="font-semibold text-sm text-neutral-900">Session #88392 Transcript</h3>
-              <p className="text-[10px] text-neutral-400">Customer resolved query autonomously via RAG bot</p>
-            </div>
-            <Button size="sm" variant="outline" className="text-xs">
-              Export Log
-            </Button>
-          </div>
-
-          {/* Messages */}
-          <div className="flex-1 overflow-y-auto p-6 space-y-4">
-            <div className="flex flex-col items-start max-w-[80%]">
-              <span className="text-[10px] font-semibold text-neutral-500 mb-1">Customer</span>
-              <div className="bg-neutral-100 text-neutral-800 text-xs px-4 py-2.5 rounded-2xl rounded-tl-none">
-                How do I reset my password?
-              </div>
-            </div>
-
-            <div className="flex flex-col items-end ml-auto max-w-[80%]">
-              <span className="text-[10px] font-semibold text-brand-600 mb-1">AI Support Bot</span>
-              <div className="bg-brand-600 text-white text-xs px-4 py-2.5 rounded-2xl rounded-tr-none">
-                You can reset your password by going to the Settings page, clicking on Security, and clicking the &quot;Reset Password&quot; button. A password reset link will be emailed to you.
-              </div>
-              <span className="text-[9px] text-neutral-400 mt-1">Grounded in user-guide.md [Page 2]</span>
-            </div>
-          </div>
-        </div>
+        ))}
       </div>
     </div>
   );

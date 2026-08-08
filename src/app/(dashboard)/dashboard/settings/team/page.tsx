@@ -1,13 +1,22 @@
+"use client";
+
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
 import { createBrowserSupabaseClient } from "@/utils/supabase/client";
 
 export default function TeamSettingsPage() {
-  const [members, setMembers] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [inviting, setInviting] = useState(false);
-  const [inviteEmail, setInviteEmail] = useState("");
+  interface Member {
+    id: string;
+    email: string;
+    full_name: string | null;
+    role: string;
+  }
+
+  const [members, setMembers] = useState<Member[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+  const [inviting, setInviting] = useState<boolean>(false);
+  const [inviteEmail, setInviteEmail] = useState<string>("");
 
   useEffect(() => {
     fetchTeamMembers();
@@ -43,7 +52,7 @@ export default function TeamSettingsPage() {
 
       setMembers(membersData || []);
     } catch (err) {
-      setError(err.message);
+      setError(err instanceof Error ? err.message : "An unknown error occurred");
       console.error("Error fetching team members:", err);
     } finally {
       setLoading(false);
@@ -95,7 +104,7 @@ export default function TeamSettingsPage() {
       // Reset form
       setInviteEmail("");
     } catch (err) {
-      setError(err.message);
+      setError(err instanceof Error ? err.message : "An unknown error occurred");
       console.error("Error inviting member:", err);
     } finally {
       setInviting(false);
@@ -120,7 +129,7 @@ export default function TeamSettingsPage() {
       // Refresh the member list
       await fetchTeamMembers();
     } catch (err) {
-      setError(err.message);
+      setError(err instanceof Error ? err.message : "An unknown error occurred");
       console.error("Error removing member:", err);
     }
   };
@@ -208,12 +217,7 @@ export default function TeamSettingsPage() {
                     {member.email}
                   </td>
                   <td className="px-6 py-4">
-                    <span className={`${member.role === 'owner'
-                      ? "text-brand-600 font-semibold"
-                      : member.role === 'admin'
-                        ? "text-neutral-600"
-                        : "text-neutral-500"
-                    }`>
+                    <span className={member.role === 'owner' ? "text-brand-600 font-semibold" : member.role === 'admin' ? "text-neutral-600" : "text-neutral-500"}>
                       {member.role.charAt(0).toUpperCase() + member.role.slice(1)}
                     </span>
                   </td>

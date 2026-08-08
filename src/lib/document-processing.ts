@@ -10,8 +10,9 @@ export async function extractTextFromPdf(file: File): Promise<string> {
   let text = '';
 
   for (const page of pages) {
+    // @ts-expect-error getTextContent method exists but isn't properly typed in pdf-lib - needed for PDF text extraction
     const pageText = await page.getTextContent();
-    const strings = pageText.items.map((item: any) => item.str);
+    const strings = pageText.items.map((item: { str: string }) => item.str);
     text += strings.join(' ') + '\n';
   }
 
@@ -125,3 +126,31 @@ export function chunkTextBySentences(
 }
 
 export { chunkText as chunkTextByWords };
+
+// �� 🔑 NEW: NVIDIA NIM Embedding Function
+export async function generateEmbedding(text: string): Promise<number[]> {
+  if (!process.env.NVIDIA_NIM_API_KEY) {
+    throw new Error('NVIDIA_NIM_API_KEY is not configured');
+  }
+
+  const response = await fetch("https://integrate.api.nvidia.com/v1/embeddings", {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${process.env.NVIDIA_NIM_API_KEY}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      input: [text],
+      model: "nvidia/nv-embedqa-e5-v5",
+      encoding_format: "float"
+    })
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(`Embedding API error: ${errorData.detail?.message || response.statusText}`);
+  }
+
+  const data = await response.json();
+  return data.data[0].embedding; // Returns 1024-dim float array
+}
