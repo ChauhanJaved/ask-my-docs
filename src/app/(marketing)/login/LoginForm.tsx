@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { GoogleButton } from "@/components/ui/google-button";
 import { useState } from "react";
 import { createBrowserSupabaseClient } from "@/utils/supabase/client";
 
@@ -12,6 +13,27 @@ export function LoginForm() {
   const [error, setError] = useState<string | null>(null);
 
   const supabase = createBrowserSupabaseClient();
+
+  const handleGoogleSignIn = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const { error: authError } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+        },
+      });
+      if (authError) {
+        setError(authError.message);
+      }
+    } catch (err) {
+      console.error(err);
+      setError("An unexpected error occurred during Google sign-in");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -94,7 +116,7 @@ export function LoginForm() {
 
           <Button
             type="submit"
-            className="w-full bg-brand-600 hover:bg-brand-700 text-white"
+            className="w-full bg-brand-600 hover:bg-brand-700 text-white font-medium"
             disabled={loading}
           >
             {loading ? "Logging in..." : "Log In"}
@@ -108,9 +130,11 @@ export function LoginForm() {
             <div className="flex-grow border-t border-neutral-200"></div>
           </div>
 
-          <Button variant="outline" className="w-full">
-            Continue with Google
-          </Button>
+          <GoogleButton
+            label="Continue with Google"
+            onClick={handleGoogleSignIn}
+            disabled={loading}
+          />
 
           <p className="text-xs text-neutral-600 mt-2">
             New to FTChat?{" "}
