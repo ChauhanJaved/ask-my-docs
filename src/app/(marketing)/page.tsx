@@ -11,7 +11,7 @@ import {
 export const dynamic = "force-static";
 
 export const metadata: Metadata = {
-  title: "FTChat — Turn Your Docs into an Instant AI Support Agent",
+  title: "Turn Your Docs into an Instant AI Support Agent",
   description:
     "Upload PDFs, Markdown, TXT files or crawl documentation URLs to generate an embeddable, customizable RAG AI customer support chat widget in minutes.",
   alternates: {
@@ -23,13 +23,25 @@ export const metadata: Metadata = {
       "Upload docs or crawl website URLs. Deliver accurate, cited RAG AI customer support with seamless human handoff.",
     url: "/",
     siteName: "FTChat",
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "FTChat — Instant AI Support Chatbot from Your Knowledge Base",
+        type: "image/png",
+      },
+    ],
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
+    site: "@ftchat",
+    creator: "@ftchat",
     title: "FTChat — Instant AI Support Chatbot from Your Docs",
     description:
       "Upload docs or crawl website URLs. Deliver accurate, cited RAG AI customer support.",
+    images: ["/twitter-image.png"],
   },
 };
 

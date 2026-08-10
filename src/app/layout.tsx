@@ -25,7 +25,10 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: "FTChat | Turn your docs into an instant AI support chatbot",
+  title: {
+    default: "FTChat | Turn your docs into an instant AI support chatbot",
+    template: "%s | FTChat",
+  },
   description: "Businesses upload their docs, FAQs, and files, and get an embeddable AI chat widget for their website.",
   metadataBase: new URL(siteConfig.url),
   manifest: "/manifest.json",
@@ -47,7 +50,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "FTChat | Turn your docs into an instant AI support chatbot",
     description: "Businesses upload their docs, FAQs, and files, and get an embeddable AI chat widget for their website.",
-    url: "/",
+    url: siteConfig.url,
     siteName: "FTChat",
     images: [
       {
@@ -63,6 +66,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
+    site: "@ftchat",
+    creator: "@ftchat",
     title: "FTChat | Turn your docs into an instant AI support chatbot",
     description: "Businesses upload their docs, FAQs, and files, and get an embeddable AI chat widget for their website.",
     images: ["/twitter-image.png"],

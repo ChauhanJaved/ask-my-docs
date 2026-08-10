@@ -11,7 +11,7 @@ import {
 export const dynamic = "force-static";
 
 export const metadata: Metadata = {
-  title: "Pricing Plans & Tiers — FTChat AI Support Assistant",
+  title: "Pricing Plans & Tiers",
   description:
     "Simple, transparent pricing for AI support chatbots. Start free with 5 docs & 100 messages/month, or scale up with Pro & Enterprise features.",
   alternates: {
@@ -23,12 +23,24 @@ export const metadata: Metadata = {
       "Simple, transparent pricing for AI support chatbots. Choose from Free, Pro ($49/mo), and Enterprise tiers.",
     url: "/pricing",
     siteName: "FTChat",
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "FTChat Pricing Plans",
+        type: "image/png",
+      },
+    ],
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
+    site: "@ftchat",
+    creator: "@ftchat",
     title: "Pricing Plans & Tiers — FTChat",
     description: "Simple, transparent pricing for AI support chatbots.",
+    images: ["/twitter-image.png"],
   },
 };
 
