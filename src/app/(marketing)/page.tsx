@@ -75,8 +75,14 @@ export default function HomePage() {
   // FAQ Accordion Open/Close State
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(0);
 
+  const isInitialMount = useRef(true);
+
   // Auto-scroll messages in simulator
   useEffect(() => {
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [chatMessages, isTyping]);
 
