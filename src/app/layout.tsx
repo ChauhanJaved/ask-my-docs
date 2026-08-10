@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter, Plus_Jakarta_Sans, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 
@@ -17,10 +17,32 @@ const jetbrainsMono = JetBrains_Mono({
   subsets: ["latin"],
 });
 
+export const viewport: Viewport = {
+  themeColor: "#4F46E5",
+  width: "device-width",
+  initialScale: 1,
+};
+
 export const metadata: Metadata = {
   title: "FTChat | Turn your docs into an instant AI support chatbot",
   description: "Businesses upload their docs, FAQs, and files, and get an embeddable AI chat widget for their website.",
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "https://ftchat.io"),
+  manifest: "/manifest.json",
+  icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/icon.svg", type: "image/svg+xml" },
+      { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
+    ],
+    apple: [
+      { url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
+    ],
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "FTChat",
+  },
   openGraph: {
     title: "FTChat | Turn your docs into an instant AI support chatbot",
     description: "Businesses upload their docs, FAQs, and files, and get an embeddable AI chat widget for their website.",
@@ -61,7 +83,23 @@ export default function RootLayout({
         className={`${inter.variable} ${plusJakartaSans.variable} ${jetbrainsMono.variable} antialiased`}
       >
         {children}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              if ('serviceWorker' in navigator) {
+                window.addEventListener('load', function() {
+                  navigator.serviceWorker.register('/sw.js').then(function(reg) {
+                    console.log('ServiceWorker registered with scope:', reg.scope);
+                  }).catch(function(err) {
+                    console.error('ServiceWorker registration failed:', err);
+                  });
+                });
+              }
+            `,
+          }}
+        />
       </body>
     </html>
   );
 }
+
