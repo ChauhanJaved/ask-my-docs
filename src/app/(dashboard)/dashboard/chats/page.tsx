@@ -70,12 +70,29 @@ export default function ChatHistoryPage() {
       if (sessionsError) throw sessionsError;
 
       // Format for UI
-      const formatted = sessions.map((session) => ({
+      type RawChatMessage = {
+        id: string;
+        sender_type: string;
+        content: string;
+        tokens_used: number;
+        sources: string | null;
+        created_at: string;
+      };
+
+      type RawChatSession = {
+        id: string;
+        created_at: string;
+        topic: string | null;
+        sentiment: string;
+        chat_messages: RawChatMessage[];
+      };
+
+      const formatted: ChatSession[] = ((sessions || []) as unknown as RawChatSession[]).map((session) => ({
         id: session.id,
         createdAt: session.created_at,
         topic: session.topic,
         sentiment: session.sentiment,
-        messages: session.chat_messages.map((msg) => ({
+        messages: (session.chat_messages || []).map((msg) => ({
           id: msg.id,
           senderType: msg.sender_type,
           content: msg.content,
