@@ -48,7 +48,7 @@ export function SignupForm() {
   };
 
   return (
-    <div className="flex min-h-screen bg-neutral-50 items-center justify-center p-6">
+    <div className="flex flex-1 items-center justify-center p-6 py-12 md:py-20">
       <div className="bg-white border border-neutral-200 rounded-lg shadow-sm p-8 w-full max-w-md">
         <div className="text-center mb-8">
           <Link href="/" className="text-2xl font-bold font-display text-brand-600">

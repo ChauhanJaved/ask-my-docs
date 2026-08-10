@@ -7,18 +7,14 @@ import {
   Sparkles,
   Upload,
   Code,
-  Bot,
   ArrowRight,
   Check,
-  Menu,
-  X,
   ChevronDown,
   Settings,
   BarChart3,
   Globe,
   Sliders,
   FileText,
-  ExternalLink,
   Lock
 } from "lucide-react";
 
@@ -49,7 +45,6 @@ const PRESETS = [
 ];
 
 export function LandingPageClient() {
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([
     {
@@ -204,105 +199,10 @@ export function LandingPageClient() {
   ];
 
   return (
-    <div className="flex flex-col min-h-screen bg-neutral-50 text-neutral-900 font-sans selection:bg-brand-500/20 selection:text-brand-900 transition-colors duration-200">
-      
+    <>
       {/* Background Gradient Mesh */}
       <div className="absolute top-0 left-0 right-0 h-[600px] bg-[radial-gradient(circle_at_top,_rgba(99,102,241,0.08)_0%,_rgba(139,92,246,0.03)_50%,_rgba(0,0,0,0)_100%)] pointer-events-none z-0" />
 
-      {/* HEADER */}
-      <header className="border-b border-neutral-200 bg-white/80 backdrop-blur-md sticky top-0 z-50 transition-all duration-300">
-        <div className="container mx-auto px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <div className="w-9 h-9 rounded-lg bg-gradient-to-tr from-brand-600 to-ai-500 flex items-center justify-center shadow-md shadow-brand-500/20">
-              <Bot className="w-5 h-5 text-white" />
-            </div>
-            <div className="flex flex-col">
-              <span className="text-lg font-bold font-display text-neutral-950 tracking-tight leading-none">FTChat</span>
-              <span className="text-[10px] text-neutral-500 font-medium tracking-wider uppercase mt-0.5">SaaS Platform</span>
-            </div>
-          </div>
-
-          {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center space-x-8 text-sm font-medium text-neutral-600">
-            <a href="#features" className="hover:text-brand-600 transition-colors">Features</a>
-            <a href="#how-it-works" className="hover:text-brand-600 transition-colors">How It Works</a>
-            <a href="#pricing" className="hover:text-brand-600 transition-colors">Pricing</a>
-            <a href="#faq" className="hover:text-brand-600 transition-colors">FAQs</a>
-          </nav>
-
-          {/* Action Buttons */}
-          <div className="hidden md:flex items-center space-x-4">
-            <Link href="/login">
-              <Button variant="ghost" size="sm" className="text-neutral-600 hover:text-brand-600 hover:bg-neutral-100 font-medium">
-                Log In
-              </Button>
-            </Link>
-            <Link href="/signup">
-              <Button size="sm" className="bg-brand-600 hover:bg-brand-700 text-white font-medium shadow-sm transition-all duration-200 hover:shadow-md hover:shadow-brand-500/10">
-                Get Started Free
-              </Button>
-            </Link>
-          </div>
-
-          {/* Mobile Hamburguer */}
-          <button 
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="md:hidden p-2 rounded-md hover:bg-neutral-100 text-neutral-600 focus:outline-none"
-            aria-label="Toggle navigation menu"
-          >
-            {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-          </button>
-        </div>
-
-        {/* Mobile Navigation Drawer */}
-        {mobileMenuOpen && (
-          <div className="md:hidden border-t border-neutral-200 bg-white px-6 py-6 space-y-4 animate-in fade-in slide-in-from-top-5 duration-200">
-            <nav className="flex flex-col space-y-4 text-base font-semibold text-neutral-700">
-              <a 
-                href="#features" 
-                onClick={() => setMobileMenuOpen(false)}
-                className="hover:text-brand-600 transition-colors"
-              >
-                Features
-              </a>
-              <a 
-                href="#how-it-works" 
-                onClick={() => setMobileMenuOpen(false)}
-                className="hover:text-brand-600 transition-colors"
-              >
-                How It Works
-              </a>
-              <a 
-                href="#pricing" 
-                onClick={() => setMobileMenuOpen(false)}
-                className="hover:text-brand-600 transition-colors"
-              >
-                Pricing
-              </a>
-              <a 
-                href="#faq" 
-                onClick={() => setMobileMenuOpen(false)}
-                className="hover:text-brand-600 transition-colors"
-              >
-                FAQs
-              </a>
-            </nav>
-            <hr className="border-neutral-200" />
-            <div className="flex flex-col space-y-3 pt-2">
-              <Link href="/login" onClick={() => setMobileMenuOpen(false)}>
-                <Button variant="outline" className="w-full justify-center">
-                  Log In
-                </Button>
-              </Link>
-              <Link href="/signup" onClick={() => setMobileMenuOpen(false)}>
-                <Button className="w-full justify-center bg-brand-600 hover:bg-brand-700 text-white">
-                  Get Started Free
-                </Button>
-              </Link>
-            </div>
-          </div>
-        )}
-      </header>
 
       {/* HERO SECTION */}
       <section className="relative flex-1 flex flex-col justify-center items-center px-6 pt-16 pb-20 md:pt-24 md:pb-32 text-center max-w-7xl mx-auto z-10">
@@ -1032,65 +932,7 @@ export function LandingPageClient() {
           </div>
         </div>
       </section>
-
-      {/* FOOTER */}
-      <footer className="bg-white border-t border-neutral-200 py-12 md:py-16 text-xs text-neutral-500">
-        <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-4 gap-8 mb-12">
-          
-          <div className="space-y-4">
-            <div className="flex items-center space-x-2 text-neutral-900 font-bold font-display text-sm">
-              <div className="w-6 h-6 rounded bg-brand-600 flex items-center justify-center">
-                <Bot className="w-3.5 h-3.5 text-white" />
-              </div>
-              <span>FTChat</span>
-            </div>
-            <p className="leading-relaxed">
-              Automated RAG-powered customer chatbot generation for B2B SaaS organizations.
-            </p>
-          </div>
-
-          <div>
-            <h5 className="font-bold text-neutral-900 uppercase tracking-wider mb-4">Product</h5>
-            <ul className="space-y-2">
-              <li><a href="#features" className="hover:text-brand-600 transition-colors">Features</a></li>
-              <li><a href="#pricing" className="hover:text-brand-600 transition-colors">Pricing Options</a></li>
-              <li><Link href="/signup" className="hover:text-brand-600 transition-colors">Sign Up</Link></li>
-              <li><Link href="/login" className="hover:text-brand-600 transition-colors">Client Log In</Link></li>
-            </ul>
-          </div>
-
-          <div>
-            <h5 className="font-bold text-neutral-900 uppercase tracking-wider mb-4">Resources</h5>
-            <ul className="space-y-2">
-              <li><a href="#faq" className="hover:text-brand-600 transition-colors">FAQs</a></li>
-              <li><a href="#" className="hover:text-brand-600 transition-colors flex items-center">API Docs <ExternalLink className="w-3 h-3 ml-1" /></a></li>
-              <li><a href="#" className="hover:text-brand-600 transition-colors">Crawl API</a></li>
-              <li><a href="#" className="hover:text-brand-600 transition-colors">Platform Status</a></li>
-            </ul>
-          </div>
-
-          <div>
-            <h5 className="font-bold text-neutral-900 uppercase tracking-wider mb-4">Legal</h5>
-            <ul className="space-y-2">
-              <li><a href="#" className="hover:text-brand-600 transition-colors">Privacy Policy</a></li>
-              <li><a href="#" className="hover:text-brand-600 transition-colors">Terms of Service</a></li>
-              <li><a href="#" className="hover:text-brand-600 transition-colors">GDPR Deletion Request</a></li>
-              <li><a href="#" className="hover:text-brand-600 transition-colors">Security Audit Report</a></li>
-            </ul>
-          </div>
-
-        </div>
-
-        <div className="max-w-7xl mx-auto px-6 pt-8 border-t border-neutral-200 flex flex-col sm:flex-row items-center justify-between text-neutral-400">
-          <p>© {new Date().getFullYear()} FTChat. All rights reserved.</p>
-          <div className="flex space-x-4 mt-4 sm:mt-0">
-            <a href="#" className="hover:text-neutral-600 transition-colors">Twitter / X</a>
-            <a href="#" className="hover:text-neutral-600 transition-colors">GitHub Repository</a>
-            <a href="#" className="hover:text-neutral-600 transition-colors">Discord Community</a>
-          </div>
-        </div>
-      </footer>
-
-    </div>
+    </>
   );
 }
+
