@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Bot, Menu, X } from "lucide-react";
+import { siteConfig } from "@/config/site";
 
 export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -24,8 +25,8 @@ export function Header() {
             <span className="text-lg font-bold font-display text-neutral-950 tracking-tight leading-none">
               FTChat
             </span>
-            <span className="text-[10px] text-neutral-500 font-medium tracking-wider uppercase mt-0.5">
-              SaaS Platform
+            <span className="text-[10px] text-neutral-500 font-medium tracking-wide mt-0.5">
+              by {siteConfig.company.name}
             </span>
           </div>
         </Link>

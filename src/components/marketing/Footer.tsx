@@ -1,6 +1,7 @@
 import React from "react";
 import Link from "next/link";
 import { Bot, ExternalLink } from "lucide-react";
+import { siteConfig } from "@/config/site";
 
 export function Footer() {
   return (
@@ -102,7 +103,7 @@ export function Footer() {
       </div>
 
       <div className="max-w-7xl mx-auto px-6 pt-8 border-t border-neutral-200 flex flex-col sm:flex-row items-center justify-between text-neutral-400">
-        <p>© {new Date().getFullYear()} FTChat. All rights reserved.</p>
+        <p>© {new Date().getFullYear()} {siteConfig.company.name}.</p>
         <div className="flex space-x-4 mt-4 sm:mt-0">
           <a href="#" className="hover:text-neutral-600 transition-colors">
             Twitter / X
