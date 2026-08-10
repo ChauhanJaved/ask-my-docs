@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Inter, Plus_Jakarta_Sans, JetBrains_Mono } from "next/font/google";
+import { siteConfig } from "@/config/site";
 import "./globals.css";
 
 const inter = Inter({
@@ -26,7 +27,7 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   title: "FTChat | Turn your docs into an instant AI support chatbot",
   description: "Businesses upload their docs, FAQs, and files, and get an embeddable AI chat widget for their website.",
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "https://ftchat.io"),
+  metadataBase: new URL(siteConfig.url),
   manifest: "/manifest.json",
   icons: {
     icon: [

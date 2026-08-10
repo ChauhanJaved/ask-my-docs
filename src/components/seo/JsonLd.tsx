@@ -1,4 +1,5 @@
 import React from "react";
+import { siteConfig } from "@/config/site";
 
 interface JsonLdProps {
   data: Record<string, unknown> | Array<Record<string, unknown>>;
@@ -20,18 +21,18 @@ export function JsonLd({ data }: JsonLdProps) {
  * Returns Organization Schema.org structure for FTChat brand entity
  */
 export function getOrganizationJsonLd() {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://ftchat.io";
+  const baseUrl = siteConfig.url;
   return {
     "@context": "https://schema.org",
     "@type": "Organization",
-    name: "FTChat",
-    url: baseUrl,
+    name: siteConfig.company.name,
+    url: siteConfig.company.url,
     logo: `${baseUrl}/icon-192.png`,
     sameAs: [
-      "https://twitter.com/ftchat",
-      "https://github.com/ChauhanJaved/ask-my-docs",
+      siteConfig.links.twitter,
+      siteConfig.links.github,
     ],
-    description: "Instant AI support chatbot trained on your company documentation, FAQs, and files.",
+    description: siteConfig.description,
   };
 }
 
@@ -39,11 +40,11 @@ export function getOrganizationJsonLd() {
  * Returns SoftwareApplication / WebApplication Schema.org structure
  */
 export function getSoftwareAppJsonLd() {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://ftchat.io";
+  const baseUrl = siteConfig.url;
   return {
     "@context": "https://schema.org",
     "@type": "SoftwareApplication",
-    name: "FTChat",
+    name: siteConfig.name,
     operatingSystem: "All",
     applicationCategory: "BusinessApplication",
     offers: {
@@ -76,7 +77,7 @@ export function getSoftwareAppJsonLd() {
         },
       ],
     },
-    description: "Upload your PDFs, Markdown, and URLs to generate an embeddable AI support widget in minutes.",
+    description: siteConfig.description,
     url: baseUrl,
   };
 }
@@ -113,7 +114,7 @@ export interface BreadcrumbItem {
  * Returns BreadcrumbList Schema.org structure for navigational context
  */
 export function getBreadcrumbJsonLd(items: BreadcrumbItem[]) {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://ftchat.io";
+  const baseUrl = siteConfig.url;
   return {
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
