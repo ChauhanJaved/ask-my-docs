@@ -40,6 +40,20 @@ export async function GET(request: NextRequest) {
         new URL(`/login?error=${encodeURIComponent(error.message)}`, request.url)
       );
     }
+
+    // Check if user has completed onboarding
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("onboarding_completed")
+        .eq("id", user.id)
+        .single();
+
+      if (!profile || profile.onboarding_completed === false) {
+        return NextResponse.redirect(new URL("/onboarding", request.url));
+      }
+    }
   }
 
   // URL to redirect to after sign in process completes

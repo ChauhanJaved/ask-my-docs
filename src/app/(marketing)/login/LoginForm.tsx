@@ -41,7 +41,7 @@ export function LoginForm() {
     setError(null);
 
     try {
-      const { error: authError } = await supabase.auth.signInWithPassword({
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
@@ -49,6 +49,20 @@ export function LoginForm() {
       if (authError) {
         setError(authError.message);
         return;
+      }
+
+      // Check onboarding status
+      if (authData.user) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("onboarding_completed")
+          .eq("id", authData.user.id)
+          .single();
+
+        if (!profile || profile.onboarding_completed === false) {
+          window.location.href = "/onboarding";
+          return;
+        }
       }
 
       window.location.href = "/dashboard";

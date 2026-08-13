@@ -37,7 +37,7 @@ export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
   // Define paths that require authentication
-  const protectedPaths = ["/dashboard"];
+  const protectedPaths = ["/dashboard", "/onboarding"];
 
   const isProtectedPath = protectedPaths.some((path) =>
     pathname.startsWith(path)
@@ -49,6 +49,31 @@ export async function middleware(req: NextRequest) {
     redirectUrl.pathname = "/login";
     redirectUrl.searchParams.set("redirectedFrom", pathname);
     return NextResponse.redirect(redirectUrl);
+  }
+
+  // If user is logged in, check onboarding status for routing
+  if (user && isProtectedPath) {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("onboarding_completed")
+      .eq("id", user.id)
+      .single();
+
+    const isOnboarded = profile?.onboarding_completed ?? false;
+
+    // First-time user trying to access /dashboard -> Redirect to /onboarding
+    if (!isOnboarded && pathname.startsWith("/dashboard")) {
+      const redirectUrl = req.nextUrl.clone();
+      redirectUrl.pathname = "/onboarding";
+      return NextResponse.redirect(redirectUrl);
+    }
+
+    // Already onboarded user trying to access /onboarding -> Redirect to /dashboard
+    if (isOnboarded && pathname.startsWith("/onboarding")) {
+      const redirectUrl = req.nextUrl.clone();
+      redirectUrl.pathname = "/dashboard";
+      return NextResponse.redirect(redirectUrl);
+    }
   }
 
   return response;

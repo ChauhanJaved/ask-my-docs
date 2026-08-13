@@ -57,8 +57,10 @@ export function SignupForm() {
         return;
       }
 
-      if (data.user) {
-        alert("Please check your email to confirm your account. You can now log in.");
+      if (data.session) {
+        window.location.href = "/onboarding";
+      } else if (data.user) {
+        alert("Please check your email to confirm your account. After confirming, you will be guided through onboarding.");
         window.location.href = "/login";
       }
     } catch (err) {
