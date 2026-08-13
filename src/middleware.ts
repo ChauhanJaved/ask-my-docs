@@ -57,7 +57,7 @@ export async function middleware(req: NextRequest) {
       .from("profiles")
       .select("onboarding_completed")
       .eq("id", user.id)
-      .single();
+      .maybeSingle();
 
     const isOnboarded = profile?.onboarding_completed ?? false;
 

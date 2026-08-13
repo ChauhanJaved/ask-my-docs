@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
+import { createAdminClient } from "@/utils/supabase/admin";
 
 export async function POST(request: Request) {
   try {
+    // 1. Authenticate user session using standard server client
     const supabase = createClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
 
@@ -13,8 +15,11 @@ export async function POST(request: Request) {
     const body = await request.json().catch(() => ({}));
     const { orgName, botName, primaryColor, greetingMessage } = body;
 
-    // 1. Fetch user's profile to check if profile & organization already exist
-    const { data: profile } = await supabase
+    // 2. Use admin client to perform database updates cleanly bypassing RLS lockouts
+    const adminSupabase = createAdminClient();
+
+    // Check if user already has a profile & organization
+    const { data: profile } = await adminSupabase
       .from("profiles")
       .select("organization_id")
       .eq("id", user.id)
@@ -22,13 +27,13 @@ export async function POST(request: Request) {
 
     let targetOrgId = profile?.organization_id;
 
-    // 2. If organization doesn't exist yet (e.g. fresh Google OAuth signup), create organization
+    // 3. Create or update Organization
     if (!targetOrgId) {
       const finalOrgName = orgName?.trim() || `${user.email?.split("@")[0] || "My"}'s Organization`;
       const baseSlug = finalOrgName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") || "org";
       const uniqueSlug = `${baseSlug}-${user.id.slice(0, 6)}`;
 
-      const { data: newOrg, error: orgInsertError } = await supabase
+      const { data: newOrg, error: orgError } = await adminSupabase
         .from("organizations")
         .insert({
           name: finalOrgName,
@@ -44,13 +49,13 @@ export async function POST(request: Request) {
         .select("id")
         .single();
 
-      if (orgInsertError) {
-        console.error("Organization creation error:", orgInsertError);
+      if (orgError) {
+        console.error("Organization creation error:", orgError);
       } else if (newOrg) {
         targetOrgId = newOrg.id;
       }
     } else {
-      // If organization exists, update its name and settings
+      // Update existing organization settings
       const updates: Record<string, unknown> = {
         updated_at: new Date().toISOString(),
       };
@@ -59,7 +64,7 @@ export async function POST(request: Request) {
         updates.name = orgName.trim();
       }
 
-      const { data: org } = await supabase
+      const { data: org } = await adminSupabase
         .from("organizations")
         .select("settings")
         .eq("id", targetOrgId)
@@ -79,43 +84,36 @@ export async function POST(request: Request) {
         ...(greetingMessage ? { greeting_message: greetingMessage } : {}),
       };
 
-      await supabase
+      await adminSupabase
         .from("organizations")
         .update(updates)
         .eq("id", targetOrgId);
     }
 
-    // 3. Upsert profile with onboarding_completed = true
-    // Using UPSERT ensures that if the profile row was missing for a Google user, it gets created immediately
+    // 4. Upsert profile record setting onboarding_completed = true
     if (targetOrgId) {
-      const { error: profileUpsertError } = await supabase
+      const { error: profileError } = await adminSupabase
         .from("profiles")
-        .upsert({
-          id: user.id,
-          organization_id: targetOrgId,
-          email: user.email ?? "",
-          full_name:
-            user.user_metadata?.full_name ||
-            user.user_metadata?.name ||
-            user.email?.split("@")[0] ||
-            "User",
-          role: "owner",
-          onboarding_completed: true,
-          updated_at: new Date().toISOString(),
-        }, { onConflict: "id" });
+        .upsert(
+          {
+            id: user.id,
+            organization_id: targetOrgId,
+            email: user.email ?? "",
+            full_name:
+              user.user_metadata?.full_name ||
+              user.user_metadata?.name ||
+              user.email?.split("@")[0] ||
+              "User",
+            role: "owner",
+            onboarding_completed: true,
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: "id" }
+        );
 
-      if (profileUpsertError) {
-        console.error("Profile upsert error:", profileUpsertError);
+      if (profileError) {
+        console.error("Profile upsert error:", profileError);
       }
-    } else {
-      // Fallback: update profile if organization ID lookup had issues
-      await supabase
-        .from("profiles")
-        .update({
-          onboarding_completed: true,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", user.id);
     }
 
     return NextResponse.json({ success: true, message: "Onboarding completed successfully" });
