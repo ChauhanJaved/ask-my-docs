@@ -20,6 +20,7 @@ import {
 export default function OnboardingPage() {
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // Form State
   const [orgName, setOrgName] = useState("");
@@ -45,6 +46,7 @@ export default function OnboardingPage() {
 
   const handleFinishOnboarding = async () => {
     setLoading(true);
+    setError(null);
     try {
       // 1. Call completion API endpoint
       const res = await fetch("/api/onboarding/complete", {
@@ -58,8 +60,10 @@ export default function OnboardingPage() {
         }),
       });
 
+      const data = await res.json().catch(() => ({}));
+
       if (!res.ok) {
-        console.warn("Onboarding complete API returned error, proceeding to dashboard.");
+        throw new Error(data.error || "Failed to complete onboarding");
       }
 
       // Also update local storage as fallback for instant middleware check
@@ -67,13 +71,15 @@ export default function OnboardingPage() {
       
       // Navigate to main dashboard
       window.location.href = "/dashboard";
-    } catch (err) {
+    } catch (err: unknown) {
       console.error("Onboarding submission error:", err);
-      window.location.href = "/dashboard";
+      const errorMessage = err instanceof Error ? err.message : "An error occurred while saving your onboarding details.";
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
   };
+
 
   const presetColors = [
     { name: "Indigo", hex: "#6366f1" },
@@ -392,6 +398,14 @@ export default function OnboardingPage() {
             <p className="text-sm text-slate-400 max-w-md mx-auto mb-6">
               Your organization workspace <span className="text-white font-medium">&quot;{orgName || "FTChat Workspace"}&quot;</span> has been created.
             </p>
+
+            {error && (
+              <div className="bg-red-500/10 border border-red-500/30 text-red-400 p-3 rounded-xl mb-6 text-xs text-left max-w-md mx-auto">
+                <p className="font-semibold mb-0.5">Could not complete setup:</p>
+                <p>{error}</p>
+              </div>
+            )}
+
 
             <div className="bg-slate-950/80 border border-slate-800 rounded-xl p-4 text-left max-w-md mx-auto mb-8 space-y-2">
               <div className="flex justify-between text-xs py-1 border-b border-slate-800/60">
