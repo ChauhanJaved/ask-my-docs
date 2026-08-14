@@ -114,7 +114,7 @@ export async function POST(request: Request) {
     // 3. Update or Upsert profile record setting onboarding_completed = true
     const profileClient = process.env.SUPABASE_SERVICE_ROLE_KEY ? createAdminClient() : supabase;
 
-    if (userProfile || targetOrgId) {
+    if (userProfile) {
       const { error: updateProfileError } = await profileClient
         .from("profiles")
         .update({
@@ -149,7 +149,7 @@ export async function POST(request: Request) {
         );
 
       if (profileError) {
-        console.error("Profile upsert error:", profileError);
+        console.error("Profile creation error:", profileError);
         return NextResponse.json({ error: `Failed to create profile: ${profileError.message}` }, { status: 500 });
       }
     }
