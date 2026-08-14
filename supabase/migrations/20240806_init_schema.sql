@@ -137,41 +137,48 @@ ALTER TABLE chat_sessions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE chat_messages ENABLE ROW LEVEL SECURITY;
 ALTER TABLE usage_records ENABLE ROW LEVEL SECURITY;
 
+-- Helper function to retrieve current user's organization ID safely without RLS recursion
+CREATE OR REPLACE FUNCTION get_auth_user_org_id()
+RETURNS UUID
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+    SELECT organization_id FROM profiles WHERE id = auth.uid() LIMIT 1;
+$$;
+
 -- Organization policies: Users can only access their own organization's data
 CREATE POLICY "Organizations are viewable by members of the organization"
 ON organizations FOR SELECT
-USING (id IN (
-    SELECT organization_id FROM profiles WHERE id = auth.uid()
-));
+USING (id = get_auth_user_org_id());
 
 CREATE POLICY "Organizations are insertable by organization owners"
 ON organizations FOR INSERT
-WITH CHECK (true); -- Initially allowinserts, will be restricted by profile creation
+WITH CHECK (true); -- Initially allow inserts, will be restricted by profile creation
 
 CREATE POLICY "Organizations are updatable by organization owners"
 ON organizations FOR UPDATE
-USING (id IN (
-    SELECT organization_id FROM profiles WHERE id = auth.uid() AND role IN ('owner', 'admin')
+USING (id = get_auth_user_org_id() AND EXISTS (
+    SELECT 1 FROM profiles WHERE id = auth.uid() AND role IN ('owner', 'admin')
 ));
 
 CREATE POLICY "Organizations are deletable by organization owners"
 ON organizations FOR DELETE
-USING (id IN (
-    SELECT organization_id FROM profiles WHERE id = auth.uid() AND role = 'owner'
+USING (id = get_auth_user_org_id() AND EXISTS (
+    SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'owner'
 ));
 
 -- Profile policies: Users can only access profiles in their own organization
 CREATE POLICY "Profiles are viewable by members of the same organization"
 ON profiles FOR SELECT
-USING (organization_id IN (
-    SELECT organization_id FROM profiles WHERE id = auth.uid()
-));
+USING (id = auth.uid() OR organization_id = get_auth_user_org_id());
 
 CREATE POLICY "Profiles are insertable for own user ID"
 ON profiles FOR INSERT
 WITH CHECK (id = auth.uid());
 
-CREATE POLICY "Profiles are updatable byorganization members"
+CREATE POLICY "Profiles are updatable by organization members"
 ON profiles FOR UPDATE
 USING (id = auth.uid());
 

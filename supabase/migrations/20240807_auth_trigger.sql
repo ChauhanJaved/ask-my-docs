@@ -1,18 +1,26 @@
 -- Create a function to handle new user sign ups
--- This function will be triggered after a user signs up
+-- This function will be triggered after a user signs up (Email or Google OAuth)
 -- It creates an organization for the user and sets them as the owner
 
 CREATE OR REPLACE FUNCTION handle_new_user()
 RETURNS TRIGGER AS $$
 DECLARE
     new_organization_id UUID;
+    user_name TEXT;
 BEGIN
+    user_name := COALESCE(
+        NEW.raw_user_meta_data->>'full_name',
+        NEW.raw_user_meta_data->>'name',
+        split_part(NEW.email, '@', 1),
+        'User'
+    );
+
     -- Create a new organization for the user
     INSERT INTO organizations (name, slug, plan)
     VALUES (
-        NEW.email || "'s Organization",  -- Organization name based on email
-        lower(replace(NEW.email, '[^a-zA-Z0-9]+', '-')),  -- Slug based on email
-        'free'  -- Default plan
+        user_name || "'s Organization",
+        lower(replace(COALESCE(NEW.email, NEW.id::text), '[^a-zA-Z0-9]+', '-')),
+        'free'
     )
     RETURNING id INTO new_organization_id;
 
@@ -22,33 +30,28 @@ BEGIN
         organization_id,
         email,
         full_name,
-        role
+        role,
+        onboarding_completed
     ) VALUES (
-        NEW.id,  -- The user's ID from auth.users
+        NEW.id,
         new_organization_id,
-        NEW.email,
-        NEW.raw_user_meta_data->>'full_name',
-        'owner'  -- New user is the owner of their organization
-    );
+        COALESCE(NEW.email, ''),
+        user_name,
+        'owner',
+        false
+    )
+    ON CONFLICT (id) DO UPDATE
+    SET organization_id = EXCLUDED.organization_id,
+        email = EXCLUDED.email;
 
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- Create a trigger that runs the function after a new user is created
--- Note: Supabase Auth doesn't directly support triggers on auth.users
--- Instead, we'll need to use a different approach or handle this in the application
--- For Supabase, we typically handle this in the application layer or using webhooks
+-- Attach trigger to auth.users table
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE FUNCTION handle_new_user();
 
--- However, we can create a trigger for demonstration purposes
--- In practice, with Supabase, you would:
--- 1. Either handle this in your sign up API route
--- 2. Or use a database webhook (though these have limitations)
--- 3. Or use the auth.uid() in RLS policies to infer the organization
-
--- Let's create a placeholder function showing the concept
-COMMENT ON FUNCTION handle_new_user() IS 'Automatically creates organization and profile for new users';
-
--- Note: In a real Supabase implementation, you would typically handle organization creation
--- in your application's sign up flow rather than as a database trigger on auth.users
--- because auth.users is managed by Supabase and direct triggers have limitations
+COMMENT ON FUNCTION handle_new_user() IS 'Automatically creates organization and profile for new users upon auth signup';
