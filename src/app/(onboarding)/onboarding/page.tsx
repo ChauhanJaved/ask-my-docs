@@ -17,6 +17,8 @@ import {
   MessageSquare
 } from "lucide-react";
 
+import { createBrowserSupabaseClient } from "@/utils/supabase/client";
+
 export default function OnboardingPage() {
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
   const [loading, setLoading] = useState(false);
@@ -31,6 +33,8 @@ export default function OnboardingPage() {
   // Quick Start Ingestion State
   const [websiteUrl, setWebsiteUrl] = useState("");
   const [ingestType, setIngestType] = useState<"url" | "file">("url");
+
+  const supabase = createBrowserSupabaseClient();
 
   const handleNextStep = () => {
     if (step < 4) {
@@ -48,25 +52,115 @@ export default function OnboardingPage() {
     setLoading(true);
     setError(null);
     try {
-      // 1. Call completion API endpoint
-      const res = await fetch("/api/onboarding/complete", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          orgName,
-          botName,
-          primaryColor,
-          greetingMessage,
-        }),
-      });
-
-      const data = await res.json().catch(() => ({}));
-
-      if (!res.ok) {
-        throw new Error(data.error || "Failed to complete onboarding");
+      // 1. Get current authenticated user
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      if (userError || !user) {
+        throw new Error("User session not found. Please log in again.");
       }
 
-      // Also update local storage as fallback for instant middleware check
+      // 2. Fetch profile to check existing organization_id
+      const { data: profile, error: profileFetchError } = await supabase
+        .from("profiles")
+        .select("organization_id")
+        .eq("id", user.id)
+        .maybeSingle();
+
+      if (profileFetchError) {
+        throw new Error(`Failed to load profile: ${profileFetchError.message}`);
+      }
+
+      let targetOrgId = profile?.organization_id;
+
+      // 3. Update existing Organization OR Create new one
+      if (targetOrgId) {
+        const { data: org } = await supabase
+          .from("organizations")
+          .select("settings")
+          .eq("id", targetOrgId)
+          .maybeSingle();
+
+        const currentSettings = (org?.settings as Record<string, unknown>) || {
+          bot_name: "FTChat Assistant",
+          tone: "friendly",
+          primary_color: "#6366f1",
+          greeting_message: "Hi! How can I help you today?",
+        };
+
+        const updates: Record<string, unknown> = {
+          updated_at: new Date().toISOString(),
+          settings: {
+            ...currentSettings,
+            ...(botName ? { bot_name: botName } : {}),
+            ...(primaryColor ? { primary_color: primaryColor } : {}),
+            ...(greetingMessage ? { greeting_message: greetingMessage } : {}),
+          },
+        };
+
+        if (orgName?.trim()) {
+          updates.name = orgName.trim();
+        }
+
+        const { error: updateOrgError } = await supabase
+          .from("organizations")
+          .update(updates)
+          .eq("id", targetOrgId);
+
+        if (updateOrgError) {
+          throw new Error(`Failed to update organization: ${updateOrgError.message}`);
+        }
+      } else {
+        const finalOrgName = orgName?.trim() || `${user.email?.split("@")[0] || "My"}'s Organization`;
+        const baseSlug = finalOrgName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") || "org";
+        const newOrgId = crypto.randomUUID();
+        const uniqueSlug = `${baseSlug}-${newOrgId.slice(0, 6)}`;
+
+        const { error: insertOrgError } = await supabase
+          .from("organizations")
+          .insert({
+            id: newOrgId,
+            name: finalOrgName,
+            slug: uniqueSlug,
+            plan: "free",
+            settings: {
+              bot_name: botName || "FTChat Assistant",
+              tone: "friendly",
+              primary_color: primaryColor || "#6366f1",
+              greeting_message: greetingMessage || "Hi! How can I help you today?",
+            },
+          });
+
+        if (insertOrgError) {
+          throw new Error(`Failed to create organization: ${insertOrgError.message}`);
+        }
+
+        targetOrgId = newOrgId;
+      }
+
+      // 4. Update or Upsert profile record setting onboarding_completed = true
+      const { error: profileUpdateError } = await supabase
+        .from("profiles")
+        .upsert(
+          {
+            id: user.id,
+            organization_id: targetOrgId,
+            email: user.email ?? "",
+            full_name:
+              user.user_metadata?.full_name ||
+              user.user_metadata?.name ||
+              user.email?.split("@")[0] ||
+              "User",
+            role: "owner",
+            onboarding_completed: true,
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: "id" }
+        );
+
+      if (profileUpdateError) {
+        throw new Error(`Failed to update profile status: ${profileUpdateError.message}`);
+      }
+
+      // Local storage fallback for instant middleware check
       localStorage.setItem("ftchat_onboarded", "true");
       
       // Navigate to main dashboard
