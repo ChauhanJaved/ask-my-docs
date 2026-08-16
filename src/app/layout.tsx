@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Inter, Plus_Jakarta_Sans, JetBrains_Mono } from "next/font/google";
 import { siteConfig } from "@/config/site";
+import { ThemeProvider } from "@/components/theme-provider";
 import "./globals.css";
 
 const inter = Inter({
@@ -84,11 +85,18 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body
-        className={`${inter.variable} ${plusJakartaSans.variable} ${jetbrainsMono.variable} antialiased`}
+        className={`${inter.variable} ${plusJakartaSans.variable} ${jetbrainsMono.variable} antialiased bg-background text-foreground`}
       >
-        {children}
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          {children}
+        </ThemeProvider>
         <script
           dangerouslySetInnerHTML={{
             __html: `
