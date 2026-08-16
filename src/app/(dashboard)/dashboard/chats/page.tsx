@@ -118,23 +118,23 @@ export default function ChatHistoryPage() {
   if (loading) {
     return <div className="flex min-h-[20vh] items-center justify-center">
       <div className="text-center">
-        <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-brand-600"></div>
-        <p className="mt-2 text-sm text-neutral-500">Loading chat history...</p>
+        <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-brand-600 dark:border-brand-400"></div>
+        <p className="mt-2 text-sm text-neutral-500 dark:text-neutral-400">Loading chat history...</p>
       </div>
     </div>;
   }
 
   if (error) {
-    return <div className="bg-rose-50 border-l-4 border-rose-400 text-rose-700 p-4">
+    return <div className="bg-rose-50 dark:bg-rose-950/50 border-l-4 border-rose-400 dark:border-rose-600 text-rose-700 dark:text-rose-300 p-4">
       <p>{error}</p>
     </div>;
   }
 
   if (chats.length === 0) {
     return <div className="flex min-h-[20vh] items-center justify-center">
-      <div className="text-center space-y-4">
-        <p className="text-neutral-500">No chat history yet</p>
-        <p className="text-sm">Start a conversation to see history here</p>
+      <div className="text-center space-y-2">
+        <p className="text-neutral-900 dark:text-white font-semibold">No chat history yet</p>
+        <p className="text-sm text-neutral-500 dark:text-neutral-400">Start a conversation to see history here</p>
       </div>
     </div>;
   }
@@ -142,46 +142,46 @@ export default function ChatHistoryPage() {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold font-display text-neutral-900">Chat History</h1>
-        <div className="text-sm text-neutral-500">
+        <h1 className="text-2xl font-bold font-display text-neutral-900 dark:text-white">Chat History</h1>
+        <div className="text-sm text-neutral-500 dark:text-neutral-400">
           {chats.reduce((sum, chat) => sum + chat.messages.length, 0)} total messages
         </div>
       </div>
 
       <div className="space-y-4">
         {chats.map((chat: ChatSession) => (
-          <div key={chat.id} className="border border-neutral-200 rounded-lg overflow-hidden shadow-sm">
-            <div className="bg-neutral-50 px-4 py-3 border-b border-neutral-200">
+          <div key={chat.id} className="border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden shadow-sm bg-white dark:bg-neutral-900 transition-colors">
+            <div className="bg-neutral-50 dark:bg-neutral-950 px-4 py-3 border-b border-neutral-200 dark:border-neutral-800">
               <div className="flex justify-between items-center">
-                <h3 className="font-semibold text-sm text-neutral-900">
+                <h3 className="font-semibold text-sm text-neutral-900 dark:text-white">
                   {chat.topic || 'Untitled Chat'}
                 </h3>
                 <div className="flex items-center space-x-2 text-xs">
-                  <span className="px-2 py-0.5 rounded-full
-                    {chat.sentiment === 'positive' ? 'bg-emerald-100 text-emerald-800' :
-                     chat.sentiment === 'negative' ? 'bg-rose-100 text-rose-800' :
-                     'bg-neutral-200 text-neutral-600'}"
-                  >
+                  <span className={`px-2 py-0.5 rounded-full font-medium ${
+                    chat.sentiment === 'positive' ? 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800' :
+                    chat.sentiment === 'negative' ? 'bg-rose-100 dark:bg-rose-950/60 text-rose-800 dark:text-rose-300 border border-rose-200 dark:border-rose-800' :
+                    'bg-neutral-200 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300'
+                  }`}>
                     {chat.sentiment}
                   </span>
-                  <span className="text-neutral-400">
+                  <span className="text-neutral-400 dark:text-neutral-500">
                     • {new Date(chat.createdAt).toLocaleString()}
                   </span>
                 </div>
               </div>
             </div>
 
-            <div className="space-y-2 p-4">
+            <div className="space-y-2.5 p-4">
               {chat.messages.map((msg: ChatMessage) => (
                 <div key={msg.id} className={`flex ${msg.senderType === 'user' ? 'justify-end' : 'justify-start'} space-x-3`}>
-                  <div className={`max-w-[70%] px-3 py-2 rounded-lg ${
+                  <div className={`max-w-[70%] px-3.5 py-2.5 rounded-lg text-sm ${
                     msg.senderType === 'user'
                       ? 'bg-brand-600 text-white'
-                      : 'bg-neutral-100 text-neutral-900'
+                      : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 border border-neutral-200 dark:border-neutral-700'
                   }`}>
-                    <p className="text-sm">{msg.content}</p>
+                    <p>{msg.content}</p>
                     {msg.sources.length > 0 && (
-                      <div className="text-xs text-neutral-400 mt-1">
+                      <div className="text-[10px] text-neutral-400 dark:text-neutral-500 mt-1">
                         Sources: {msg.sources.map((s: { document_id: string }) => s.document_id).join(', ')}
                       </div>
                     )}

@@ -73,24 +73,24 @@ export function SignupForm() {
 
   return (
     <div className="flex flex-1 items-center justify-center p-6 py-12 md:py-20">
-      <div className="bg-white border border-neutral-200 rounded-lg shadow-sm p-8 w-full max-w-md">
+      <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-lg shadow-sm p-8 w-full max-w-md transition-colors">
         <div className="text-center mb-8">
-          <Link href="/" className="text-2xl font-bold font-display text-brand-600">
+          <Link href="/" className="text-2xl font-bold font-display text-brand-600 dark:text-brand-400">
             FTChat
           </Link>
-          <h1 className="mt-4 text-xl font-semibold text-neutral-900">Create your account</h1>
-          <p className="text-xs text-neutral-500 mt-1">Start building your AI assistant today.</p>
+          <h1 className="mt-4 text-xl font-semibold text-neutral-900 dark:text-white">Create your account</h1>
+          <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">Start building your AI assistant today.</p>
         </div>
 
         {error && (
-          <div className="bg-red-50 border-l-4 border-red-400 text-red-700 p-4 mb-4">
+          <div className="bg-red-50 dark:bg-red-950/50 border-l-4 border-red-400 dark:border-red-600 text-red-700 dark:text-red-300 p-4 mb-4">
             <p>{error}</p>
           </div>
         )}
 
         <form className="space-y-4" onSubmit={handleSubmit}>
           <div>
-            <label className="block text-sm font-medium text-neutral-700 mb-1" htmlFor="name">
+            <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1" htmlFor="name">
               Full Name
             </label>
             <input
@@ -99,14 +99,14 @@ export function SignupForm() {
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
               placeholder="John Doe"
-              className="w-full border border-neutral-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand-500"
+              className="w-full bg-white dark:bg-neutral-950 border border-neutral-300 dark:border-neutral-700 text-neutral-900 dark:text-white placeholder-neutral-400 dark:placeholder-neutral-500 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand-500"
               required
               disabled={loading}
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-neutral-700 mb-1" htmlFor="email">
+            <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1" htmlFor="email">
               Email Address
             </label>
             <input
@@ -115,14 +115,14 @@ export function SignupForm() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="you@example.com"
-              className="w-full border border-neutral-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand-500"
+              className="w-full bg-white dark:bg-neutral-950 border border-neutral-300 dark:border-neutral-700 text-neutral-900 dark:text-white placeholder-neutral-400 dark:placeholder-neutral-500 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand-500"
               required
               disabled={loading}
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-neutral-700 mb-1" htmlFor="password">
+            <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1" htmlFor="password">
               Password
             </label>
             <input
@@ -131,7 +131,7 @@ export function SignupForm() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
-              className="w-full border border-neutral-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand-500"
+              className="w-full bg-white dark:bg-neutral-950 border border-neutral-300 dark:border-neutral-700 text-neutral-900 dark:text-white placeholder-neutral-400 dark:placeholder-neutral-500 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand-500"
               required
               disabled={loading}
             />
@@ -148,9 +148,9 @@ export function SignupForm() {
 
         <div className="mt-6 flex flex-col space-y-4 text-center">
           <div className="relative flex py-2 items-center">
-            <div className="flex-grow border-t border-neutral-200"></div>
-            <span className="flex-shrink mx-4 text-neutral-400 text-xs uppercase">Or</span>
-            <div className="flex-grow border-t border-neutral-200"></div>
+            <div className="flex-grow border-t border-neutral-200 dark:border-neutral-800"></div>
+            <span className="flex-shrink mx-4 text-neutral-400 dark:text-neutral-500 text-xs uppercase">Or</span>
+            <div className="flex-grow border-t border-neutral-200 dark:border-neutral-800"></div>
           </div>
 
           <GoogleButton
@@ -159,9 +159,9 @@ export function SignupForm() {
             disabled={loading}
           />
 
-          <p className="text-xs text-neutral-600 mt-2">
+          <p className="text-xs text-neutral-600 dark:text-neutral-400 mt-2">
             Already have an account?{" "}
-            <Link href="/login" className="text-brand-600 hover:underline">
+            <Link href="/login" className="text-brand-600 dark:text-brand-400 hover:underline">
               Log In
             </Link>
           </p>

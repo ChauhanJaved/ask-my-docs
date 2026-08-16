@@ -39,14 +39,14 @@ export function Breadcrumbs() {
   return (
     <nav
       aria-label="Breadcrumb"
-      className="container mx-auto px-6 py-4 border-b border-neutral-100 bg-neutral-50/50"
+      className="container mx-auto px-6 py-4 border-b border-neutral-100 dark:border-neutral-800 bg-neutral-50/50 dark:bg-neutral-950/50"
     >
-      <ol className="flex items-center space-x-2 text-xs md:text-sm text-neutral-500">
+      <ol className="flex items-center space-x-2 text-xs md:text-sm text-neutral-500 dark:text-neutral-400">
         {/* Home Item */}
         <li className="flex items-center">
           <Link
             href="/"
-            className="flex items-center text-neutral-500 hover:text-brand-600 transition-colors"
+            className="flex items-center text-neutral-500 dark:text-neutral-400 hover:text-brand-600 dark:hover:text-brand-400 transition-colors"
           >
             <Home className="w-3.5 h-3.5 mr-1" />
             <span>Home</span>
@@ -59,10 +59,10 @@ export function Breadcrumbs() {
 
           return (
             <li key={item.href} className="flex items-center space-x-2">
-              <ChevronRight className="w-3.5 h-3.5 text-neutral-400 flex-shrink-0" />
+              <ChevronRight className="w-3.5 h-3.5 text-neutral-400 dark:text-neutral-600 flex-shrink-0" />
               {isLast ? (
                 <span
-                  className="font-medium text-neutral-900"
+                  className="font-medium text-neutral-900 dark:text-white"
                   aria-current="page"
                 >
                   {item.label}
@@ -70,7 +70,7 @@ export function Breadcrumbs() {
               ) : (
                 <Link
                   href={item.href}
-                  className="text-neutral-500 hover:text-brand-600 transition-colors"
+                  className="text-neutral-500 dark:text-neutral-400 hover:text-brand-600 dark:hover:text-brand-400 transition-colors"
                 >
                   {item.label}
                 </Link>

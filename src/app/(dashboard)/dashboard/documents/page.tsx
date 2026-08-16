@@ -93,12 +93,12 @@ export default function DocumentsPage() {
   };
 
   if (loading) {
-    return <div className="text-center py-12">Loading documents...</div>;
+    return <div className="text-center py-12 text-neutral-500 dark:text-neutral-400">Loading documents...</div>;
   }
 
   if (error) {
     return (
-      <div className="bg-rose-50 border-l-4 border-rose-400 text-rose-700 p-4 mb-6">
+      <div className="bg-rose-50 dark:bg-rose-950/50 border-l-4 border-rose-400 dark:border-rose-600 text-rose-700 dark:text-rose-300 p-4 mb-6">
         <p>{error}</p>
       </div>
     );
@@ -109,8 +109,8 @@ export default function DocumentsPage() {
       {/* Title */}
       <div className="flex justify-between items-end">
         <div>
-          <h1 className="text-2xl font-bold font-display text-neutral-900">Knowledge Documents</h1>
-          <p className="text-sm text-neutral-500">Sync text files, Markdown files, or crawl websites to teach your AI bot.</p>
+          <h1 className="text-2xl font-bold font-display text-neutral-900 dark:text-white">Knowledge Documents</h1>
+          <p className="text-sm text-neutral-500 dark:text-neutral-400">Sync text files, Markdown files, or crawl websites to teach your AI bot.</p>
         </div>
         <div className="flex space-x-3">
           <Button
@@ -135,24 +135,24 @@ export default function DocumentsPage() {
 
       {/* Upload Status */}
       {error && (
-        <div className="bg-rose-50 border-l-4 border-rose-400 text-rose-700 p-4 mb-6">
+        <div className="bg-rose-50 dark:bg-rose-950/50 border-l-4 border-rose-400 dark:border-rose-600 text-rose-700 dark:text-rose-300 p-4 mb-6">
           <p>{error}</p>
         </div>
       )}
 
       {/* Documents Table */}
-      <div className="bg-white border border-neutral-200 rounded-lg overflow-hidden shadow-sm">
-        <div className="p-5 border-b border-neutral-200">
-          <h3 className="font-semibold text-sm text-neutral-900">Ingested Sources ({documents.length})</h3>
+      <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden shadow-sm transition-colors">
+        <div className="p-5 border-b border-neutral-200 dark:border-neutral-800">
+          <h3 className="font-semibold text-sm text-neutral-900 dark:text-white">Ingested Sources ({documents.length})</h3>
         </div>
         {documents.length === 0 ? (
-          <div className="text-center py-8 text-neutral-500">
+          <div className="text-center py-8 text-neutral-500 dark:text-neutral-400">
             No documents uploaded yet. Click &quot;Ingest File&quot; to get started.
           </div>
         ) : (
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="bg-neutral-50 text-[10px] uppercase font-bold text-neutral-500 border-b border-neutral-200">
+              <tr className="bg-neutral-50 dark:bg-neutral-950 text-[10px] uppercase font-bold text-neutral-500 dark:text-neutral-400 border-b border-neutral-200 dark:border-neutral-800">
                 <th className="px-6 py-3">Source Name</th>
                 <th className="px-6 py-3">Type</th>
                 <th className="px-6 py-3">Ingested At</th>
@@ -160,37 +160,37 @@ export default function DocumentsPage() {
                 <th className="px-6 py-3 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-neutral-200 text-xs">
+            <tbody className="divide-y divide-neutral-200 dark:divide-neutral-800 text-xs">
               {documents.map((doc) => (
-                <tr key={doc.id}>
-                  <td className="px-6 py-4 font-medium text-neutral-900">
+                <tr key={doc.id} className="hover:bg-neutral-50/50 dark:hover:bg-neutral-800/40 transition-colors">
+                  <td className="px-6 py-4 font-medium text-neutral-900 dark:text-white">
                     {doc.name}
                   </td>
-                  <td className="px-6 py-4 text-neutral-500">
+                  <td className="px-6 py-4 text-neutral-500 dark:text-neutral-400">
                     {doc.type.toUpperCase()}
                   </td>
-                  <td className="px-6 py-4 text-neutral-500">
+                  <td className="px-6 py-4 text-neutral-500 dark:text-neutral-400">
                     {new Date(doc.created_at).toLocaleString()}
                   </td>
                   <td className="px-6 py-4">
                     <span className={`${doc.status === "processing"
-                      ? "bg-blue-100 text-blue-800"
+                      ? "bg-blue-100 dark:bg-blue-950/60 text-blue-800 dark:text-blue-300 border border-blue-200 dark:border-blue-800"
                       : doc.status === "ready"
-                        ? "bg-emerald-100 text-emerald-800"
-                        : "bg-rose-100 text-rose-800"
+                        ? "bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800"
+                        : "bg-rose-100 dark:bg-rose-950/60 text-rose-800 dark:text-rose-300 border border-rose-200 dark:border-rose-800"
                     } text-[10px] font-semibold px-2 py-0.5 rounded-full`}>
                       {doc.status.charAt(0).toUpperCase() + doc.status.slice(1)}
                     </span>
                   </td>
                   <td className="px-6 py-4 text-right">
                     <button
-                      className="text-neutral-400 hover:text-neutral-600 mr-4 font-semibold"
+                      className="text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200 mr-4 font-semibold transition-colors"
                       onClick={() => alert(`View chunks for ${doc.name}`)}
                     >
                       View Chunks
                     </button>
                     <button
-                      className="text-rose-600 hover:text-rose-800 font-semibold"
+                      className="text-rose-600 dark:text-rose-400 hover:text-rose-800 dark:hover:text-rose-300 font-semibold transition-colors"
                       onClick={() => handleDeleteDocument(doc.id)}
                     >
                       Delete

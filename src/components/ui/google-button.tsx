@@ -45,7 +45,7 @@ export function GoogleButton({
     <Button
       type={type}
       variant="outline"
-      className={`w-full relative flex items-center justify-center gap-3 bg-white text-neutral-700 font-medium border border-neutral-300 hover:bg-neutral-50 hover:border-neutral-400 active:bg-neutral-100 shadow-xs transition-all ${className}`}
+      className={`w-full relative flex items-center justify-center gap-3 bg-white dark:bg-neutral-900 text-neutral-700 dark:text-neutral-200 font-medium border border-neutral-300 dark:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-800 hover:border-neutral-400 dark:hover:border-neutral-600 active:bg-neutral-100 dark:active:bg-neutral-800 shadow-xs transition-all ${className}`}
       {...props}
     >
       <GoogleIcon className="w-5 h-5 shrink-0" />

@@ -135,12 +135,12 @@ export default function TeamSettingsPage() {
   };
 
   if (loading) {
-    return <div className="text-center py-12">Loading team members...</div>;
+    return <div className="text-center py-12 text-neutral-500 dark:text-neutral-400">Loading team members...</div>;
   }
 
   if (error) {
     return (
-      <div className="bg-rose-50 border-l-4 border-rose-400 text-rose-700 p-4 mb-6">
+      <div className="bg-rose-50 dark:bg-rose-950/50 border-l-4 border-rose-400 dark:border-rose-600 text-rose-700 dark:text-rose-300 p-4 mb-6">
         <p>{error}</p>
       </div>
     );
@@ -151,8 +151,8 @@ export default function TeamSettingsPage() {
       {/* Title */}
       <div className="flex justify-between items-end">
         <div>
-          <h1 className="text-2xl font-bold font-display text-neutral-900">Team Workspace Settings</h1>
-          <p className="text-sm text-neutral-500">Manage collaborative permissions and organization user roles.</p>
+          <h1 className="text-2xl font-bold font-display text-neutral-900 dark:text-white">Team Workspace Settings</h1>
+          <p className="text-sm text-neutral-500 dark:text-neutral-400">Manage collaborative permissions and organization user roles.</p>
         </div>
         <Button className="bg-brand-600 hover:bg-brand-700 text-white">
           Invite Member
@@ -160,11 +160,11 @@ export default function TeamSettingsPage() {
       </div>
 
       {/* Invite Member Form */}
-      <div className="bg-white border border-neutral-200 rounded-lg p-6 shadow-sm">
-        <h3 className="font-semibold text-sm text-neutral-900 font-display border-b pb-4">Invite Team Member</h3>
-        <form onSubmit={handleInviteMember} className="space-y-4">
+      <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-lg p-6 shadow-sm transition-colors">
+        <h3 className="font-semibold text-sm text-neutral-900 dark:text-white font-display border-b border-neutral-200 dark:border-neutral-800 pb-4">Invite Team Member</h3>
+        <form onSubmit={handleInviteMember} className="space-y-4 pt-4">
           <div>
-            <label className="block text-xs font-semibold text-neutral-700 mb-1" htmlFor="inviteEmail">
+            <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1" htmlFor="inviteEmail">
               Email Address
             </label>
             <input
@@ -172,7 +172,7 @@ export default function TeamSettingsPage() {
               id="inviteEmail"
               value={inviteEmail}
               onChange={(e) => setInviteEmail(e.target.value)}
-              className="w-full border border-neutral-300 rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-brand-500"
+              className="w-full bg-white dark:bg-neutral-950 border border-neutral-300 dark:border-neutral-700 text-neutral-900 dark:text-white placeholder-neutral-400 rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-brand-500"
               disabled={inviting}
             />
           </div>
@@ -189,41 +189,41 @@ export default function TeamSettingsPage() {
       </div>
 
       {/* Team Roster */}
-      <div className="bg-white border border-neutral-200 rounded-lg overflow-hidden shadow-sm">
-        <div className="p-5 border-b border-neutral-200">
-          <h3 className="font-semibold text-sm text-neutral-900">Active Workspace Members ({members.length})</h3>
+      <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden shadow-sm transition-colors">
+        <div className="p-5 border-b border-neutral-200 dark:border-neutral-800">
+          <h3 className="font-semibold text-sm text-neutral-900 dark:text-white">Active Workspace Members ({members.length})</h3>
         </div>
         {members.length === 0 ? (
-          <div className="text-center py-8 text-neutral-500">
+          <div className="text-center py-8 text-neutral-500 dark:text-neutral-400">
             No team members found.
           </div>
         ) : (
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="bg-neutral-50 text-[10px] uppercase font-bold text-neutral-500 border-b border-neutral-200">
+              <tr className="bg-neutral-50 dark:bg-neutral-950 text-[10px] uppercase font-bold text-neutral-500 dark:text-neutral-400 border-b border-neutral-200 dark:border-neutral-800">
                 <th className="px-6 py-3">User</th>
                 <th className="px-6 py-3">Email</th>
                 <th className="px-6 py-3">Role</th>
                 <th className="px-6 py-3 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-neutral-200 text-xs">
+            <tbody className="divide-y divide-neutral-200 dark:divide-neutral-800 text-xs">
               {members.map((member) => (
-                <tr key={member.id}>
-                  <td className="px-6 py-4 font-semibold text-neutral-900">
+                <tr key={member.id} className="hover:bg-neutral-50/50 dark:hover:bg-neutral-800/40 transition-colors">
+                  <td className="px-6 py-4 font-semibold text-neutral-900 dark:text-white">
                     {member.full_name || member.email.split('@')[0]}
                   </td>
-                  <td className="px-6 py-4 text-neutral-500">
+                  <td className="px-6 py-4 text-neutral-500 dark:text-neutral-400">
                     {member.email}
                   </td>
                   <td className="px-6 py-4">
-                    <span className={member.role === 'owner' ? "text-brand-600 font-semibold" : member.role === 'admin' ? "text-neutral-600" : "text-neutral-500"}>
+                    <span className={member.role === 'owner' ? "text-brand-600 dark:text-brand-400 font-semibold" : member.role === 'admin' ? "text-neutral-600 dark:text-neutral-300" : "text-neutral-500 dark:text-neutral-400"}>
                       {member.role.charAt(0).toUpperCase() + member.role.slice(1)}
                     </span>
                   </td>
                   <td className="px-6 py-4 text-right">
                     <button
-                      className="text-rose-600 hover:text-rose-800 font-semibold"
+                      className="text-rose-600 dark:text-rose-400 hover:text-rose-800 dark:hover:text-rose-300 font-semibold disabled:opacity-30 transition-colors"
                       onClick={() => handleRemoveMember(member.id)}
                       disabled={member.role === 'owner'} // Prevent removing owner
                     >
