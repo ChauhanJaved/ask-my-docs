@@ -4,8 +4,15 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Bot, Menu, X } from "lucide-react";
+import { Bot, Menu } from "lucide-react";
 import { siteConfig } from "@/config/site";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 
 export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -84,63 +91,74 @@ export function Header() {
           </Link>
         </div>
 
-        {/* Mobile Menu Button */}
-        <button
-          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          className="md:hidden p-2 rounded-md hover:bg-neutral-100 text-neutral-600 focus:outline-none"
-          aria-label="Toggle navigation menu"
-        >
-          {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-        </button>
-      </div>
+        {/* Mobile Shadcn Sheet Menu */}
+        <div className="md:hidden">
+          <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+            <SheetTrigger
+              aria-label="Toggle navigation menu"
+              className="p-2 rounded-lg text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100 focus:outline-none transition-colors"
+            >
+              <Menu className="w-6 h-6" />
+            </SheetTrigger>
+            <SheetContent side="right" className="w-[300px] sm:w-[350px] p-6 flex flex-col justify-between">
+              <div>
+                <SheetHeader className="pb-6 border-b border-neutral-100">
+                  <SheetTitle className="flex items-center space-x-2">
+                    <div className="w-7 h-7 rounded-md bg-gradient-to-tr from-brand-600 to-ai-500 flex items-center justify-center">
+                      <Bot className="w-4 h-4 text-white" />
+                    </div>
+                    <span className="font-bold text-neutral-950 font-display">FTChat</span>
+                  </SheetTitle>
+                </SheetHeader>
 
-      {/* Mobile Menu Dropdown */}
-      {mobileMenuOpen && (
-        <div className="md:hidden border-b border-neutral-200 bg-white px-6 py-4 space-y-4 shadow-xl">
-          <nav className="flex flex-col space-y-3 text-sm font-medium text-neutral-700">
-            <Link
-              href={isHomePage ? "#features" : "/#features"}
-              onClick={() => setMobileMenuOpen(false)}
-              className="hover:text-brand-600 transition-colors py-1"
-            >
-              Features
-            </Link>
-            <Link
-              href={isHomePage ? "#how-it-works" : "/#how-it-works"}
-              onClick={() => setMobileMenuOpen(false)}
-              className="hover:text-brand-600 transition-colors py-1"
-            >
-              How It Works
-            </Link>
-            <Link
-              href="/pricing"
-              onClick={() => setMobileMenuOpen(false)}
-              className="hover:text-brand-600 transition-colors py-1"
-            >
-              Pricing
-            </Link>
-            <Link
-              href={isHomePage ? "#faq" : "/#faq"}
-              onClick={() => setMobileMenuOpen(false)}
-              className="hover:text-brand-600 transition-colors py-1"
-            >
-              FAQs
-            </Link>
-          </nav>
-          <div className="pt-3 border-t border-neutral-100 flex flex-col space-y-2">
-            <Link href="/login" onClick={() => setMobileMenuOpen(false)}>
-              <Button variant="outline" className="w-full justify-center">
-                Log In
-              </Button>
-            </Link>
-            <Link href="/signup" onClick={() => setMobileMenuOpen(false)}>
-              <Button className="w-full bg-brand-600 hover:bg-brand-700 text-white justify-center">
-                Get Started Free
-              </Button>
-            </Link>
-          </div>
+                <nav className="flex flex-col space-y-4 pt-6 text-base font-medium text-neutral-700">
+                  <Link
+                    href={isHomePage ? "#features" : "/#features"}
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="hover:text-brand-600 transition-colors py-1"
+                  >
+                    Features
+                  </Link>
+                  <Link
+                    href={isHomePage ? "#how-it-works" : "/#how-it-works"}
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="hover:text-brand-600 transition-colors py-1"
+                  >
+                    How It Works
+                  </Link>
+                  <Link
+                    href="/pricing"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="hover:text-brand-600 transition-colors py-1"
+                  >
+                    Pricing
+                  </Link>
+                  <Link
+                    href={isHomePage ? "#faq" : "/#faq"}
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="hover:text-brand-600 transition-colors py-1"
+                  >
+                    FAQs
+                  </Link>
+                </nav>
+              </div>
+
+              <div className="pt-6 border-t border-neutral-100 flex flex-col space-y-3">
+                <Link href="/login" onClick={() => setMobileMenuOpen(false)}>
+                  <Button variant="outline" className="w-full justify-center">
+                    Log In
+                  </Button>
+                </Link>
+                <Link href="/signup" onClick={() => setMobileMenuOpen(false)}>
+                  <Button className="w-full bg-brand-600 hover:bg-brand-700 text-white justify-center">
+                    Get Started Free
+                  </Button>
+                </Link>
+              </div>
+            </SheetContent>
+          </Sheet>
         </div>
-      )}
+      </div>
     </header>
   );
 }
