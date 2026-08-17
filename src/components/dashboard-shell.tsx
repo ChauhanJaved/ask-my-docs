@@ -1,12 +1,13 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { Menu, Sparkles, X } from "lucide-react";
+import { Menu, Sparkles, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { DashboardNav } from "@/components/dashboard-nav";
 import { UserDropdown } from "@/components/user-dropdown";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { cn } from "@/lib/utils";
 
 interface DashboardShellProps {
   fullName: string;
@@ -26,48 +27,106 @@ export function DashboardShell({
   children,
 }: DashboardShellProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  // Read sidebar state preference from localStorage on mount
+  useEffect(() => {
+    setMounted(true);
+    const savedState = localStorage.getItem("ftchat_sidebar_collapsed");
+    if (savedState !== null) {
+      setIsCollapsed(savedState === "true");
+    }
+  }, []);
+
+  const toggleSidebar = () => {
+    const nextState = !isCollapsed;
+    setIsCollapsed(nextState);
+    localStorage.setItem("ftchat_sidebar_collapsed", String(nextState));
+  };
 
   return (
     <div className="flex h-screen bg-neutral-50 dark:bg-neutral-950 text-neutral-900 dark:text-neutral-100 font-sans transition-colors duration-300 overflow-hidden">
-      {/* Desktop Persistent Sidebar */}
-      <aside className="hidden md:flex md:w-64 border-r border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 flex-col shrink-0 transition-colors">
-        {/* Brand Header */}
-        <div className="p-5 border-b border-neutral-200 dark:border-neutral-800 flex items-center justify-between">
-          <Link href="/dashboard" className="flex flex-col">
-            <span className="text-xl font-bold font-display tracking-tight text-brand-600 dark:text-brand-400">
-              FTChat
-            </span>
-            <span className="text-[10px] font-semibold text-neutral-400 dark:text-neutral-500 uppercase tracking-wider">
-              Dashboard Hub
-            </span>
+      {/* Desktop Persistent / Collapsible Sidebar */}
+      <aside
+        className={cn(
+          "hidden md:flex border-r border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 flex-col shrink-0 transition-all duration-300 ease-in-out z-30",
+          mounted && isCollapsed ? "w-16" : "w-64"
+        )}
+      >
+        {/* Brand & Collapse Toggle Header */}
+        <div
+          className={cn(
+            "border-b border-neutral-200 dark:border-neutral-800 flex items-center transition-all duration-300",
+            isCollapsed ? "p-3 flex-col gap-2 justify-center" : "p-5 justify-between"
+          )}
+        >
+          <Link href="/dashboard" className="flex flex-col min-w-0">
+            {isCollapsed ? (
+              <span className="text-lg font-black font-display tracking-tight text-brand-600 dark:text-brand-400">
+                FT
+              </span>
+            ) : (
+              <>
+                <span className="text-xl font-bold font-display tracking-tight text-brand-600 dark:text-brand-400 truncate">
+                  FTChat
+                </span>
+                <span className="text-[10px] font-semibold text-neutral-400 dark:text-neutral-500 uppercase tracking-wider truncate">
+                  Dashboard Hub
+                </span>
+              </>
+            )}
           </Link>
+
+          {/* Desktop Collapse Toggle Button */}
+          <button
+            type="button"
+            onClick={toggleSidebar}
+            title={isCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
+            aria-label={isCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
+            className="p-1.5 rounded-lg text-neutral-500 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors focus:outline-none focus:ring-2 focus:ring-brand-500/20"
+          >
+            {isCollapsed ? (
+              <PanelLeftOpen className="w-4 h-4" />
+            ) : (
+              <PanelLeftClose className="w-4 h-4" />
+            )}
+          </button>
         </div>
 
         {/* Sidebar Nav links */}
-        <DashboardNav />
+        <DashboardNav isCollapsed={isCollapsed} />
 
-        {/* Desktop Sidebar Footer - Profile Quick View */}
-        <div className="p-4 border-t border-neutral-200 dark:border-neutral-800 bg-neutral-50/70 dark:bg-neutral-950/40">
-          <div className="flex items-center space-x-3 overflow-hidden">
+        {/* Desktop Sidebar Footer - User Quick View */}
+        <div className="p-3 border-t border-neutral-200 dark:border-neutral-800 bg-neutral-50/70 dark:bg-neutral-950/40">
+          <div
+            className={cn(
+              "flex items-center space-x-3 overflow-hidden",
+              isCollapsed && "justify-center space-x-0"
+            )}
+            title={isCollapsed ? `${fullName} (${roleDisplay})` : undefined}
+          >
             {avatarUrl ? (
               <img
                 src={avatarUrl}
                 alt={fullName}
-                className="h-9 w-9 rounded-full object-cover shrink-0 border border-neutral-200 dark:border-neutral-700"
+                className="h-8 w-8 rounded-full object-cover shrink-0 border border-neutral-200 dark:border-neutral-700"
               />
             ) : (
-              <div className="h-9 w-9 rounded-full bg-brand-600 text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-xs">
+              <div className="h-8 w-8 rounded-full bg-brand-600 text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-xs">
                 {initials}
               </div>
             )}
-            <div className="min-w-0 flex-1">
-              <p className="text-xs font-semibold text-neutral-800 dark:text-neutral-200 truncate">
-                {fullName}
-              </p>
-              <p className="text-[10px] text-neutral-500 dark:text-neutral-400 truncate">
-                {roleDisplay}
-              </p>
-            </div>
+            {!isCollapsed && (
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-semibold text-neutral-800 dark:text-neutral-200 truncate">
+                  {fullName}
+                </p>
+                <p className="text-[10px] text-neutral-500 dark:text-neutral-400 truncate">
+                  {roleDisplay}
+                </p>
+              </div>
+            )}
           </div>
         </div>
       </aside>

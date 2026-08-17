@@ -56,9 +56,10 @@ const settingsNavItems: NavItem[] = [
 
 interface DashboardNavProps {
   onItemClick?: () => void;
+  isCollapsed?: boolean;
 }
 
-export function DashboardNav({ onItemClick }: DashboardNavProps) {
+export function DashboardNav({ onItemClick, isCollapsed = false }: DashboardNavProps) {
   const pathname = usePathname();
 
   const isLinkActive = (href: string) => {
@@ -72,9 +73,11 @@ export function DashboardNav({ onItemClick }: DashboardNavProps) {
     <nav className="flex-1 px-3 py-4 space-y-6 overflow-y-auto">
       {/* Main Section */}
       <div className="space-y-1">
-        <div className="px-3 pb-2 text-[11px] font-bold tracking-wider text-neutral-400 dark:text-neutral-500 uppercase">
-          Workspace
-        </div>
+        {!isCollapsed && (
+          <div className="px-3 pb-2 text-[11px] font-bold tracking-wider text-neutral-400 dark:text-neutral-500 uppercase transition-opacity duration-200">
+            Workspace
+          </div>
+        )}
         {mainNavItems.map((item) => {
           const Icon = item.icon;
           const active = isLinkActive(item.href);
@@ -84,8 +87,10 @@ export function DashboardNav({ onItemClick }: DashboardNavProps) {
               key={item.href}
               href={item.href}
               onClick={onItemClick}
+              title={isCollapsed ? item.title : undefined}
               className={cn(
-                "flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-150 group",
+                "flex items-center gap-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-150 group",
+                isCollapsed ? "justify-center px-2" : "px-3",
                 active
                   ? "bg-brand-50 dark:bg-brand-950/60 text-brand-700 dark:text-brand-300 font-semibold shadow-xs"
                   : "text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800/70 hover:text-neutral-900 dark:hover:text-white"
@@ -99,7 +104,7 @@ export function DashboardNav({ onItemClick }: DashboardNavProps) {
                     : "text-neutral-400 dark:text-neutral-500 group-hover:text-neutral-700 dark:group-hover:text-neutral-300"
                 )}
               />
-              <span>{item.title}</span>
+              {!isCollapsed && <span>{item.title}</span>}
             </Link>
           );
         })}
@@ -107,9 +112,11 @@ export function DashboardNav({ onItemClick }: DashboardNavProps) {
 
       {/* Settings Section */}
       <div className="space-y-1">
-        <div className="px-3 pb-2 text-[11px] font-bold tracking-wider text-neutral-400 dark:text-neutral-500 uppercase">
-          Management
-        </div>
+        {!isCollapsed && (
+          <div className="px-3 pb-2 text-[11px] font-bold tracking-wider text-neutral-400 dark:text-neutral-500 uppercase transition-opacity duration-200">
+            Management
+          </div>
+        )}
         {settingsNavItems.map((item) => {
           const Icon = item.icon;
           const active = isLinkActive(item.href);
@@ -119,8 +126,10 @@ export function DashboardNav({ onItemClick }: DashboardNavProps) {
               key={item.href}
               href={item.href}
               onClick={onItemClick}
+              title={isCollapsed ? item.title : undefined}
               className={cn(
-                "flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-150 group",
+                "flex items-center gap-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-150 group",
+                isCollapsed ? "justify-center px-2" : "px-3",
                 active
                   ? "bg-brand-50 dark:bg-brand-950/60 text-brand-700 dark:text-brand-300 font-semibold shadow-xs"
                   : "text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800/70 hover:text-neutral-900 dark:hover:text-white"
@@ -134,7 +143,7 @@ export function DashboardNav({ onItemClick }: DashboardNavProps) {
                     : "text-neutral-400 dark:text-neutral-500 group-hover:text-neutral-700 dark:group-hover:text-neutral-300"
                 )}
               />
-              <span>{item.title}</span>
+              {!isCollapsed && <span>{item.title}</span>}
             </Link>
           );
         })}
