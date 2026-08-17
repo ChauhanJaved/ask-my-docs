@@ -1,11 +1,52 @@
 import Link from "next/link";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { createServerSupabaseClient } from "@/utils/supabase/server";
 
-export default function DashboardLayout({
+export default async function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const supabase = createServerSupabaseClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const { data: profile } = user
+    ? await supabase
+        .from("profiles")
+        .select("full_name, role")
+        .eq("id", user.id)
+        .maybeSingle()
+    : { data: null };
+
+  const fullName =
+    profile?.full_name ||
+    user?.user_metadata?.full_name ||
+    user?.user_metadata?.name ||
+    user?.email?.split("@")[0] ||
+    "User";
+
+  const avatarUrl =
+    user?.user_metadata?.avatar_url ||
+    user?.user_metadata?.picture ||
+    null;
+
+  const getInitials = (name: string) => {
+    if (!name) return "U";
+    const parts = name.trim().split(/\s+/).filter(Boolean);
+    if (parts.length === 0) return "U";
+    if (parts.length === 1) {
+      return parts[0].slice(0, 2).toUpperCase();
+    }
+    return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
+  };
+
+  const initials = getInitials(fullName);
+  const roleDisplay = profile?.role
+    ? profile.role.charAt(0).toUpperCase() + profile.role.slice(1)
+    : "Workspace Owner";
+
   return (
     <div className="flex h-screen bg-neutral-50 dark:bg-neutral-950 text-neutral-900 dark:text-neutral-100 font-sans transition-colors duration-300">
       {/* Sidebar */}
@@ -65,13 +106,21 @@ export default function DashboardLayout({
 
         {/* User Footer */}
         <div className="p-4 border-t border-neutral-200 dark:border-neutral-800 bg-neutral-50/50 dark:bg-neutral-950/50">
-          <div className="flex items-center space-x-3">
-            <div className="h-9 w-9 rounded-full bg-brand-500 text-white flex items-center justify-center font-bold text-sm">
-              JD
-            </div>
-            <div>
-              <p className="text-xs font-semibold text-neutral-800 dark:text-neutral-200">John Doe</p>
-              <p className="text-[10px] text-neutral-500 dark:text-neutral-400">Workspace Owner</p>
+          <div className="flex items-center space-x-3 overflow-hidden">
+            {avatarUrl ? (
+              <img
+                src={avatarUrl}
+                alt={fullName}
+                className="h-9 w-9 rounded-full object-cover shrink-0 border border-neutral-200 dark:border-neutral-700"
+              />
+            ) : (
+              <div className="h-9 w-9 rounded-full bg-brand-500 text-white flex items-center justify-center font-bold text-sm shrink-0">
+                {initials}
+              </div>
+            )}
+            <div className="min-w-0 flex-1">
+              <p className="text-xs font-semibold text-neutral-800 dark:text-neutral-200 truncate">{fullName}</p>
+              <p className="text-[10px] text-neutral-500 dark:text-neutral-400 truncate">{roleDisplay}</p>
             </div>
           </div>
         </div>
@@ -98,3 +147,4 @@ export default function DashboardLayout({
     </div>
   );
 }
+
