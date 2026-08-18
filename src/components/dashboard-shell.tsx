@@ -133,34 +133,6 @@ export function DashboardShell({
 
         {/* Sidebar Nav links */}
         <DashboardNav isCollapsed={isCollapsed} />
-
-        {/* Desktop Sidebar Footer - User Quick View */}
-        <div className="p-3 border-t border-neutral-200 dark:border-neutral-800 bg-neutral-50/70 dark:bg-neutral-950/40">
-          <div
-            className={cn(
-              "flex items-center space-x-3 overflow-hidden",
-              isCollapsed && "justify-center space-x-0"
-            )}
-            title={isCollapsed ? `${fullName} (${roleDisplay})` : undefined}
-          >
-            <AvatarImage
-              src={avatarUrl}
-              alt={fullName}
-              initials={initials}
-              className="h-8 w-8 rounded-full object-cover shrink-0 border border-neutral-200 dark:border-neutral-700"
-            />
-            {!isCollapsed && (
-              <div className="min-w-0 flex-1">
-                <p className="text-xs font-semibold text-neutral-800 dark:text-neutral-200 truncate">
-                  {fullName}
-                </p>
-                <p className="text-[10px] text-neutral-500 dark:text-neutral-400 truncate">
-                  {roleDisplay}
-                </p>
-              </div>
-            )}
-          </div>
-        </div>
       </aside>
 
       {/* Main Workspace Area */}
@@ -196,30 +168,6 @@ export function DashboardShell({
 
                 {/* Mobile Drawer Navigation */}
                 <DashboardNav onItemClick={() => setMobileOpen(false)} />
-
-                {/* Mobile Drawer Footer */}
-                <div className="p-4 border-t border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950">
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="text-xs text-neutral-500 dark:text-neutral-400 font-medium">Theme Mode</span>
-                    <ThemeToggle />
-                  </div>
-                  <div className="flex items-center gap-3 pt-2 border-t border-neutral-200/60 dark:border-neutral-800/60">
-                    <AvatarImage
-                      src={avatarUrl}
-                      alt={fullName}
-                      initials={initials}
-                      className="h-9 w-9 rounded-full object-cover shrink-0 border border-neutral-200 dark:border-neutral-700"
-                    />
-                    <div className="min-w-0 flex-1">
-                      <p className="text-xs font-semibold text-neutral-800 dark:text-neutral-200 truncate">
-                        {fullName}
-                      </p>
-                      <span className="inline-flex items-center gap-1 text-[10px] bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 font-semibold px-2 py-0.2 rounded-full">
-                        Free Plan
-                      </span>
-                    </div>
-                  </div>
-                </div>
               </SheetContent>
             </Sheet>
 
@@ -230,18 +178,10 @@ export function DashboardShell({
 
           {/* Right Side Header Controls */}
           <div className="flex items-center gap-2 sm:gap-3">
-            {/* Free Plan Badge (visible on tablet/desktop) */}
-            <span className="hidden sm:inline-flex items-center gap-1 text-xs bg-emerald-50 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/80 font-semibold px-2.5 py-1 rounded-full shadow-2xs">
-              <Sparkles className="w-3 h-3 text-emerald-500" />
-              Free Plan
-            </span>
+            {/* Theme Toggle (visible on mobile and desktop) */}
+            <ThemeToggle />
 
-            {/* Desktop Theme Toggle */}
-            <div className="hidden sm:block">
-              <ThemeToggle />
-            </div>
-
-            {/* Interactive User Dropdown (containing Sign Out, Profile & Mobile Theme/Plan) */}
+            {/* Interactive User Dropdown */}
             <UserDropdown
               fullName={fullName}
               roleDisplay={roleDisplay}

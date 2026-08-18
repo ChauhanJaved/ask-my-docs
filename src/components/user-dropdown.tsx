@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   User,
+  Users,
   LogOut,
   ChevronDown,
   Sparkles,
@@ -115,25 +116,32 @@ export function UserDropdown({
           role="menu"
         >
           {/* User Header Info */}
-          <div className="px-4 py-3 border-b border-neutral-100 dark:border-neutral-800">
-            <div className="flex items-center justify-between mb-1.5">
+          <div className="px-4 py-3 border-b border-neutral-100 dark:border-neutral-800 flex items-center gap-3">
+            {avatarUrl && !imgError ? (
+              <img
+                src={avatarUrl}
+                alt={fullName}
+                referrerPolicy="no-referrer"
+                className="h-9 w-9 rounded-full object-cover shrink-0 border border-neutral-200 dark:border-neutral-700"
+              />
+            ) : (
+              <div className="h-9 w-9 rounded-full bg-brand-600 text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-xs">
+                {initials}
+              </div>
+            )}
+            <div className="min-w-0 flex-1">
               <p className="text-xs font-bold text-neutral-900 dark:text-neutral-100 truncate">
                 {fullName}
               </p>
-              {/* Responsive Free Plan Badge */}
-              <span className="inline-flex items-center gap-1 text-[10px] bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/80 font-bold px-2 py-0.5 rounded-full">
-                <Sparkles className="w-2.5 h-2.5 text-emerald-500" />
-                Free Plan
+              {userEmail && (
+                <p className="text-[11px] text-neutral-500 dark:text-neutral-400 truncate">
+                  {userEmail}
+                </p>
+              )}
+              <span className="inline-block mt-0.5 text-[10px] font-semibold text-neutral-400 dark:text-neutral-500">
+                {roleDisplay}
               </span>
             </div>
-            {userEmail && (
-              <p className="text-[11px] text-neutral-500 dark:text-neutral-400 truncate">
-                {userEmail}
-              </p>
-            )}
-            <p className="text-[10px] text-neutral-400 dark:text-neutral-500 font-medium mt-0.5">
-              Role: {roleDisplay}
-            </p>
           </div>
 
           {/* Nav Items */}
@@ -146,6 +154,15 @@ export function UserDropdown({
             >
               <Sliders className="w-3.5 h-3.5 text-neutral-400" />
               <span>Widget Settings</span>
+            </Link>
+            <Link
+              href="/dashboard/settings/team"
+              onClick={() => setIsOpen(false)}
+              className="flex items-center gap-2.5 px-4 py-2 text-xs font-medium text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+              role="menuitem"
+            >
+              <Users className="w-3.5 h-3.5 text-neutral-400" />
+              <span>Team Settings</span>
             </Link>
             <Link
               href="/dashboard/settings/billing"
