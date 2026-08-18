@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 
 import { createBrowserSupabaseClient } from "@/utils/supabase/client";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 export default function OnboardingPage() {
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
@@ -184,22 +185,25 @@ export default function OnboardingPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-slate-950 dark:bg-neutral-950 text-slate-100 dark:text-neutral-100 flex flex-col justify-between selection:bg-brand-500 selection:text-white relative overflow-hidden font-sans transition-colors duration-300">
+    <div className="min-h-screen bg-background text-foreground flex flex-col justify-between selection:bg-brand-500 selection:text-white relative overflow-hidden font-sans transition-colors duration-300">
       {/* Background Glow Accents */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[350px] bg-gradient-to-b from-brand-600/20 via-violet-600/10 to-transparent blur-3xl pointer-events-none" />
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[350px] bg-gradient-to-b from-brand-600/15 via-violet-600/10 to-transparent dark:from-brand-600/20 dark:via-violet-600/10 blur-3xl pointer-events-none" />
       <div className="absolute bottom-0 right-0 w-[500px] h-[300px] bg-brand-500/10 blur-3xl pointer-events-none" />
 
       {/* Header */}
       <header className="max-w-5xl mx-auto w-full flex items-center justify-between px-6 py-6 z-10">
-        <Link href="/" className="flex items-center gap-2 font-display text-xl font-bold tracking-tight text-white">
+        <Link href="/" className="flex items-center gap-2 font-display text-xl font-bold tracking-tight text-foreground">
           <div className="h-8 w-8 rounded-lg bg-gradient-to-tr from-brand-600 to-violet-500 flex items-center justify-center text-white shadow-lg shadow-brand-500/30">
             <Sparkles className="w-4 h-4" />
           </div>
           <span>FTChat</span>
         </Link>
-        <div className="flex items-center gap-2 bg-slate-900/80 dark:bg-neutral-900/80 border border-slate-800 dark:border-neutral-800 rounded-full px-3 py-1 text-xs text-slate-400 dark:text-neutral-400 backdrop-blur-md">
-          <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-          <span>Interactive Setup</span>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 bg-card/80 border border-border rounded-full px-3 py-1 text-xs text-muted-foreground backdrop-blur-md shadow-xs">
+            <ShieldCheck className="w-3.5 h-3.5 text-emerald-500 dark:text-emerald-400" />
+            <span>Interactive Setup</span>
+          </div>
+          <ThemeToggle />
         </div>
       </header>
 
@@ -207,8 +211,8 @@ export default function OnboardingPage() {
       <main className="max-w-2xl mx-auto w-full px-6 py-8 z-10 flex-1 flex flex-col justify-center">
         {/* Progress Bar */}
         <div className="mb-8">
-          <div className="flex justify-between items-center text-xs font-medium mb-3 text-slate-400 dark:text-neutral-400">
-            <span className="flex items-center gap-1.5 text-brand-400">
+          <div className="flex justify-between items-center text-xs font-medium mb-3 text-muted-foreground">
+            <span className="flex items-center gap-1.5 text-brand-600 dark:text-brand-400">
               <Sparkles className="w-3.5 h-3.5" /> Step {step} of 4
             </span>
             <span>
@@ -218,7 +222,7 @@ export default function OnboardingPage() {
               {step === 4 && "Ready to Launch"}
             </span>
           </div>
-          <div className="h-2 w-full bg-slate-900 dark:bg-neutral-900 rounded-full p-0.5 border border-slate-800 dark:border-neutral-800 overflow-hidden">
+          <div className="h-2 w-full bg-muted rounded-full p-0.5 border border-border overflow-hidden">
             <div
               className="h-full bg-gradient-to-r from-brand-500 to-violet-500 rounded-full transition-all duration-500 ease-out"
               style={{ width: `${(step / 4) * 100}%` }}
@@ -228,20 +232,20 @@ export default function OnboardingPage() {
 
         {/* STEP 1: Workspace & Bot Customization */}
         {step === 1 && (
-          <div className="bg-slate-900/90 dark:bg-neutral-900/90 border border-slate-800/80 dark:border-neutral-800/80 rounded-2xl p-6 sm:p-8 shadow-2xl backdrop-blur-xl animate-in fade-in slide-in-from-bottom-3 duration-300">
+          <div className="bg-card/90 border border-border rounded-2xl p-6 sm:p-8 shadow-xl backdrop-blur-xl animate-in fade-in slide-in-from-bottom-3 duration-300">
             <div className="flex items-center gap-3 mb-6">
-              <div className="p-2.5 rounded-xl bg-brand-500/10 border border-brand-500/20 text-brand-400">
+              <div className="p-2.5 rounded-xl bg-brand-500/10 border border-brand-500/20 text-brand-600 dark:text-brand-400">
                 <Building2 className="w-5 h-5" />
               </div>
               <div>
-                <h2 className="text-xl font-bold text-white tracking-tight">Configure Your AI Assistant</h2>
-                <p className="text-xs text-slate-400 dark:text-neutral-400">Set your organization name and bot style</p>
+                <h2 className="text-xl font-bold text-foreground tracking-tight">Configure Your AI Assistant</h2>
+                <p className="text-xs text-muted-foreground">Set your organization name and bot style</p>
               </div>
             </div>
 
             <form className="space-y-5" onSubmit={(e) => { e.preventDefault(); handleNextStep(); }}>
               <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300 dark:text-neutral-300 mb-2">
+                <label className="block text-xs font-semibold uppercase tracking-wider text-foreground/90 mb-2">
                   Organization / Company Name
                 </label>
                 <input
@@ -249,49 +253,49 @@ export default function OnboardingPage() {
                   value={orgName}
                   onChange={(e) => setOrgName(e.target.value)}
                   placeholder="e.g. Acme Inc"
-                  className="w-full bg-slate-950 dark:bg-neutral-950 border border-slate-800 dark:border-neutral-800 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-500 dark:placeholder-neutral-500 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-all"
+                  className="w-full bg-background border border-input rounded-xl px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-all"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300 dark:text-neutral-300 mb-2">
+                <label className="block text-xs font-semibold uppercase tracking-wider text-foreground/90 mb-2">
                   Bot Name
                 </label>
                 <div className="relative">
-                  <Bot className="w-4 h-4 text-slate-500 dark:text-neutral-500 absolute left-3.5 top-3" />
+                  <Bot className="w-4 h-4 text-muted-foreground absolute left-3.5 top-3" />
                   <input
                     type="text"
                     value={botName}
                     onChange={(e) => setBotName(e.target.value)}
                     placeholder="e.g. FTChat Support Assistant"
-                    className="w-full bg-slate-950 dark:bg-neutral-950 border border-slate-800 dark:border-neutral-800 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white placeholder-slate-500 dark:placeholder-neutral-500 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-all"
+                    className="w-full bg-background border border-input rounded-xl pl-10 pr-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-all"
                     required
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300 dark:text-neutral-300 mb-2">
+                <label className="block text-xs font-semibold uppercase tracking-wider text-foreground/90 mb-2">
                   Welcome Greeting Message
                 </label>
                 <div className="relative">
-                  <MessageSquare className="w-4 h-4 text-slate-500 dark:text-neutral-500 absolute left-3.5 top-3" />
+                  <MessageSquare className="w-4 h-4 text-muted-foreground absolute left-3.5 top-3" />
                   <input
                     type="text"
                     value={greetingMessage}
                     onChange={(e) => setGreetingMessage(e.target.value)}
                     placeholder="e.g. Hi! How can I help you today?"
-                    className="w-full bg-slate-950 dark:bg-neutral-950 border border-slate-800 dark:border-neutral-800 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white placeholder-slate-500 dark:placeholder-neutral-500 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-all"
+                    className="w-full bg-background border border-input rounded-xl pl-10 pr-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-all"
                     required
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300 dark:text-neutral-300 mb-2 flex items-center justify-between">
+                <label className="block text-xs font-semibold uppercase tracking-wider text-foreground/90 mb-2 flex items-center justify-between">
                   <span>Widget Brand Color</span>
-                  <span className="text-[10px] text-slate-400 dark:text-neutral-400 capitalize">{primaryColor}</span>
+                  <span className="text-[10px] text-muted-foreground capitalize">{primaryColor}</span>
                 </label>
                 <div className="flex items-center gap-3">
                   {presetColors.map((color) => (
@@ -301,7 +305,7 @@ export default function OnboardingPage() {
                       onClick={() => setPrimaryColor(color.hex)}
                       className={`h-9 w-9 rounded-xl flex items-center justify-center transition-all ${
                         primaryColor === color.hex
-                          ? "ring-2 ring-white scale-110 shadow-lg shadow-brand-500/20"
+                          ? "ring-2 ring-primary scale-110 shadow-lg shadow-brand-500/20"
                           : "hover:scale-105 opacity-80"
                       }`}
                       style={{ backgroundColor: color.hex }}
@@ -332,66 +336,66 @@ export default function OnboardingPage() {
 
         {/* STEP 2: Interactive Product Overview */}
         {step === 2 && (
-          <div className="bg-slate-900/90 dark:bg-neutral-900/90 border border-slate-800/80 dark:border-neutral-800/80 rounded-2xl p-6 sm:p-8 shadow-2xl backdrop-blur-xl animate-in fade-in slide-in-from-bottom-3 duration-300">
+          <div className="bg-card/90 border border-border rounded-2xl p-6 sm:p-8 shadow-xl backdrop-blur-xl animate-in fade-in slide-in-from-bottom-3 duration-300">
             <div className="flex items-center gap-3 mb-6">
-              <div className="p-2.5 rounded-xl bg-violet-500/10 border border-violet-500/20 text-violet-400">
+              <div className="p-2.5 rounded-xl bg-violet-500/10 border border-violet-500/20 text-violet-600 dark:text-violet-400">
                 <Layers className="w-5 h-5" />
               </div>
               <div>
-                <h2 className="text-xl font-bold text-white tracking-tight">How FTChat Works</h2>
-                <p className="text-xs text-slate-400 dark:text-neutral-400">Transform your documentation into a smart AI agent in 3 steps</p>
+                <h2 className="text-xl font-bold text-foreground tracking-tight">How FTChat Works</h2>
+                <p className="text-xs text-muted-foreground">Transform your documentation into a smart AI agent in 3 steps</p>
               </div>
             </div>
 
             <div className="grid grid-cols-1 gap-4 mb-8">
-              <div className="p-4 rounded-xl bg-slate-950/60 dark:bg-neutral-950/60 border border-slate-800/80 dark:border-neutral-800/80 flex items-start gap-4">
-                <div className="h-10 w-10 rounded-lg bg-brand-500/10 border border-brand-500/30 flex items-center justify-center text-brand-400 shrink-0 font-bold">
+              <div className="p-4 rounded-xl bg-muted/40 border border-border flex items-start gap-4">
+                <div className="h-10 w-10 rounded-lg bg-brand-500/10 border border-brand-500/30 flex items-center justify-center text-brand-600 dark:text-brand-400 shrink-0 font-bold">
                   1
                 </div>
                 <div>
-                  <h4 className="text-sm font-semibold text-white mb-1 flex items-center gap-2">
-                    <FileText className="w-4 h-4 text-brand-400" />
+                  <h4 className="text-sm font-semibold text-foreground mb-1 flex items-center gap-2">
+                    <FileText className="w-4 h-4 text-brand-600 dark:text-brand-400" />
                     <span>Upload Documents or Paste Web URLs</span>
                   </h4>
-                  <p className="text-xs text-slate-400 dark:text-neutral-400 leading-relaxed">
+                  <p className="text-xs text-muted-foreground leading-relaxed">
                     Upload PDFs, TXT, DOCX files or crawl your documentation website. FTChat extracts content automatically.
                   </p>
                 </div>
               </div>
 
-              <div className="p-4 rounded-xl bg-slate-950/60 dark:bg-neutral-950/60 border border-slate-800/80 dark:border-neutral-800/80 flex items-start gap-4">
-                <div className="h-10 w-10 rounded-lg bg-violet-500/10 border border-violet-500/30 flex items-center justify-center text-violet-400 shrink-0 font-bold">
+              <div className="p-4 rounded-xl bg-muted/40 border border-border flex items-start gap-4">
+                <div className="h-10 w-10 rounded-lg bg-violet-500/10 border border-violet-500/30 flex items-center justify-center text-violet-600 dark:text-violet-400 shrink-0 font-bold">
                   2
                 </div>
                 <div>
-                  <h4 className="text-sm font-semibold text-white mb-1 flex items-center gap-2">
-                    <Sparkles className="w-4 h-4 text-violet-400" />
+                  <h4 className="text-sm font-semibold text-foreground mb-1 flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-violet-600 dark:text-violet-400" />
                     <span>Automated AI Vector Training (RAG)</span>
                   </h4>
-                  <p className="text-xs text-slate-400 dark:text-neutral-400 leading-relaxed">
+                  <p className="text-xs text-muted-foreground leading-relaxed">
                     Text is parsed into semantic chunks and stored in pgvector embeddings, guaranteeing accurate answers strictly from your content.
                   </p>
                 </div>
               </div>
 
-              <div className="p-4 rounded-xl bg-slate-950/60 dark:bg-neutral-950/60 border border-slate-800/80 dark:border-neutral-800/80 flex items-start gap-4">
-                <div className="h-10 w-10 rounded-lg bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shrink-0 font-bold">
+              <div className="p-4 rounded-xl bg-muted/40 border border-border flex items-start gap-4">
+                <div className="h-10 w-10 rounded-lg bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400 shrink-0 font-bold">
                   3
                 </div>
                 <div>
-                  <h4 className="text-sm font-semibold text-white mb-1 flex items-center gap-2">
-                    <Code2 className="w-4 h-4 text-emerald-400" />
+                  <h4 className="text-sm font-semibold text-foreground mb-1 flex items-center gap-2">
+                    <Code2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                     <span>Embed Script Widget on Any Website</span>
                   </h4>
-                  <p className="text-xs text-slate-400 dark:text-neutral-400 leading-relaxed">
-                    Copy a single <code className="text-emerald-400 bg-slate-900 dark:bg-neutral-900 px-1.5 py-0.5 rounded text-[11px] font-mono">&lt;script&gt;</code> snippet onto your site or web app to launch an instant AI customer support chat window.
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    Copy a single <code className="text-emerald-600 dark:text-emerald-400 bg-muted border border-border px-1.5 py-0.5 rounded text-[11px] font-mono">&lt;script&gt;</code> snippet onto your site or web app to launch an instant AI customer support chat window.
                   </p>
                 </div>
               </div>
             </div>
 
             <div className="flex justify-between items-center pt-2">
-              <Button type="button" variant="outline" onClick={handlePrevStep} className="border-slate-700 dark:border-neutral-700 text-slate-300 dark:text-neutral-300 hover:bg-slate-800 dark:hover:bg-neutral-800">
+              <Button type="button" variant="outline" onClick={handlePrevStep} className="border-border text-foreground hover:bg-accent hover:text-accent-foreground">
                 Back
               </Button>
               <Button type="button" onClick={handleNextStep} className="bg-brand-600 hover:bg-brand-500 text-white gap-2 px-6 rounded-xl">
@@ -404,23 +408,23 @@ export default function OnboardingPage() {
 
         {/* STEP 3: Quick Start / First Knowledge Seed */}
         {step === 3 && (
-          <div className="bg-slate-900/90 dark:bg-neutral-900/90 border border-slate-800/80 dark:border-neutral-800/80 rounded-2xl p-6 sm:p-8 shadow-2xl backdrop-blur-xl animate-in fade-in slide-in-from-bottom-3 duration-300">
+          <div className="bg-card/90 border border-border rounded-2xl p-6 sm:p-8 shadow-xl backdrop-blur-xl animate-in fade-in slide-in-from-bottom-3 duration-300">
             <div className="flex items-center gap-3 mb-6">
-              <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
+              <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400">
                 <Globe className="w-5 h-5" />
               </div>
               <div>
-                <h2 className="text-xl font-bold text-white tracking-tight">Add Your First Knowledge Base Item</h2>
-                <p className="text-xs text-slate-400 dark:text-neutral-400">Provide a website URL or skip to add documents later in the dashboard</p>
+                <h2 className="text-xl font-bold text-foreground tracking-tight">Add Your First Knowledge Base Item</h2>
+                <p className="text-xs text-muted-foreground">Provide a website URL or skip to add documents later in the dashboard</p>
               </div>
             </div>
 
-            <div className="flex items-center gap-2 mb-6 p-1 bg-slate-950 dark:bg-neutral-950 rounded-xl border border-slate-800 dark:border-neutral-800">
+            <div className="flex items-center gap-2 mb-6 p-1 bg-muted rounded-xl border border-border">
               <button
                 type="button"
                 onClick={() => setIngestType("url")}
                 className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-all flex items-center justify-center gap-2 ${
-                  ingestType === "url" ? "bg-brand-600 text-white shadow" : "text-slate-400 dark:text-neutral-400 hover:text-slate-200 dark:hover:text-neutral-200"
+                  ingestType === "url" ? "bg-brand-600 text-white shadow" : "text-muted-foreground hover:text-foreground"
                 }`}
               >
                 <Globe className="w-3.5 h-3.5" />
@@ -430,7 +434,7 @@ export default function OnboardingPage() {
                 type="button"
                 onClick={() => setIngestType("file")}
                 className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-all flex items-center justify-center gap-2 ${
-                  ingestType === "file" ? "bg-brand-600 text-white shadow" : "text-slate-400 dark:text-neutral-400 hover:text-slate-200 dark:hover:text-neutral-200"
+                  ingestType === "file" ? "bg-brand-600 text-white shadow" : "text-muted-foreground hover:text-foreground"
                 }`}
               >
                 <FileText className="w-3.5 h-3.5" />
@@ -441,7 +445,7 @@ export default function OnboardingPage() {
             {ingestType === "url" ? (
               <div className="space-y-4 mb-8">
                 <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300 dark:text-neutral-300 mb-2">
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-foreground/90 mb-2">
                     Documentation or FAQ URL
                   </label>
                   <input
@@ -449,27 +453,27 @@ export default function OnboardingPage() {
                     value={websiteUrl}
                     onChange={(e) => setWebsiteUrl(e.target.value)}
                     placeholder="https://example.com/docs"
-                    className="w-full bg-slate-950 dark:bg-neutral-950 border border-slate-800 dark:border-neutral-800 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-500 dark:placeholder-neutral-500 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500"
+                    className="w-full bg-background border border-input rounded-xl px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500"
                   />
                 </div>
-                <p className="text-[11px] text-slate-500 dark:text-neutral-400">
+                <p className="text-[11px] text-muted-foreground">
                   Tip: You can add multiple websites and PDF documents from your dashboard anytime.
                 </p>
               </div>
             ) : (
-              <div className="mb-8 border-2 border-dashed border-slate-800 dark:border-neutral-800 hover:border-brand-500/50 rounded-2xl p-6 text-center bg-slate-950/40 dark:bg-neutral-950/40 transition-all cursor-pointer">
-                <FileText className="w-8 h-8 text-slate-500 dark:text-neutral-400 mx-auto mb-2" />
-                <p className="text-xs font-medium text-slate-300 dark:text-neutral-300 mb-1">Click to select or drop a file (PDF, TXT, DOCX)</p>
-                <p className="text-[10px] text-slate-500 dark:text-neutral-400">Up to 10MB file size</p>
+              <div className="mb-8 border-2 border-dashed border-border hover:border-brand-500/50 rounded-2xl p-6 text-center bg-muted/30 transition-all cursor-pointer">
+                <FileText className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
+                <p className="text-xs font-medium text-foreground mb-1">Click to select or drop a file (PDF, TXT, DOCX)</p>
+                <p className="text-[10px] text-muted-foreground">Up to 10MB file size</p>
               </div>
             )}
 
             <div className="flex justify-between items-center pt-2">
-              <Button type="button" variant="outline" onClick={handlePrevStep} className="border-slate-700 dark:border-neutral-700 text-slate-300 dark:text-neutral-300 hover:bg-slate-800 dark:hover:bg-neutral-800">
+              <Button type="button" variant="outline" onClick={handlePrevStep} className="border-border text-foreground hover:bg-accent hover:text-accent-foreground">
                 Back
               </Button>
               <div className="flex items-center gap-2">
-                <Button type="button" variant="ghost" onClick={handleNextStep} className="text-slate-400 dark:text-neutral-400 hover:text-slate-200 dark:hover:text-neutral-200">
+                <Button type="button" variant="ghost" onClick={handleNextStep} className="text-muted-foreground hover:text-foreground">
                   Skip for Now
                 </Button>
                 <Button type="button" onClick={handleNextStep} className="bg-brand-600 hover:bg-brand-500 text-white gap-2 px-6 rounded-xl">
@@ -483,40 +487,39 @@ export default function OnboardingPage() {
 
         {/* STEP 4: Ready to Launch */}
         {step === 4 && (
-          <div className="bg-slate-900/90 dark:bg-neutral-900/90 border border-slate-800/80 dark:border-neutral-800/80 rounded-2xl p-6 sm:p-8 shadow-2xl backdrop-blur-xl text-center animate-in fade-in slide-in-from-bottom-3 duration-300">
+          <div className="bg-card/90 border border-border rounded-2xl p-6 sm:p-8 shadow-xl backdrop-blur-xl text-center animate-in fade-in slide-in-from-bottom-3 duration-300">
             <div className="h-16 w-16 rounded-2xl bg-gradient-to-tr from-brand-500 to-violet-500 flex items-center justify-center text-white mx-auto mb-6 shadow-xl shadow-brand-500/30">
               <CheckCircle2 className="w-8 h-8" />
             </div>
 
-            <h2 className="text-2xl font-bold text-white tracking-tight mb-2">You&apos;re All Set!</h2>
-            <p className="text-sm text-slate-400 dark:text-neutral-400 max-w-md mx-auto mb-6">
-              Your organization workspace <span className="text-white font-medium">&quot;{orgName || "FTChat Workspace"}&quot;</span> has been created.
+            <h2 className="text-2xl font-bold text-foreground tracking-tight mb-2">You&apos;re All Set!</h2>
+            <p className="text-sm text-muted-foreground max-w-md mx-auto mb-6">
+              Your organization workspace <span className="text-foreground font-medium">&quot;{orgName || "FTChat Workspace"}&quot;</span> has been created.
             </p>
 
             {error && (
-              <div className="bg-red-500/10 border border-red-500/30 text-red-400 p-3 rounded-xl mb-6 text-xs text-left max-w-md mx-auto">
+              <div className="bg-red-500/10 border border-red-500/30 text-red-500 dark:text-red-400 p-3 rounded-xl mb-6 text-xs text-left max-w-md mx-auto">
                 <p className="font-semibold mb-0.5">Could not complete setup:</p>
                 <p>{error}</p>
               </div>
             )}
 
-
-            <div className="bg-slate-950/80 dark:bg-neutral-950/80 border border-slate-800 dark:border-neutral-800 rounded-xl p-4 text-left max-w-md mx-auto mb-8 space-y-2">
-              <div className="flex justify-between text-xs py-1 border-b border-slate-800/60 dark:border-neutral-800/60">
-                <span className="text-slate-400 dark:text-neutral-400">Assistant Name:</span>
-                <span className="text-white font-medium">{botName}</span>
+            <div className="bg-muted/50 border border-border rounded-xl p-4 text-left max-w-md mx-auto mb-8 space-y-2">
+              <div className="flex justify-between text-xs py-1 border-b border-border">
+                <span className="text-muted-foreground">Assistant Name:</span>
+                <span className="text-foreground font-medium">{botName}</span>
               </div>
-              <div className="flex justify-between text-xs py-1 border-b border-slate-800/60 dark:border-neutral-800/60">
-                <span className="text-slate-400 dark:text-neutral-400">Brand Color:</span>
-                <span className="flex items-center gap-1.5 text-white font-medium">
+              <div className="flex justify-between text-xs py-1 border-b border-border">
+                <span className="text-muted-foreground">Brand Color:</span>
+                <span className="flex items-center gap-1.5 text-foreground font-medium">
                   <span className="h-2.5 w-2.5 rounded-full inline-block" style={{ backgroundColor: primaryColor }} />
                   {primaryColor}
                 </span>
               </div>
               <div className="flex justify-between text-xs py-1">
-                <span className="text-slate-400 dark:text-neutral-400">Status:</span>
-                <span className="text-emerald-400 font-medium flex items-center gap-1">
-                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                <span className="text-muted-foreground">Status:</span>
+                <span className="text-emerald-600 dark:text-emerald-400 font-medium flex items-center gap-1">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
                   Ready to train & embed
                 </span>
               </div>
@@ -541,7 +544,7 @@ export default function OnboardingPage() {
       </main>
 
       {/* Footer */}
-      <footer className="max-w-5xl mx-auto w-full text-center text-xs text-slate-500 dark:text-neutral-400 py-6 z-10">
+      <footer className="max-w-5xl mx-auto w-full text-center text-xs text-muted-foreground py-6 z-10">
         <p>© {new Date().getFullYear()} FTChat. Multi-tenant AI Support System.</p>
       </footer>
     </div>
