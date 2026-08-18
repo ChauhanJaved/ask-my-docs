@@ -5,7 +5,16 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { Bot, Menu } from "lucide-react";
+import {
+  Bot,
+  Menu,
+  Sparkles,
+  Zap,
+  CreditCard,
+  HelpCircle,
+  ArrowRight,
+  ChevronRight,
+} from "lucide-react";
 import { siteConfig } from "@/config/site";
 import {
   Sheet,
@@ -20,6 +29,33 @@ export function Header() {
   const pathname = usePathname();
 
   const isHomePage = pathname === "/";
+
+  const navItems = [
+    {
+      label: "Features",
+      href: isHomePage ? "#features" : "/#features",
+      icon: Sparkles,
+      isActive: false,
+    },
+    {
+      label: "How It Works",
+      href: isHomePage ? "#how-it-works" : "/#how-it-works",
+      icon: Zap,
+      isActive: false,
+    },
+    {
+      label: "Pricing",
+      href: "/pricing",
+      icon: CreditCard,
+      isActive: pathname === "/pricing",
+    },
+    {
+      label: "FAQs",
+      href: isHomePage ? "#faq" : "/#faq",
+      icon: HelpCircle,
+      isActive: false,
+    },
+  ];
 
   return (
     <header className="border-b border-neutral-200 dark:border-neutral-800 bg-white/80 dark:bg-neutral-950/80 backdrop-blur-md sticky top-0 z-50 transition-colors duration-300">
@@ -103,58 +139,69 @@ export function Header() {
             >
               <Menu className="w-6 h-6" />
             </SheetTrigger>
-            <SheetContent side="right" className="w-[300px] sm:w-[350px] p-6 flex flex-col justify-between bg-white dark:bg-neutral-950 border-l border-neutral-200 dark:border-neutral-800">
+            <SheetContent
+              side="right"
+              className="w-[300px] sm:w-[350px] p-6 flex flex-col justify-between bg-white dark:bg-neutral-950 border-l border-neutral-200 dark:border-neutral-800"
+            >
               <div>
                 <SheetHeader className="pb-6 border-b border-neutral-100 dark:border-neutral-800">
                   <SheetTitle className="flex items-center space-x-2">
                     <div className="w-7 h-7 rounded-md bg-gradient-to-tr from-brand-600 to-ai-500 flex items-center justify-center">
                       <Bot className="w-4 h-4 text-white" />
                     </div>
-                    <span className="font-bold text-neutral-950 dark:text-white font-display">FTChat</span>
+                    <span className="font-bold text-neutral-950 dark:text-white font-display">
+                      FTChat
+                    </span>
                   </SheetTitle>
                 </SheetHeader>
 
-                <nav className="flex flex-col space-y-4 pt-6 text-base font-medium text-neutral-700 dark:text-neutral-300">
-                  <Link
-                    href={isHomePage ? "#features" : "/#features"}
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="hover:text-brand-600 dark:hover:text-brand-400 transition-colors py-1"
-                  >
-                    Features
-                  </Link>
-                  <Link
-                    href={isHomePage ? "#how-it-works" : "/#how-it-works"}
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="hover:text-brand-600 dark:hover:text-brand-400 transition-colors py-1"
-                  >
-                    How It Works
-                  </Link>
-                  <Link
-                    href="/pricing"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="hover:text-brand-600 dark:hover:text-brand-400 transition-colors py-1"
-                  >
-                    Pricing
-                  </Link>
-                  <Link
-                    href={isHomePage ? "#faq" : "/#faq"}
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="hover:text-brand-600 dark:hover:text-brand-400 transition-colors py-1"
-                  >
-                    FAQs
-                  </Link>
+                <nav className="flex flex-col space-y-1.5 pt-6">
+                  {navItems.map((item) => {
+                    const Icon = item.icon;
+                    return (
+                      <Link
+                        key={item.label}
+                        href={item.href}
+                        onClick={() => setMobileMenuOpen(false)}
+                        className={`flex items-center justify-between p-3 rounded-xl text-sm font-medium transition-colors ${
+                          item.isActive
+                            ? "bg-brand-50 dark:bg-brand-950/50 text-brand-600 dark:text-brand-400 font-semibold"
+                            : "text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-900 hover:text-neutral-950 dark:hover:text-white"
+                        }`}
+                      >
+                        <div className="flex items-center space-x-3">
+                          <div
+                            className={`p-1.5 rounded-lg ${
+                              item.isActive
+                                ? "bg-brand-100 dark:bg-brand-900/50 text-brand-600 dark:text-brand-400"
+                                : "bg-neutral-100 dark:bg-neutral-800 text-neutral-500 dark:text-neutral-400"
+                            }`}
+                          >
+                            <Icon className="w-4 h-4" />
+                          </div>
+                          <span>{item.label}</span>
+                        </div>
+                        <ChevronRight className="w-4 h-4 text-neutral-400 dark:text-neutral-600" />
+                      </Link>
+                    );
+                  })}
                 </nav>
               </div>
 
+              {/* Action Buttons Block: Primary CTA first, then Log In */}
               <div className="pt-6 border-t border-neutral-100 dark:border-neutral-800 flex flex-col space-y-3">
-                <Link href="/login" onClick={() => setMobileMenuOpen(false)}>
-                  <Button variant="outline" className="w-full justify-center">
-                    Log In
+                <Link href="/signup" onClick={() => setMobileMenuOpen(false)}>
+                  <Button className="w-full bg-brand-600 hover:bg-brand-700 text-white justify-center shadow-sm font-semibold h-11">
+                    Get Started Free
+                    <ArrowRight className="w-4 h-4 ml-2" />
                   </Button>
                 </Link>
-                <Link href="/signup" onClick={() => setMobileMenuOpen(false)}>
-                  <Button className="w-full bg-brand-600 hover:bg-brand-700 text-white justify-center">
-                    Get Started Free
+                <Link href="/login" onClick={() => setMobileMenuOpen(false)}>
+                  <Button
+                    variant="outline"
+                    className="w-full justify-center text-neutral-700 dark:text-neutral-300 h-11 font-medium border-neutral-200 dark:border-neutral-800"
+                  >
+                    Log In
                   </Button>
                 </Link>
               </div>
