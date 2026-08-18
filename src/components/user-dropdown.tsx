@@ -64,11 +64,9 @@ export function UserDropdown({
       setIsSigningOut(true);
       const supabase = createBrowserSupabaseClient();
       await supabase.auth.signOut();
-      router.push("/");
-      router.refresh();
+      window.location.href = "/";
     } catch (err) {
       console.error("Error signing out:", err);
-      // Fallback redirect
       window.location.href = "/";
     } finally {
       setIsSigningOut(false);
