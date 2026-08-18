@@ -31,6 +31,7 @@ export function UserDropdown({
 }: UserDropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
+  const [imgError, setImgError] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
@@ -83,10 +84,12 @@ export function UserDropdown({
         aria-label="User account menu"
         className="flex items-center space-x-2.5 p-1.5 rounded-xl hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors focus:outline-none focus:ring-2 focus:ring-brand-500/20"
       >
-        {avatarUrl ? (
+        {avatarUrl && !imgError ? (
           <img
             src={avatarUrl}
             alt={fullName}
+            referrerPolicy="no-referrer"
+            onError={() => setImgError(true)}
             className="h-8 w-8 rounded-full object-cover shrink-0 border border-neutral-200 dark:border-neutral-700"
           />
         ) : (

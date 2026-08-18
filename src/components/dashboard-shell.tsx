@@ -18,6 +18,43 @@ interface DashboardShellProps {
   children: React.ReactNode;
 }
 
+function AvatarImage({
+  src,
+  alt,
+  initials,
+  className,
+}: {
+  src: string | null;
+  alt: string;
+  initials: string;
+  className: string;
+}) {
+  const [hasError, setHasError] = useState(false);
+
+  if (src && !hasError) {
+    return (
+      <img
+        src={src}
+        alt={alt}
+        referrerPolicy="no-referrer"
+        onError={() => setHasError(true)}
+        className={className}
+      />
+    );
+  }
+
+  return (
+    <div
+      className={cn(
+        "bg-brand-600 text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-xs rounded-full",
+        className
+      )}
+    >
+      {initials}
+    </div>
+  );
+}
+
 export function DashboardShell({
   fullName,
   roleDisplay,
@@ -106,17 +143,12 @@ export function DashboardShell({
             )}
             title={isCollapsed ? `${fullName} (${roleDisplay})` : undefined}
           >
-            {avatarUrl ? (
-              <img
-                src={avatarUrl}
-                alt={fullName}
-                className="h-8 w-8 rounded-full object-cover shrink-0 border border-neutral-200 dark:border-neutral-700"
-              />
-            ) : (
-              <div className="h-8 w-8 rounded-full bg-brand-600 text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-xs">
-                {initials}
-              </div>
-            )}
+            <AvatarImage
+              src={avatarUrl}
+              alt={fullName}
+              initials={initials}
+              className="h-8 w-8 rounded-full object-cover shrink-0 border border-neutral-200 dark:border-neutral-700"
+            />
             {!isCollapsed && (
               <div className="min-w-0 flex-1">
                 <p className="text-xs font-semibold text-neutral-800 dark:text-neutral-200 truncate">
@@ -172,17 +204,12 @@ export function DashboardShell({
                     <ThemeToggle />
                   </div>
                   <div className="flex items-center gap-3 pt-2 border-t border-neutral-200/60 dark:border-neutral-800/60">
-                    {avatarUrl ? (
-                      <img
-                        src={avatarUrl}
-                        alt={fullName}
-                        className="h-9 w-9 rounded-full object-cover shrink-0 border border-neutral-200 dark:border-neutral-700"
-                      />
-                    ) : (
-                      <div className="h-9 w-9 rounded-full bg-brand-600 text-white flex items-center justify-center font-bold text-xs shrink-0">
-                        {initials}
-                      </div>
-                    )}
+                    <AvatarImage
+                      src={avatarUrl}
+                      alt={fullName}
+                      initials={initials}
+                      className="h-9 w-9 rounded-full object-cover shrink-0 border border-neutral-200 dark:border-neutral-700"
+                    />
                     <div className="min-w-0 flex-1">
                       <p className="text-xs font-semibold text-neutral-800 dark:text-neutral-200 truncate">
                         {fullName}
