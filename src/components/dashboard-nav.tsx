@@ -9,6 +9,7 @@ import {
   Sliders,
   Users,
   CreditCard,
+  User,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -37,6 +38,11 @@ const mainNavItems: NavItem[] = [
 ];
 
 const settingsNavItems: NavItem[] = [
+  {
+    title: "Profile Settings",
+    href: "/dashboard/settings/profile",
+    icon: User,
+  },
   {
     title: "Widget Config",
     href: "/dashboard/settings/widget",

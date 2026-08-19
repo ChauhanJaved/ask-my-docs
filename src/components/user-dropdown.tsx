@@ -147,6 +147,15 @@ export function UserDropdown({
           {/* Nav Items */}
           <div className="py-1">
             <Link
+              href="/dashboard/settings/profile"
+              onClick={() => setIsOpen(false)}
+              className="flex items-center gap-2.5 px-4 py-2 text-xs font-medium text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+              role="menuitem"
+            >
+              <User className="w-3.5 h-3.5 text-neutral-400" />
+              <span>Profile Settings</span>
+            </Link>
+            <Link
               href="/dashboard/settings/widget"
               onClick={() => setIsOpen(false)}
               className="flex items-center gap-2.5 px-4 py-2 text-xs font-medium text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
