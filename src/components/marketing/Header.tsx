@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useTheme } from "next-themes";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/theme-toggle";
 import {
@@ -13,7 +14,11 @@ import {
   CreditCard,
   HelpCircle,
   ArrowRight,
-  ChevronRight,
+  Sun,
+  Moon,
+  Monitor,
+  Check,
+  ChevronDown,
 } from "lucide-react";
 import { siteConfig } from "@/config/site";
 import {
@@ -26,7 +31,14 @@ import {
 
 export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [mobileThemeOpen, setMobileThemeOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  const { theme, setTheme, resolvedTheme } = useTheme();
   const pathname = usePathname();
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const isHomePage = pathname === "/";
 
@@ -55,6 +67,20 @@ export function Header() {
       icon: HelpCircle,
       isActive: false,
     },
+  ];
+
+  const currentThemeIcon = () => {
+    if (!mounted) return Sun;
+    if (theme === "system") return Monitor;
+    return resolvedTheme === "dark" ? Moon : Sun;
+  };
+
+  const CurrentThemeIcon = currentThemeIcon();
+
+  const themeOptions = [
+    { id: "light", label: "Light", icon: Sun },
+    { id: "dark", label: "Dark", icon: Moon },
+    { id: "system", label: "Device", icon: Monitor },
   ];
 
   return (
@@ -130,8 +156,7 @@ export function Header() {
         </div>
 
         {/* Mobile View Toggle & Sheet Menu */}
-        <div className="md:hidden flex items-center space-x-2">
-          <ThemeToggle />
+        <div className="md:hidden flex items-center">
           <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
             <SheetTrigger
               aria-label="Toggle navigation menu"
@@ -163,28 +188,90 @@ export function Header() {
                         key={item.label}
                         href={item.href}
                         onClick={() => setMobileMenuOpen(false)}
-                        className={`flex items-center justify-between p-3 rounded-xl text-sm font-medium transition-colors ${
+                        className={`flex items-center space-x-3 p-3 rounded-xl text-sm font-medium transition-colors ${
                           item.isActive
                             ? "bg-brand-50 dark:bg-brand-950/50 text-brand-600 dark:text-brand-400 font-semibold"
                             : "text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-900 hover:text-neutral-950 dark:hover:text-white"
                         }`}
                       >
-                        <div className="flex items-center space-x-3">
-                          <div
-                            className={`p-1.5 rounded-lg ${
-                              item.isActive
-                                ? "bg-brand-100 dark:bg-brand-900/50 text-brand-600 dark:text-brand-400"
-                                : "bg-neutral-100 dark:bg-neutral-800 text-neutral-500 dark:text-neutral-400"
-                            }`}
-                          >
-                            <Icon className="w-4 h-4" />
-                          </div>
-                          <span>{item.label}</span>
+                        <div
+                          className={`p-1.5 rounded-lg ${
+                            item.isActive
+                              ? "bg-brand-100 dark:bg-brand-900/50 text-brand-600 dark:text-brand-400"
+                              : "bg-neutral-100 dark:bg-neutral-800 text-neutral-500 dark:text-neutral-400"
+                          }`}
+                        >
+                          <Icon className="w-4 h-4" />
                         </div>
-                        <ChevronRight className="w-4 h-4 text-neutral-400 dark:text-neutral-600" />
+                        <span>{item.label}</span>
                       </Link>
                     );
                   })}
+
+                  {/* Mode Selector Item with Expandable Submenu */}
+                  <div className="pt-1">
+                    <button
+                      type="button"
+                      onClick={() => setMobileThemeOpen(!mobileThemeOpen)}
+                      className="w-full flex items-center justify-between p-3 rounded-xl text-sm font-medium text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-900 hover:text-neutral-950 dark:hover:text-white transition-colors"
+                    >
+                      <div className="flex items-center space-x-3">
+                        <div className="p-1.5 rounded-lg bg-neutral-100 dark:bg-neutral-800 text-neutral-500 dark:text-neutral-400">
+                          <CurrentThemeIcon className="w-4 h-4" />
+                        </div>
+                        <span>Mode</span>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <span className="text-xs text-neutral-400 dark:text-neutral-500 capitalize">
+                          {mounted
+                            ? theme === "system"
+                              ? "Device"
+                              : theme === "dark"
+                              ? "Dark"
+                              : "Light"
+                            : ""}
+                        </span>
+                        <ChevronDown
+                          className={`w-4 h-4 text-neutral-400 transition-transform duration-200 ${
+                            mobileThemeOpen ? "rotate-180" : ""
+                          }`}
+                        />
+                      </div>
+                    </button>
+
+                    {mobileThemeOpen && (
+                      <div className="mt-1 ml-4 pl-3 border-l-2 border-neutral-200 dark:border-neutral-800 space-y-1 py-1">
+                        {themeOptions.map((opt) => {
+                          const OptIcon = opt.icon;
+                          const isSelected = mounted && theme === opt.id;
+                          return (
+                            <button
+                              key={opt.id}
+                              type="button"
+                              onClick={() => {
+                                setTheme(opt.id);
+                                setMobileThemeOpen(false);
+                                setMobileMenuOpen(false);
+                              }}
+                              className={`w-full flex items-center justify-between p-2.5 rounded-lg text-xs font-medium transition-colors ${
+                                isSelected
+                                  ? "bg-brand-50 dark:bg-brand-950/50 text-brand-600 dark:text-brand-400 font-semibold"
+                                  : "text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-900 hover:text-neutral-900 dark:hover:text-white"
+                              }`}
+                            >
+                              <div className="flex items-center space-x-2.5">
+                                <OptIcon className="w-3.5 h-3.5 opacity-80" />
+                                <span>{opt.label}</span>
+                              </div>
+                              {isSelected && (
+                                <Check className="w-3.5 h-3.5 text-brand-600 dark:text-brand-400" />
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
                 </nav>
               </div>
 
@@ -212,3 +299,4 @@ export function Header() {
     </header>
   );
 }
+
