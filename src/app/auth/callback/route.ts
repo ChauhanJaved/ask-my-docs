@@ -41,6 +41,12 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    // Check if 2FA (MFA) verification is required
+    const { data: mfaData } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+    if (mfaData && mfaData.currentLevel === "aal1" && mfaData.nextLevel === "aal2") {
+      return NextResponse.redirect(new URL("/2fa-verify", request.url));
+    }
+
     // Check if user has completed onboarding
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {

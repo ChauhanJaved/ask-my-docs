@@ -51,8 +51,16 @@ export async function middleware(req: NextRequest) {
     return NextResponse.redirect(redirectUrl);
   }
 
-  // If user is logged in, check onboarding status for routing
+  // If user is logged in, check 2FA and onboarding status for routing
   if (user && isProtectedPath) {
+    // Check 2FA requirement (Assurance Level)
+    const { data: mfaData } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+    if (mfaData && mfaData.currentLevel === "aal1" && mfaData.nextLevel === "aal2") {
+      const redirectUrl = req.nextUrl.clone();
+      redirectUrl.pathname = "/2fa-verify";
+      return NextResponse.redirect(redirectUrl);
+    }
+
     const { data: profile } = await supabase
       .from("profiles")
       .select("onboarding_completed")
