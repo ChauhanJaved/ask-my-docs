@@ -3,13 +3,18 @@
 import React, { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useTheme } from "next-themes";
 import {
   User,
   Users,
   LogOut,
   CreditCard,
+  Sun,
+  Moon,
+  Monitor,
 } from "lucide-react";
 import { createBrowserSupabaseClient } from "@/utils/supabase/client";
+import { cn } from "@/lib/utils";
 
 interface UserDropdownProps {
   fullName: string;
@@ -29,8 +34,14 @@ export function UserDropdown({
   const [isOpen, setIsOpen] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
   const [imgError, setImgError] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  const { theme, setTheme } = useTheme();
   const dropdownRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -79,7 +90,7 @@ export function UserDropdown({
         onClick={() => setIsOpen(!isOpen)}
         aria-expanded={isOpen}
         aria-label="User account menu"
-        className="flex items-center space-x-2.5 p-1.5 rounded-xl hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors focus:outline-none focus:ring-2 focus:ring-brand-500/20"
+        className="flex items-center space-x-2 p-1 sm:p-1.5 rounded-xl hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors focus:outline-none focus:ring-2 focus:ring-brand-500/20"
       >
         {avatarUrl && !imgError ? (
           <img
@@ -168,6 +179,39 @@ export function UserDropdown({
               <CreditCard className="w-3.5 h-3.5 text-neutral-400" />
               <span>Billing & Plans</span>
             </Link>
+          </div>
+
+          {/* Theme Mode Selector */}
+          <div className="px-3 py-2 border-t border-neutral-100 dark:border-neutral-800 my-1">
+            <div className="text-[10px] font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-wider mb-2 px-1">
+              Theme
+            </div>
+            <div className="grid grid-cols-3 gap-1 bg-neutral-100 dark:bg-neutral-800/70 p-1 rounded-xl">
+              {[
+                { id: "light", label: "Light", icon: Sun },
+                { id: "dark", label: "Dark", icon: Moon },
+                { id: "system", label: "System", icon: Monitor },
+              ].map((t) => {
+                const Icon = t.icon;
+                const active = mounted && theme === t.id;
+                return (
+                  <button
+                    key={t.id}
+                    type="button"
+                    onClick={() => setTheme(t.id)}
+                    className={cn(
+                      "flex flex-col items-center justify-center gap-1 py-1.5 px-2 rounded-lg text-[11px] font-medium transition-all duration-150",
+                      active
+                        ? "bg-white dark:bg-neutral-900 text-brand-600 dark:text-brand-400 shadow-xs font-semibold"
+                        : "text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white"
+                    )}
+                  >
+                    <Icon className="w-3.5 h-3.5" />
+                    <span>{t.label}</span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
           <div className="border-t border-neutral-100 dark:border-neutral-800 my-1" />

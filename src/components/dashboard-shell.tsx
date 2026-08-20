@@ -3,7 +3,6 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { Bot, Menu, PanelLeftClose, PanelLeftOpen } from "lucide-react";
-import { ThemeToggle } from "@/components/theme-toggle";
 import { DashboardNav } from "@/components/dashboard-nav";
 import { UserDropdown } from "@/components/user-dropdown";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
@@ -49,14 +48,14 @@ export function DashboardShell({
   return (
     <div className="flex flex-col h-screen bg-neutral-50 dark:bg-neutral-950 text-neutral-900 dark:text-neutral-100 font-sans transition-colors duration-300 overflow-hidden">
       {/* Top Fixed Header Bar */}
-      <header className="h-16 border-b border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 flex items-center justify-between px-4 sm:px-6 lg:px-8 shrink-0 transition-colors z-30">
+      <header className="h-16 border-b border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 flex items-center justify-between px-3 sm:px-6 lg:px-8 shrink-0 transition-colors z-30">
         {/* Left Side: Landing Page Style FTChat Logo */}
-        <Link href="/dashboard" className="flex items-center space-x-3 group shrink-0">
-          <div className="w-9 h-9 rounded-lg bg-gradient-to-tr from-brand-600 to-ai-500 flex items-center justify-center shadow-md shadow-brand-500/20 group-hover:scale-105 transition-transform duration-200">
-            <Bot className="w-5 h-5 text-white" />
+        <Link href="/dashboard" className="flex items-center space-x-2 sm:space-x-3 group shrink-0">
+          <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg bg-gradient-to-tr from-brand-600 to-ai-500 flex items-center justify-center shadow-md shadow-brand-500/20 group-hover:scale-105 transition-transform duration-200">
+            <Bot className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
           </div>
           <div className="flex flex-col">
-            <span className="text-lg font-bold font-display text-neutral-950 dark:text-white tracking-tight leading-none">
+            <span className="text-base sm:text-lg font-bold font-display text-neutral-950 dark:text-white tracking-tight leading-none">
               FTChat
             </span>
             <span className="text-[10px] text-neutral-500 dark:text-neutral-400 font-medium tracking-wide mt-0.5">
@@ -65,10 +64,8 @@ export function DashboardShell({
           </div>
         </Link>
 
-        {/* Right Side Controls: Theme Toggle + User Avatar Dropdown + Mobile Hamburger Menu */}
-        <div className="flex items-center gap-2 sm:gap-3">
-          <ThemeToggle />
-
+        {/* Right Side Controls: User Avatar Dropdown + Mobile Hamburger Menu */}
+        <div className="flex items-center gap-1 sm:gap-3">
           <UserDropdown
             fullName={fullName}
             roleDisplay={roleDisplay}
@@ -79,7 +76,7 @@ export function DashboardShell({
 
           {/* Mobile Sheet Trigger (Hamburger Menu on Right side next to Avatar) */}
           <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
-            <SheetTrigger className="md:hidden p-2 rounded-lg text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 focus:outline-none focus:ring-2 focus:ring-brand-500/20">
+            <SheetTrigger className="md:hidden p-1.5 rounded-lg text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 focus:outline-none focus:ring-2 focus:ring-brand-500/20">
               <Menu className="w-5 h-5" />
               <span className="sr-only">Open mobile navigation</span>
             </SheetTrigger>
