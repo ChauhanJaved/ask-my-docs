@@ -7,11 +7,7 @@ import {
   User,
   Users,
   LogOut,
-  ChevronDown,
-  Sparkles,
-  Sliders,
   CreditCard,
-  Shield,
 } from "lucide-react";
 import { createBrowserSupabaseClient } from "@/utils/supabase/client";
 
@@ -106,7 +102,6 @@ export function UserDropdown({
             {roleDisplay}
           </span>
         </div>
-        <ChevronDown className="w-3.5 h-3.5 text-neutral-400 dark:text-neutral-500 shrink-0 transition-transform duration-200" />
       </button>
 
       {/* Popover Dropdown Menu */}
@@ -154,15 +149,6 @@ export function UserDropdown({
             >
               <User className="w-3.5 h-3.5 text-neutral-400" />
               <span>Profile Settings</span>
-            </Link>
-            <Link
-              href="/dashboard/settings/widget"
-              onClick={() => setIsOpen(false)}
-              className="flex items-center gap-2.5 px-4 py-2 text-xs font-medium text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
-              role="menuitem"
-            >
-              <Sliders className="w-3.5 h-3.5 text-neutral-400" />
-              <span>Widget Settings</span>
             </Link>
             <Link
               href="/dashboard/settings/team"

@@ -7,9 +7,6 @@ import {
   FileText,
   MessageSquare,
   Sliders,
-  Users,
-  CreditCard,
-  User,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -39,24 +36,9 @@ const mainNavItems: NavItem[] = [
 
 const settingsNavItems: NavItem[] = [
   {
-    title: "Profile Settings",
-    href: "/dashboard/settings/profile",
-    icon: User,
-  },
-  {
     title: "Widget Config",
     href: "/dashboard/settings/widget",
     icon: Sliders,
-  },
-  {
-    title: "Team Settings",
-    href: "/dashboard/settings/team",
-    icon: Users,
-  },
-  {
-    title: "Billing",
-    href: "/dashboard/settings/billing",
-    icon: CreditCard,
   },
 ];
 
