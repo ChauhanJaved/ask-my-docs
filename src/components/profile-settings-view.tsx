@@ -18,6 +18,7 @@ import {
   EyeOff,
   RefreshCw,
   Info,
+  ShieldOff,
 } from "lucide-react";
 
 interface ProfileSettingsViewProps {
@@ -61,6 +62,10 @@ export function ProfileSettingsView({ initialFullName, userEmail }: ProfileSetti
   const [verifyCode, setVerifyCode] = useState("");
   const [isVerifyingCode, setIsVerifyingCode] = useState(false);
   const [copiedSecret, setCopiedSecret] = useState(false);
+
+  // 2FA Disable Modal State
+  const [showDisableModal, setShowDisableModal] = useState(false);
+  const [isDisabling2FA, setIsDisabling2FA] = useState(false);
 
   // Load 2FA Factors on Mount
   useEffect(() => {
@@ -167,16 +172,44 @@ export function ProfileSettingsView({ initialFullName, userEmail }: ProfileSetti
     }
   };
 
+  // --- Cancel 2FA Enrollment & Cleanup ---
+  const handleCancelEnrollModal = async () => {
+    if (enrollingFactor) {
+      try {
+        const supabase = createBrowserSupabaseClient();
+        await supabase.auth.mfa.unenroll({ factorId: enrollingFactor.id });
+      } catch (e) {
+        console.error("Error cleaning up unverified factor on cancel:", e);
+      }
+    }
+    setShowEnrollModal(false);
+    setEnrollingFactor(null);
+    setVerifyCode("");
+    await fetch2FAStatus();
+  };
+
   // --- Start 2FA Enrollment ---
   const handleStart2FAEnrollment = async () => {
     setMfaMessage(null);
     setIsVerifyingCode(false);
     try {
       const supabase = createBrowserSupabaseClient();
+
+      // Clean up all existing factors (both verified and unverified) before starting a new enrollment
+      const { data: factorsList } = await supabase.auth.mfa.listFactors();
+      const existingFactors = factorsList?.all || factorsList?.totp || [];
+      for (const factor of existingFactors) {
+        try {
+          await supabase.auth.mfa.unenroll({ factorId: factor.id });
+        } catch (unenrollErr) {
+          console.warn("Could not unenroll factor:", factor.id, unenrollErr);
+        }
+      }
+
+      // Enroll new TOTP factor
       const { data, error } = await supabase.auth.mfa.enroll({
         factorType: "totp",
         issuer: "FTChat",
-        friendlyName: `FTChat (${userEmail})`,
       });
 
       if (error) throw error;
@@ -241,10 +274,8 @@ export function ProfileSettingsView({ initialFullName, userEmail }: ProfileSetti
   // --- Disable 2FA ---
   const handleDisable2FA = async () => {
     if (!verifiedFactor) return;
-    if (!window.confirm("Are you sure you want to disable Two-Factor Authentication? Your account will be less secure.")) {
-      return;
-    }
 
+    setIsDisabling2FA(true);
     setMfaMessage(null);
     try {
       const supabase = createBrowserSupabaseClient();
@@ -255,12 +286,15 @@ export function ProfileSettingsView({ initialFullName, userEmail }: ProfileSetti
       if (error) throw error;
 
       setMfaMessage({ type: "success", text: "Two-Factor Authentication has been disabled." });
+      setShowDisableModal(false);
       await fetch2FAStatus();
     } catch (err) {
       setMfaMessage({
         type: "error",
         text: err instanceof Error ? err.message : "Failed to disable 2FA.",
       });
+    } finally {
+      setIsDisabling2FA(false);
     }
   };
 
@@ -550,7 +584,7 @@ export function ProfileSettingsView({ initialFullName, userEmail }: ProfileSetti
           <div>
             {is2FAEnabled ? (
               <Button
-                onClick={handleDisable2FA}
+                onClick={() => setShowDisableModal(true)}
                 className="bg-rose-50 hover:bg-rose-100 text-rose-600 dark:bg-rose-950/50 dark:hover:bg-rose-950 dark:text-rose-400 border border-rose-200 dark:border-rose-800/60 text-xs font-medium px-4 py-2 rounded-xl transition-all"
               >
                 Disable 2FA
@@ -582,10 +616,7 @@ export function ProfileSettingsView({ initialFullName, userEmail }: ProfileSetti
                 </h3>
               </div>
               <button
-                onClick={() => {
-                  setShowEnrollModal(false);
-                  setEnrollingFactor(null);
-                }}
+                onClick={handleCancelEnrollModal}
                 className="text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200 text-xs font-bold"
               >
                 ✕
@@ -647,10 +678,7 @@ export function ProfileSettingsView({ initialFullName, userEmail }: ProfileSetti
               <div className="flex gap-3 pt-2">
                 <Button
                   type="button"
-                  onClick={() => {
-                    setShowEnrollModal(false);
-                    setEnrollingFactor(null);
-                  }}
+                  onClick={handleCancelEnrollModal}
                   className="flex-1 bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 text-neutral-700 dark:text-neutral-300 text-xs font-medium py-2.5 rounded-xl transition-all"
                 >
                   Cancel
@@ -664,6 +692,66 @@ export function ProfileSettingsView({ initialFullName, userEmail }: ProfileSetti
                 </Button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+      {/* --- 2FA Disable Confirmation Modal --- */}
+      {showDisableModal && (
+        <div className="fixed inset-0 z-50 bg-neutral-950/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-5 animate-in fade-in-90 zoom-in-95 duration-200">
+            <div className="flex items-center justify-between border-b border-neutral-100 dark:border-neutral-800 pb-4">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-rose-100 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 flex items-center justify-center">
+                  <ShieldOff className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-sm text-neutral-900 dark:text-white font-display">
+                    Disable 2-Factor Authentication
+                  </h3>
+                  <p className="text-[11px] text-rose-600 dark:text-rose-400 font-medium">
+                    Security Warning
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowDisableModal(false)}
+                disabled={isDisabling2FA}
+                className="text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200 text-xs font-bold disabled:opacity-50"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              <p className="text-xs text-neutral-600 dark:text-neutral-300 leading-relaxed">
+                Are you sure you want to disable 2-Factor Authentication on your account?
+              </p>
+              <div className="p-3 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 rounded-xl text-xs text-amber-800 dark:text-amber-300 flex items-start gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0 text-amber-600 dark:text-amber-400 mt-0.5" />
+                <span>
+                  Disabling 2FA removes an important layer of protection. Your account will rely solely on your password for sign-in.
+                </span>
+              </div>
+            </div>
+
+            <div className="flex gap-3 pt-2">
+              <Button
+                type="button"
+                disabled={isDisabling2FA}
+                onClick={() => setShowDisableModal(false)}
+                className="flex-1 bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 text-neutral-700 dark:text-neutral-300 text-xs font-medium py-2.5 rounded-xl transition-all"
+              >
+                Keep 2FA Enabled
+              </Button>
+              <Button
+                type="button"
+                disabled={isDisabling2FA}
+                onClick={handleDisable2FA}
+                className="flex-1 bg-rose-600 hover:bg-rose-700 text-white text-xs font-medium py-2.5 rounded-xl transition-all disabled:opacity-50"
+              >
+                {isDisabling2FA ? "Disabling..." : "Disable 2FA"}
+              </Button>
+            </div>
           </div>
         </div>
       )}
