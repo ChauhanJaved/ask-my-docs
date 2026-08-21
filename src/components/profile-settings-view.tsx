@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { createBrowserSupabaseClient } from "@/utils/supabase/client";
 import { Button } from "@/components/ui/button";
 import {
@@ -19,6 +19,7 @@ import {
   RefreshCw,
   Info,
   ShieldOff,
+  Clock,
 } from "lucide-react";
 
 interface ProfileSettingsViewProps {
@@ -62,6 +63,9 @@ export function ProfileSettingsView({ initialFullName, userEmail }: ProfileSetti
   const [verifyCode, setVerifyCode] = useState("");
   const [isVerifyingCode, setIsVerifyingCode] = useState(false);
   const [copiedSecret, setCopiedSecret] = useState(false);
+  const [enrollModalError, setEnrollModalError] = useState<string | null>(null);
+  const [hasEnrollError, setHasEnrollError] = useState(false);
+  const enrollInputRef = useRef<HTMLInputElement>(null);
 
   // 2FA Disable Modal State
   const [showDisableModal, setShowDisableModal] = useState(false);
@@ -185,6 +189,8 @@ export function ProfileSettingsView({ initialFullName, userEmail }: ProfileSetti
     setShowEnrollModal(false);
     setEnrollingFactor(null);
     setVerifyCode("");
+    setEnrollModalError(null);
+    setHasEnrollError(false);
     await fetch2FAStatus();
   };
 
@@ -220,6 +226,8 @@ export function ProfileSettingsView({ initialFullName, userEmail }: ProfileSetti
         secret: data.totp.secret,
         uri: data.totp.uri,
       });
+      setEnrollModalError(null);
+      setHasEnrollError(false);
       setShowEnrollModal(true);
     } catch (err) {
       setMfaMessage({
@@ -236,6 +244,8 @@ export function ProfileSettingsView({ initialFullName, userEmail }: ProfileSetti
 
     setIsVerifyingCode(true);
     setMfaMessage(null);
+    setEnrollModalError(null);
+    setHasEnrollError(false);
 
     try {
       const supabase = createBrowserSupabaseClient();
@@ -245,7 +255,13 @@ export function ProfileSettingsView({ initialFullName, userEmail }: ProfileSetti
         factorId: enrollingFactor.id,
       });
 
-      if (challengeError) throw challengeError;
+      if (challengeError) {
+        setEnrollModalError("Could not challenge 2FA factor. Please try again.");
+        setHasEnrollError(true);
+        setIsVerifyingCode(false);
+        setTimeout(() => enrollInputRef.current?.select(), 50);
+        return;
+      }
 
       // Verify challenge with entered code
       const { error: verifyError } = await supabase.auth.mfa.verify({
@@ -254,18 +270,29 @@ export function ProfileSettingsView({ initialFullName, userEmail }: ProfileSetti
         code: verifyCode.trim(),
       });
 
-      if (verifyError) throw verifyError;
+      if (verifyError) {
+        setEnrollModalError("Invalid authentication code. Please check your authenticator app and enter the current 6-digit code.");
+        setHasEnrollError(true);
+        setIsVerifyingCode(false);
+        setTimeout(() => enrollInputRef.current?.select(), 50);
+        return;
+      }
 
       setMfaMessage({ type: "success", text: "Two-Factor Authentication enabled successfully!" });
       setShowEnrollModal(false);
       setEnrollingFactor(null);
       setVerifyCode("");
+      setEnrollModalError(null);
+      setHasEnrollError(false);
       await fetch2FAStatus();
     } catch (err) {
-      setMfaMessage({
-        type: "error",
-        text: err instanceof Error ? err.message : "Invalid code. Please try again.",
-      });
+      setEnrollModalError(
+        err instanceof Error
+          ? err.message
+          : "Invalid authentication code. Please check your authenticator app and try again."
+      );
+      setHasEnrollError(true);
+      setTimeout(() => enrollInputRef.current?.select(), 50);
     } finally {
       setIsVerifyingCode(false);
     }
@@ -659,18 +686,36 @@ export function ProfileSettingsView({ initialFullName, userEmail }: ProfileSetti
 
             {/* Step 2: Enter Verification Code */}
             <form onSubmit={handleVerify2FA} className="space-y-4 pt-2 border-t border-neutral-100 dark:border-neutral-800">
+              {enrollModalError && (
+                <div className="bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-800/80 rounded-xl p-3 text-xs text-rose-700 dark:text-rose-300 flex items-start gap-2 animate-in fade-in zoom-in-95 duration-200">
+                  <AlertCircle className="w-4 h-4 text-rose-500 shrink-0 mt-0.5" />
+                  <span>{enrollModalError}</span>
+                </div>
+              )}
+
               <div>
                 <label htmlFor="verifyCode" className="block text-xs font-bold text-neutral-700 dark:text-neutral-300 mb-1.5">
                   2. Enter the 6-digit code from your app:
                 </label>
                 <input
+                  ref={enrollInputRef}
                   id="verifyCode"
                   type="text"
                   maxLength={6}
                   value={verifyCode}
-                  onChange={(e) => setVerifyCode(e.target.value.replace(/\D/g, ""))}
+                  onChange={(e) => {
+                    setVerifyCode(e.target.value.replace(/\D/g, ""));
+                    if (hasEnrollError) {
+                      setHasEnrollError(false);
+                      setEnrollModalError(null);
+                    }
+                  }}
                   placeholder="123456"
-                  className="w-full text-center text-lg font-mono font-bold tracking-widest bg-white dark:bg-neutral-950 border border-neutral-300 dark:border-neutral-700 text-neutral-900 dark:text-white rounded-xl px-3.5 py-2.5 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500"
+                  className={`w-full text-center text-lg font-mono font-bold tracking-widest bg-white dark:bg-neutral-950 border rounded-xl px-3.5 py-2.5 focus:outline-none transition-all ${
+                    hasEnrollError
+                      ? "border-rose-500 dark:border-rose-500 ring-2 ring-rose-500/20 text-rose-600 dark:text-rose-400"
+                      : "border-neutral-300 dark:border-neutral-700 text-neutral-900 dark:text-white focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500"
+                  }`}
                   required
                 />
               </div>
