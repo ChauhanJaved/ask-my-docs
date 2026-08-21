@@ -1,6 +1,41 @@
+"use client";
+
 import { Button } from "@/components/ui/button";
+import { useState, useEffect } from "react";
+import { createBrowserSupabaseClient } from "@/utils/supabase/client";
+import { canManageBilling, UserRole } from "@/lib/permissions";
 
 export default function BillingSettingsPage() {
+  const [role, setRole] = useState<UserRole | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+
+  useEffect(() => {
+    async function fetchUserRole() {
+      try {
+        const supabase = createBrowserSupabaseClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("role")
+            .eq("id", user.id)
+            .single();
+
+          if (profile) {
+            setRole(profile.role as UserRole);
+          }
+        }
+      } catch (err) {
+        console.error("Error fetching user role for billing:", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchUserRole();
+  }, []);
+
+  const isOwner = canManageBilling(role);
+
   return (
     <div className="space-y-8">
       {/* Title */}
@@ -8,6 +43,14 @@ export default function BillingSettingsPage() {
         <h1 className="text-2xl font-bold font-display text-neutral-900 dark:text-white">Billing & Quota Plan</h1>
         <p className="text-sm text-neutral-500 dark:text-neutral-400">View current plan parameters, usage caps, and invoices.</p>
       </div>
+
+      {/* Role Notice Banner for Non-Owners */}
+      {!loading && !isOwner && (
+        <div className="bg-amber-50 dark:bg-amber-950/40 border-l-4 border-amber-500 p-4 rounded-r-md text-xs text-amber-800 dark:text-amber-300">
+          <p className="font-semibold">🔒 Restricted Access: Only Workspace Owners can manage subscriptions or make plan changes.</p>
+          <p className="mt-1 opacity-90">You are currently viewing this page as a <strong>{role || "Member"}</strong>. If you need to upgrade limits or update billing info, please contact your workspace Owner.</p>
+        </div>
+      )}
 
       <div className="grid md:grid-cols-2 gap-8">
         {/* Active plan card */}
@@ -28,8 +71,16 @@ export default function BillingSettingsPage() {
             </p>
           </div>
           
-          <Button className="bg-brand-600 hover:bg-brand-700 text-white text-xs mt-6 self-start">
-            Upgrade to Pro ($49/mo)
+          <Button
+            className={`text-xs mt-6 self-start ${
+              isOwner
+                ? "bg-brand-600 hover:bg-brand-700 text-white"
+                : "bg-neutral-200 text-neutral-400 cursor-not-allowed dark:bg-neutral-800 dark:text-neutral-600"
+            }`}
+            disabled={!isOwner}
+            title={isOwner ? "Upgrade your workspace plan" : "Only workspace Owners can upgrade plans"}
+          >
+            {isOwner ? "Upgrade to Pro ($49/mo)" : "Upgrade Restricted (Owner Only)"}
           </Button>
         </div>
 

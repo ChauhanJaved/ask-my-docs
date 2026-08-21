@@ -211,7 +211,7 @@ export default function TwoFactorVerifyPage() {
             {hasErrorState && (
               <div className="flex items-center gap-1.5 text-[11px] text-neutral-500 dark:text-neutral-400 bg-neutral-100 dark:bg-neutral-950 p-2.5 rounded-lg border border-neutral-200 dark:border-neutral-800">
                 <Clock className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-                <span>Make sure your phone's clock is set automatically for code synchronization.</span>
+                <span>Make sure your phone&apos;s clock is set automatically for code synchronization.</span>
               </div>
             )}
 

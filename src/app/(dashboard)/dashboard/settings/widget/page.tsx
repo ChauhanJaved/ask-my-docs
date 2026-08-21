@@ -1,34 +1,59 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { createBrowserSupabaseClient } from "@/utils/supabase/client";
+import { canManageBotSettings, UserRole } from "@/lib/permissions";
 
 export default function WidgetSettingsPage() {
   const [script, setScript] = useState<string>("");
   const [generating, setGenerating] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [widgetUrl, setWidgetUrl] = useState<string>("");
+  const [role, setRole] = useState<UserRole | null>(null);
+
+  useEffect(() => {
+    async function fetchRole() {
+      try {
+        const supabase = createBrowserSupabaseClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("role")
+            .eq("id", user.id)
+            .single();
+
+          if (profile) {
+            setRole(profile.role as UserRole);
+          }
+        }
+      } catch (err) {
+        console.error("Error fetching user role for widget settings:", err);
+      }
+    }
+    fetchRole();
+  }, []);
+
+  const canEditSettings = canManageBotSettings(role);
 
   // In a real app, you'd get orgId from user context
-  const mockOrgId = "11111111-1111-1111-1111-111111111111"; // Replace with actual org ID logic
+  const mockOrgId = "11111111-1111-1111-1111-111111111111";
 
   const handleGenerateScript = async () => {
     setGenerating(true);
     setError("");
     setWidgetUrl("");
     try {
-      // Call your widget endpoint to get the script
       const response = await fetch(`/api/widget/embed?orgId=${mockOrgId}`);
       if (!response.ok) {
         throw new Error("Failed to generate widget script");
       }
       const widgetHtml = await response.text();
 
-      // Extract just the script tag for display
       const scriptMatch = widgetHtml.match(/<script[^>]*src="[^"]*"[^>]*><\/script>/);
       if (scriptMatch) {
         setScript(scriptMatch[0]);
-        // Extract the URL for the loader script
         const urlMatch = widgetHtml.match(/src="([^"]*)"/);
         if (urlMatch && urlMatch[1]) {
           setWidgetUrl(urlMatch[1]);
@@ -50,6 +75,12 @@ export default function WidgetSettingsPage() {
         <p className="text-sm text-neutral-500 dark:text-neutral-400">Style your support bot and integrate it with your web app.</p>
       </div>
 
+      {role === "member" && (
+        <div className="bg-amber-50 dark:bg-amber-950/40 border-l-4 border-amber-500 p-4 rounded-r-md text-xs text-amber-800 dark:text-amber-300">
+          ℹ️ You are logged in as a <strong>Member</strong>. Only workspace Owners and Admins can change global chatbot settings and branding. You can still generate and copy the embed script below.
+        </div>
+      )}
+
       <div className="grid lg:grid-cols-2 gap-8">
         {/* Config Form */}
         <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-lg p-6 shadow-sm space-y-6 transition-colors">
@@ -64,7 +95,8 @@ export default function WidgetSettingsPage() {
                 id="botName"
                 type="text"
                 defaultValue="FTChat Assistant"
-                className="w-full bg-white dark:bg-neutral-950 border border-neutral-300 dark:border-neutral-700 text-neutral-900 dark:text-white placeholder-neutral-400 rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-brand-500"
+                disabled={!canEditSettings}
+                className="w-full bg-white dark:bg-neutral-950 border border-neutral-300 dark:border-neutral-700 text-neutral-900 dark:text-white placeholder-neutral-400 rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-brand-500 disabled:opacity-60 disabled:cursor-not-allowed"
               />
             </div>
 
@@ -76,7 +108,8 @@ export default function WidgetSettingsPage() {
                 id="welcomeMsg"
                 defaultValue="Hi there! How can I help you today?"
                 rows={3}
-                className="w-full bg-white dark:bg-neutral-950 border border-neutral-300 dark:border-neutral-700 text-neutral-900 dark:text-white placeholder-neutral-400 rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-brand-500"
+                disabled={!canEditSettings}
+                className="w-full bg-white dark:bg-neutral-950 border border-neutral-300 dark:border-neutral-700 text-neutral-900 dark:text-white placeholder-neutral-400 rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-brand-500 disabled:opacity-60 disabled:cursor-not-allowed"
               />
             </div>
 
@@ -85,10 +118,10 @@ export default function WidgetSettingsPage() {
                 Accent Theme Color
               </label>
               <div className="flex space-x-3 mt-1.5">
-                <button type="button" className="h-6 w-6 rounded-full bg-brand-500 border-2 border-white ring-2 ring-brand-500"></button>
-                <button type="button" className="h-6 w-6 rounded-full bg-teal-500 border border-neutral-300 dark:border-neutral-700"></button>
-                <button type="button" className="h-6 w-6 rounded-full bg-rose-500 border border-neutral-300 dark:border-neutral-700"></button>
-                <button type="button" className="h-6 w-6 rounded-full bg-neutral-900 dark:bg-neutral-100 border border-neutral-300 dark:border-neutral-700"></button>
+                <button type="button" disabled={!canEditSettings} className="h-6 w-6 rounded-full bg-brand-500 border-2 border-white ring-2 ring-brand-500 disabled:opacity-60"></button>
+                <button type="button" disabled={!canEditSettings} className="h-6 w-6 rounded-full bg-teal-500 border border-neutral-300 dark:border-neutral-700 disabled:opacity-60"></button>
+                <button type="button" disabled={!canEditSettings} className="h-6 w-6 rounded-full bg-rose-500 border border-neutral-300 dark:border-neutral-700 disabled:opacity-60"></button>
+                <button type="button" disabled={!canEditSettings} className="h-6 w-6 rounded-full bg-neutral-900 dark:bg-neutral-100 border border-neutral-300 dark:border-neutral-700 disabled:opacity-60"></button>
               </div>
             </div>
 
