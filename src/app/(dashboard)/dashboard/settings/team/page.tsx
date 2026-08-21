@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { useState, useEffect, useCallback } from "react";
 import { createBrowserSupabaseClient } from "@/utils/supabase/client";
 import { canManageTeam, canChangeRoles, UserRole } from "@/lib/permissions";
+import { Copy, Check, RefreshCw, Trash2, Mail, Link as LinkIcon } from "lucide-react";
 
 interface Member {
   id: string;
@@ -18,6 +19,7 @@ interface Invitation {
   role: UserRole;
   created_at: string;
   status: string;
+  token?: string;
 }
 
 export default function TeamSettingsPage() {
@@ -34,6 +36,10 @@ export default function TeamSettingsPage() {
   const [inviting, setInviting] = useState<boolean>(false);
   const [inviteEmail, setInviteEmail] = useState<string>("");
   const [inviteRole, setInviteRole] = useState<UserRole>("member");
+
+  // Interaction feedback states
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [resendingId, setResendingId] = useState<string | null>(null);
 
   const fetchTeamData = useCallback(async () => {
     setLoading(true);
@@ -71,11 +77,11 @@ export default function TeamSettingsPage() {
       if (membersError) throw membersError;
       setMembers((membersData as Member[]) || []);
 
-      // If user is owner or admin, fetch pending invitations
+      // Fetch pending invitations
       if (canManageTeam(userRole)) {
         const { data: inviteData, error: inviteError } = await supabase
           .from("invitations")
-          .select("id, email, role, created_at, status")
+          .select("id, email, role, created_at, status, token")
           .eq("organization_id", profile.organization_id)
           .eq("status", "pending")
           .order("created_at", { ascending: false });
@@ -109,29 +115,20 @@ export default function TeamSettingsPage() {
 
     setInviting(true);
     try {
-      const supabase = createBrowserSupabaseClient();
-
-      // Check if user is already a member
-      const existingMember = members.find(
-        (m) => m.email.toLowerCase() === inviteEmail.trim().toLowerCase()
-      );
-      if (existingMember) {
-        setError("User with this email is already a member of this workspace.");
-        setInviting(false);
-        return;
-      }
-
-      // Insert invitation into Supabase DB
-      const { error: insertError } = await supabase.from("invitations").insert({
-        organization_id: orgId,
-        email: inviteEmail.trim().toLowerCase(),
-        role: inviteRole,
-        invited_by: currentUserId,
+      // Call backend API route which handles DB insert and Resend email dispatch
+      const res = await fetch("/api/team/invite", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: inviteEmail.trim(), role: inviteRole }),
       });
 
-      if (insertError) throw insertError;
+      const data = await res.json();
 
-      setSuccessMsg(`Invitation successfully sent to ${inviteEmail.trim()} as ${inviteRole.toUpperCase()}`);
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to send invitation.");
+      }
+
+      setSuccessMsg(data.message || `Invitation created for ${inviteEmail.trim()} as ${inviteRole.toUpperCase()}`);
       setInviteEmail("");
       setInviteRole("member");
       await fetchTeamData();
@@ -140,6 +137,42 @@ export default function TeamSettingsPage() {
       console.error("Error inviting member:", err);
     } finally {
       setInviting(false);
+    }
+  };
+
+  const handleCopyInviteLink = (token?: string, id?: string) => {
+    if (!token || !id) return;
+    const origin = typeof window !== "undefined" ? window.location.origin : "";
+    const inviteUrl = `${origin}/accept-invite?token=${token}`;
+
+    navigator.clipboard.writeText(inviteUrl);
+    setCopiedId(id);
+    setTimeout(() => {
+      setCopiedId(null);
+    }, 2500);
+  };
+
+  const handleResendInvitation = async (invitationId: string) => {
+    setResendingId(invitationId);
+    setError(null);
+    setSuccessMsg(null);
+
+    try {
+      const res = await fetch("/api/team/resend-invite", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ invitationId }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to resend invitation");
+
+      setSuccessMsg(data.message || "Invitation email resent successfully.");
+      await fetchTeamData();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to resend invitation.");
+    } finally {
+      setResendingId(null);
     }
   };
 
@@ -272,8 +305,9 @@ export default function TeamSettingsPage() {
       {/* Invite Member Section (Visible to Owner & Admin) */}
       {canManageTeam(currentRole) ? (
         <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-lg p-6 shadow-sm">
-          <h3 className="font-semibold text-sm text-neutral-900 dark:text-white font-display border-b border-neutral-200 dark:border-neutral-800 pb-4">
-            Invite Team Member
+          <h3 className="font-semibold text-sm text-neutral-900 dark:text-white font-display border-b border-neutral-200 dark:border-neutral-800 pb-4 flex items-center gap-2">
+            <Mail className="w-4 h-4 text-brand-600 dark:text-brand-400" />
+            <span>Invite Team Member via Resend & Direct Link</span>
           </h3>
           <form onSubmit={handleInviteMember} className="space-y-4 pt-4">
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -303,18 +337,24 @@ export default function TeamSettingsPage() {
                   className="w-full bg-white dark:bg-neutral-950 border border-neutral-300 dark:border-neutral-700 text-neutral-900 dark:text-white rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-brand-500"
                   disabled={inviting}
                 >
-                  <option value="member">Member</option>
-                  <option value="admin">Admin</option>
+                  <option value="member">Member (Upload docs & test bot)</option>
+                  <option value="admin">Admin (Manage team & bot settings)</option>
                 </select>
               </div>
             </div>
-            <Button
-              type="submit"
-              className={`bg-brand-600 hover:bg-brand-700 text-white text-xs ${inviting ? "opacity-50" : ""}`}
-              disabled={inviting}
-            >
-              {inviting ? "Sending Invitation..." : "Send Invitation"}
-            </Button>
+            <div className="flex items-center justify-between pt-2">
+              <p className="text-[11px] text-neutral-500 dark:text-neutral-400 flex items-center gap-1">
+                <LinkIcon className="w-3 h-3 text-brand-500" />
+                <span>An invite email will be sent via Resend, and a shareable join link generated instantly.</span>
+              </p>
+              <Button
+                type="submit"
+                className={`bg-brand-600 hover:bg-brand-700 text-white text-xs ${inviting ? "opacity-50" : ""}`}
+                disabled={inviting}
+              >
+                {inviting ? "Sending Invitation..." : "Send Invitation"}
+              </Button>
+            </div>
           </form>
         </div>
       ) : (
@@ -404,17 +444,19 @@ export default function TeamSettingsPage() {
       {/* Pending Invitations Section */}
       {canManageTeam(currentRole) && invitations.length > 0 && (
         <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden shadow-sm">
-          <div className="p-5 border-b border-neutral-200 dark:border-neutral-800">
-            <h3 className="font-semibold text-sm text-neutral-900 dark:text-white">
-              Pending Invitations ({invitations.length})
+          <div className="p-5 border-b border-neutral-200 dark:border-neutral-800 flex justify-between items-center">
+            <h3 className="font-semibold text-sm text-neutral-900 dark:text-white flex items-center gap-2">
+              <span>Pending Invitations ({invitations.length})</span>
+              <span className="text-xs font-normal text-neutral-500 dark:text-neutral-400">(Sent via Resend & Direct Link)</span>
             </h3>
           </div>
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-neutral-50 dark:bg-neutral-950 text-[10px] uppercase font-bold text-neutral-500 dark:text-neutral-400 border-b border-neutral-200 dark:border-neutral-800">
                 <th className="px-6 py-3">Invited Email</th>
-                <th className="px-6 py-3">Assigned Role</th>
+                <th className="px-6 py-3">Role</th>
                 <th className="px-6 py-3">Sent Date</th>
+                <th className="px-6 py-3">Status</th>
                 <th className="px-6 py-3 text-right">Actions</th>
               </tr>
             </thead>
@@ -432,12 +474,50 @@ export default function TeamSettingsPage() {
                   <td className="px-6 py-4 text-neutral-500 dark:text-neutral-400">
                     {new Date(inv.created_at).toLocaleDateString()}
                   </td>
-                  <td className="px-6 py-4 text-right">
+                  <td className="px-6 py-4">
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300">
+                      Pending
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 text-right space-x-2">
+                    {/* Copy Link Button */}
                     <button
-                      className="text-neutral-500 hover:text-rose-600 dark:hover:text-rose-400 font-semibold text-xs transition-colors"
-                      onClick={() => handleRevokeInvitation(inv.id)}
+                      onClick={() => handleCopyInviteLink(inv.token, inv.id)}
+                      className="inline-flex items-center gap-1 text-brand-600 hover:text-brand-800 dark:text-brand-400 font-semibold text-xs transition-colors bg-brand-50 dark:bg-brand-950/50 border border-brand-200 dark:border-brand-900 px-2.5 py-1 rounded"
+                      title="Copy invitation link to clipboard"
                     >
-                      Revoke
+                      {copiedId === inv.id ? (
+                        <>
+                          <Check className="w-3 h-3 text-emerald-500" />
+                          <span className="text-emerald-600 dark:text-emerald-400">Copied!</span>
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="w-3 h-3" />
+                          <span>Copy Link</span>
+                        </>
+                      )}
+                    </button>
+
+                    {/* Resend Email Button */}
+                    <button
+                      onClick={() => handleResendInvitation(inv.id)}
+                      disabled={resendingId === inv.id}
+                      className="inline-flex items-center gap-1 text-neutral-700 dark:text-neutral-300 hover:text-brand-600 dark:hover:text-brand-400 font-semibold text-xs transition-colors bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 px-2.5 py-1 rounded disabled:opacity-50"
+                      title="Resend email via Resend"
+                    >
+                      <RefreshCw className={`w-3 h-3 ${resendingId === inv.id ? "animate-spin" : ""}`} />
+                      <span>{resendingId === inv.id ? "Sending..." : "Resend"}</span>
+                    </button>
+
+                    {/* Revoke Button */}
+                    <button
+                      className="inline-flex items-center gap-1 text-rose-600 dark:text-rose-400 hover:text-rose-800 dark:hover:text-rose-300 font-semibold text-xs transition-colors px-2 py-1"
+                      onClick={() => handleRevokeInvitation(inv.id)}
+                      title="Revoke invitation"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                      <span>Revoke</span>
                     </button>
                   </td>
                 </tr>
