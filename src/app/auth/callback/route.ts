@@ -6,6 +6,7 @@ import type { NextRequest } from "next/server";
 export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url);
   const code = requestUrl.searchParams.get("code");
+  const hasExplicitNext = requestUrl.searchParams.has("next");
   const next = requestUrl.searchParams.get("next") ?? "/dashboard";
 
   if (code) {
@@ -47,17 +48,19 @@ export async function GET(request: NextRequest) {
       return NextResponse.redirect(new URL("/2fa-verify", request.url));
     }
 
-    // Check if user has completed onboarding
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("onboarding_completed")
-        .eq("id", user.id)
-        .single();
+    // Check if user has completed onboarding (Only if user didn't come with an explicit redirect target like /accept-invite)
+    if (!hasExplicitNext) {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("onboarding_completed")
+          .eq("id", user.id)
+          .single();
 
-      if (!profile || profile.onboarding_completed === false) {
-        return NextResponse.redirect(new URL("/onboarding", request.url));
+        if (!profile || profile.onboarding_completed === false) {
+          return NextResponse.redirect(new URL("/onboarding", request.url));
+        }
       }
     }
   }

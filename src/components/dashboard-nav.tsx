@@ -7,8 +7,11 @@ import {
   FileText,
   MessageSquare,
   Sliders,
+  Users,
+  CreditCard,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { canManageBilling, canManageTeam, UserRole } from "@/lib/permissions";
 
 interface NavItem {
   title: string;
@@ -34,20 +37,13 @@ const mainNavItems: NavItem[] = [
   },
 ];
 
-const settingsNavItems: NavItem[] = [
-  {
-    title: "Widget Config",
-    href: "/dashboard/settings/widget",
-    icon: Sliders,
-  },
-];
-
 interface DashboardNavProps {
+  role?: UserRole | string;
   onItemClick?: () => void;
   isCollapsed?: boolean;
 }
 
-export function DashboardNav({ onItemClick, isCollapsed = false }: DashboardNavProps) {
+export function DashboardNav({ role, onItemClick, isCollapsed = false }: DashboardNavProps) {
   const pathname = usePathname();
 
   const isLinkActive = (href: string) => {
@@ -56,6 +52,32 @@ export function DashboardNav({ onItemClick, isCollapsed = false }: DashboardNavP
     }
     return pathname.startsWith(href);
   };
+
+  const managementNavItems: NavItem[] = [
+    {
+      title: "Widget Config",
+      href: "/dashboard/settings/widget",
+      icon: Sliders,
+    },
+    ...(canManageTeam(role)
+      ? [
+          {
+            title: "Team Settings",
+            href: "/dashboard/settings/team",
+            icon: Users,
+          },
+        ]
+      : []),
+    ...(canManageBilling(role)
+      ? [
+          {
+            title: "Billing & Plans",
+            href: "/dashboard/settings/billing",
+            icon: CreditCard,
+          },
+        ]
+      : []),
+  ];
 
   return (
     <nav className="flex-1 px-3 py-4 space-y-6 overflow-y-auto">
@@ -105,7 +127,7 @@ export function DashboardNav({ onItemClick, isCollapsed = false }: DashboardNavP
             Management
           </div>
         )}
-        {settingsNavItems.map((item) => {
+        {managementNavItems.map((item) => {
           const Icon = item.icon;
           const active = isLinkActive(item.href);
 

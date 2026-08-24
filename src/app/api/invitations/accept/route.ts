@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
+import { createAdminClient } from "@/utils/supabase/admin";
 
 export async function POST(req: Request) {
   try {
@@ -16,8 +17,10 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Missing invitation token" }, { status: 400 });
     }
 
-    // 1. Fetch invitation
-    const { data: invitation, error: inviteError } = await supabase
+    const adminSupabase = createAdminClient();
+
+    // 1. Fetch invitation using admin client
+    const { data: invitation, error: inviteError } = await adminSupabase
       .from("invitations")
       .select("id, organization_id, email, role, status, expires_at")
       .eq("token", token)
@@ -35,8 +38,8 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "This invitation link has expired. Please ask your administrator to resend it." }, { status: 400 });
     }
 
-    // 2. Update current user's profile to link to the new organization and set role
-    const { error: profileUpdateError } = await supabase
+    // 2. Update current user's profile using admin client to set new org & role
+    const { error: profileUpdateError } = await adminSupabase
       .from("profiles")
       .upsert(
         {
@@ -60,8 +63,8 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: `Failed to join workspace: ${profileUpdateError.message}` }, { status: 500 });
     }
 
-    // 3. Mark invitation as accepted
-    await supabase
+    // 3. Mark invitation as accepted using admin client
+    await adminSupabase
       .from("invitations")
       .update({ status: "accepted" })
       .eq("id", invitation.id);

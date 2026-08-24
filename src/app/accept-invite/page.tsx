@@ -200,7 +200,7 @@ function AcceptInviteContent() {
             Sign in or create an account to accept this invitation:
           </p>
           <Button
-            onClick={() => router.push(`/onboarding?token=${token}`)}
+            onClick={() => router.push(`/signup?token=${encodeURIComponent(token || "")}&next=${encodeURIComponent(`/accept-invite?token=${token || ""}`)}`)}
             className="w-full bg-brand-600 hover:bg-brand-500 text-white text-xs gap-2 py-2.5 rounded-xl"
           >
             <UserPlus className="w-4 h-4" />
@@ -208,7 +208,7 @@ function AcceptInviteContent() {
           </Button>
           <Button
             variant="outline"
-            onClick={() => router.push(`/auth?token=${token}`)}
+            onClick={() => router.push(`/login?token=${encodeURIComponent(token || "")}&next=${encodeURIComponent(`/accept-invite?token=${token || ""}`)}`)}
             className="w-full border-border text-foreground hover:bg-accent text-xs gap-2 py-2.5 rounded-xl"
           >
             <LogIn className="w-4 h-4" />

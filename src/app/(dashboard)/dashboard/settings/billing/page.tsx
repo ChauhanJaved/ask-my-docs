@@ -36,21 +36,40 @@ export default function BillingSettingsPage() {
 
   const isOwner = canManageBilling(role);
 
+  if (loading) {
+    return <div className="text-center py-12 text-neutral-500 dark:text-neutral-400 font-medium">Loading billing details...</div>;
+  }
+
+  if (!isOwner) {
+    return (
+      <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-2xl p-8 shadow-sm text-center max-w-lg mx-auto my-12 space-y-4">
+        <div className="h-12 w-12 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center mx-auto text-xl font-bold">
+          🔒
+        </div>
+        <h2 className="text-xl font-bold font-display text-neutral-900 dark:text-white">
+          Access Restricted
+        </h2>
+        <p className="text-xs text-neutral-500 dark:text-neutral-400 leading-relaxed">
+          Only workspace <strong>Owners</strong> can view or manage billing, subscription plans, and invoices. You are currently logged in as an <strong className="capitalize text-neutral-700 dark:text-neutral-300">{role || "Member"}</strong>.
+        </p>
+        <div className="pt-2">
+          <Button
+            onClick={() => (window.location.href = "/dashboard")}
+            className="bg-brand-600 hover:bg-brand-700 text-white text-xs px-6 rounded-xl"
+          >
+            Return to Dashboard
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-8">
-      {/* Title */}
       <div>
         <h1 className="text-2xl font-bold font-display text-neutral-900 dark:text-white">Billing & Quota Plan</h1>
         <p className="text-sm text-neutral-500 dark:text-neutral-400">View current plan parameters, usage caps, and invoices.</p>
       </div>
-
-      {/* Role Notice Banner for Non-Owners */}
-      {!loading && !isOwner && (
-        <div className="bg-amber-50 dark:bg-amber-950/40 border-l-4 border-amber-500 p-4 rounded-r-md text-xs text-amber-800 dark:text-amber-300">
-          <p className="font-semibold">🔒 Restricted Access: Only Workspace Owners can manage subscriptions or make plan changes.</p>
-          <p className="mt-1 opacity-90">You are currently viewing this page as a <strong>{role || "Member"}</strong>. If you need to upgrade limits or update billing info, please contact your workspace Owner.</p>
-        </div>
-      )}
 
       <div className="grid md:grid-cols-2 gap-8">
         {/* Active plan card */}
@@ -72,15 +91,10 @@ export default function BillingSettingsPage() {
           </div>
           
           <Button
-            className={`text-xs mt-6 self-start ${
-              isOwner
-                ? "bg-brand-600 hover:bg-brand-700 text-white"
-                : "bg-neutral-200 text-neutral-400 cursor-not-allowed dark:bg-neutral-800 dark:text-neutral-600"
-            }`}
-            disabled={!isOwner}
-            title={isOwner ? "Upgrade your workspace plan" : "Only workspace Owners can upgrade plans"}
+            className="bg-brand-600 hover:bg-brand-700 text-white text-xs mt-6 self-start"
+            title="Upgrade your workspace plan"
           >
-            {isOwner ? "Upgrade to Pro ($49/mo)" : "Upgrade Restricted (Owner Only)"}
+            Upgrade to Pro ($49/mo)
           </Button>
         </div>
 

@@ -3,15 +3,22 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { GoogleButton } from "@/components/ui/google-button";
-import { useState } from "react";
+import { useState, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { createBrowserSupabaseClient } from "@/utils/supabase/client";
 
-export function SignupForm() {
+function SignupFormContent() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const searchParams = useSearchParams();
+  const token = searchParams.get("token");
+  const nextParam = searchParams.get("next");
+
+  const targetNext = nextParam || (token ? `/accept-invite?token=${token}` : null);
 
   const supabase = createBrowserSupabaseClient();
 
@@ -19,10 +26,15 @@ export function SignupForm() {
     setLoading(true);
     setError(null);
     try {
+      const callbackUrl = new URL(`${window.location.origin}/auth/callback`);
+      if (targetNext) {
+        callbackUrl.searchParams.set("next", targetNext);
+      }
+
       const { error: authError } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
+          redirectTo: callbackUrl.toString(),
         },
       });
       if (authError) {
@@ -58,10 +70,17 @@ export function SignupForm() {
       }
 
       if (data.session) {
-        window.location.href = "/onboarding";
+        if (targetNext) {
+          window.location.href = targetNext;
+        } else {
+          window.location.href = "/onboarding";
+        }
       } else if (data.user) {
-        alert("Please check your email to confirm your account. After confirming, you will be guided through onboarding.");
-        window.location.href = "/login";
+        alert("Please check your email to confirm your account. After confirming, you will be guided to complete your invitation.");
+        const loginUrl = targetNext
+          ? `/login?${token ? `token=${encodeURIComponent(token)}&` : ""}next=${encodeURIComponent(targetNext)}`
+          : "/login";
+        window.location.href = loginUrl;
       }
     } catch (err) {
       console.error(err);
@@ -71,6 +90,10 @@ export function SignupForm() {
     }
   };
 
+  const loginLink = targetNext
+    ? `/login?${token ? `token=${encodeURIComponent(token)}&` : ""}next=${encodeURIComponent(targetNext)}`
+    : "/login";
+
   return (
     <div className="flex flex-1 items-center justify-center p-6 py-12 md:py-20">
       <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-lg shadow-sm p-8 w-full max-w-md transition-colors">
@@ -79,7 +102,15 @@ export function SignupForm() {
             FTChat
           </Link>
           <h1 className="mt-4 text-xl font-semibold text-neutral-900 dark:text-white">Create your account</h1>
-          <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">Start building your AI assistant today.</p>
+          {token ? (
+            <p className="text-xs text-brand-600 dark:text-brand-400 font-medium mt-1">
+              Sign up to accept your team invitation
+            </p>
+          ) : (
+            <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">
+              Start building your AI assistant today.
+            </p>
+          )}
         </div>
 
         {error && (
@@ -142,7 +173,7 @@ export function SignupForm() {
             className="w-full bg-brand-600 hover:bg-brand-700 text-white font-medium"
             disabled={loading}
           >
-            {loading ? "Creating account..." : "Get Started"}
+            {loading ? "Creating account..." : token ? "Create Account & Join Team" : "Get Started"}
           </Button>
         </form>
 
@@ -161,12 +192,20 @@ export function SignupForm() {
 
           <p className="text-xs text-neutral-600 dark:text-neutral-400 mt-2">
             Already have an account?{" "}
-            <Link href="/login" className="text-brand-600 dark:text-brand-400 hover:underline">
+            <Link href={loginLink} className="text-brand-600 dark:text-brand-400 hover:underline">
               Log In
             </Link>
           </p>
         </div>
       </div>
     </div>
+  );
+}
+
+export function SignupForm() {
+  return (
+    <Suspense fallback={<div className="flex flex-1 items-center justify-center p-6 text-xs text-neutral-500">Loading signup form...</div>}>
+      <SignupFormContent />
+    </Suspense>
   );
 }

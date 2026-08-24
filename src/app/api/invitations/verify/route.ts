@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/utils/supabase/server";
+import { createAdminClient } from "@/utils/supabase/admin";
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
@@ -10,17 +10,17 @@ export async function GET(req: Request) {
   }
 
   try {
-    const supabase = await createClient();
+    const adminSupabase = createAdminClient();
 
-    // Query invitation by token
-    const { data: invitation, error } = await supabase
+    // Query invitation by token using admin client (bypasses RLS on server)
+    const { data: invitation, error } = await adminSupabase
       .from("invitations")
       .select("id, organization_id, email, role, status, expires_at, created_at")
       .eq("token", token)
       .maybeSingle();
 
     if (error || !invitation) {
-      return NextResponse.json({ valid: false, error: "Invalid invitation link" }, { status: 444 });
+      return NextResponse.json({ valid: false, error: "Invalid invitation link" }, { status: 404 });
     }
 
     if (invitation.status !== "pending") {
@@ -37,7 +37,7 @@ export async function GET(req: Request) {
     }
 
     // Fetch organization name
-    const { data: org } = await supabase
+    const { data: org } = await adminSupabase
       .from("organizations")
       .select("name, slug")
       .eq("id", invitation.organization_id)

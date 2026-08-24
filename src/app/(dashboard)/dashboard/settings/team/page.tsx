@@ -256,6 +256,30 @@ export default function TeamSettingsPage() {
     return <div className="text-center py-12 text-neutral-500 dark:text-neutral-400 font-medium">Loading workspace team details...</div>;
   }
 
+  if (!canManageTeam(currentRole)) {
+    return (
+      <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-2xl p-8 shadow-sm text-center max-w-lg mx-auto my-12 space-y-4">
+        <div className="h-12 w-12 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center mx-auto text-xl font-bold">
+          🔒
+        </div>
+        <h2 className="text-xl font-bold font-display text-neutral-900 dark:text-white">
+          Access Restricted
+        </h2>
+        <p className="text-xs text-neutral-500 dark:text-neutral-400 leading-relaxed">
+          Only workspace <strong>Owners</strong> and <strong>Admins</strong> can view team member rosters or send invitations. You are currently logged in as a <strong className="capitalize text-neutral-700 dark:text-neutral-300">{currentRole}</strong>.
+        </p>
+        <div className="pt-2">
+          <Button
+            onClick={() => (window.location.href = "/dashboard")}
+            className="bg-brand-600 hover:bg-brand-700 text-white text-xs px-6 rounded-xl"
+          >
+            Return to Dashboard
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-8">
       {/* Page Header */}

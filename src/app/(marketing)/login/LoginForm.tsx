@@ -3,14 +3,21 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { GoogleButton } from "@/components/ui/google-button";
-import { useState } from "react";
+import { useState, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { createBrowserSupabaseClient } from "@/utils/supabase/client";
 
-export function LoginForm() {
+function LoginFormContent() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const searchParams = useSearchParams();
+  const token = searchParams.get("token");
+  const nextParam = searchParams.get("next");
+
+  const targetNext = nextParam || (token ? `/accept-invite?token=${token}` : null);
 
   const supabase = createBrowserSupabaseClient();
 
@@ -18,10 +25,15 @@ export function LoginForm() {
     setLoading(true);
     setError(null);
     try {
+      const callbackUrl = new URL(`${window.location.origin}/auth/callback`);
+      if (targetNext) {
+        callbackUrl.searchParams.set("next", targetNext);
+      }
+
       const { error: authError } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
+          redirectTo: callbackUrl.toString(),
         },
       });
       if (authError) {
@@ -58,6 +70,12 @@ export function LoginForm() {
         return;
       }
 
+      // If user came from an invite or has a targetNext redirect destination
+      if (targetNext) {
+        window.location.href = targetNext;
+        return;
+      }
+
       // Check onboarding status
       if (authData.user) {
         const { data: profile } = await supabase
@@ -81,6 +99,10 @@ export function LoginForm() {
     }
   };
 
+  const signupLink = targetNext
+    ? `/signup?${token ? `token=${encodeURIComponent(token)}&` : ""}next=${encodeURIComponent(targetNext)}`
+    : "/signup";
+
   return (
     <div className="flex flex-1 items-center justify-center p-6 py-12 md:py-20">
       <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-lg shadow-sm p-8 w-full max-w-md transition-colors">
@@ -89,6 +111,11 @@ export function LoginForm() {
             FTChat
           </Link>
           <h1 className="mt-4 text-xl font-semibold text-neutral-900 dark:text-white">Sign in to your account</h1>
+          {token && (
+            <p className="text-xs text-brand-600 dark:text-brand-400 font-medium mt-1">
+              Sign in to accept your team invitation
+            </p>
+          )}
         </div>
 
         {error && (
@@ -140,7 +167,7 @@ export function LoginForm() {
             className="w-full bg-brand-600 hover:bg-brand-700 text-white font-medium"
             disabled={loading}
           >
-            {loading ? "Logging in..." : "Log In"}
+            {loading ? "Logging in..." : token ? "Log In & Continue Invite" : "Log In"}
           </Button>
         </form>
 
@@ -159,12 +186,20 @@ export function LoginForm() {
 
           <p className="text-xs text-neutral-600 dark:text-neutral-400 mt-2">
             New to FTChat?{" "}
-            <Link href="/signup" className="text-brand-600 dark:text-brand-400 hover:underline">
+            <Link href={signupLink} className="text-brand-600 dark:text-brand-400 hover:underline">
               Create an account
             </Link>
           </p>
         </div>
       </div>
     </div>
+  );
+}
+
+export function LoginForm() {
+  return (
+    <Suspense fallback={<div className="flex flex-1 items-center justify-center p-6 text-xs text-neutral-500">Loading auth form...</div>}>
+      <LoginFormContent />
+    </Suspense>
   );
 }

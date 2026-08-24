@@ -9,8 +9,11 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/co
 import { cn } from "@/lib/utils";
 import { siteConfig } from "@/config/site";
 
+import { UserRole } from "@/lib/permissions";
+
 interface DashboardShellProps {
   fullName: string;
+  role?: UserRole | string;
   roleDisplay: string;
   avatarUrl: string | null;
   initials: string;
@@ -20,6 +23,7 @@ interface DashboardShellProps {
 
 export function DashboardShell({
   fullName,
+  role,
   roleDisplay,
   avatarUrl,
   initials,
@@ -68,6 +72,7 @@ export function DashboardShell({
         <div className="flex items-center gap-1 sm:gap-3">
           <UserDropdown
             fullName={fullName}
+            role={role}
             roleDisplay={roleDisplay}
             avatarUrl={avatarUrl}
             initials={initials}
@@ -96,7 +101,7 @@ export function DashboardShell({
               </SheetHeader>
 
               {/* Mobile Drawer Navigation */}
-              <DashboardNav onItemClick={() => setMobileOpen(false)} />
+              <DashboardNav role={role} onItemClick={() => setMobileOpen(false)} />
             </SheetContent>
           </Sheet>
         </div>
@@ -139,7 +144,7 @@ export function DashboardShell({
           </div>
 
           {/* Sidebar Nav links */}
-          <DashboardNav isCollapsed={isCollapsed} />
+          <DashboardNav role={role} isCollapsed={isCollapsed} />
         </aside>
 
         {/* Dashboard Main Content Body */}

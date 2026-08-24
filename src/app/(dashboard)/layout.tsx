@@ -1,5 +1,9 @@
 import { createServerSupabaseClient } from "@/utils/supabase/server";
 import { DashboardShell } from "@/components/dashboard-shell";
+import { UserRole } from "@/lib/permissions";
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 export default async function DashboardLayout({
   children,
@@ -45,13 +49,13 @@ export default async function DashboardLayout({
   };
 
   const initials = getInitials(fullName);
-  const roleDisplay = profile?.role
-    ? profile.role.charAt(0).toUpperCase() + profile.role.slice(1)
-    : "Workspace Owner";
+  const userRole = (profile?.role as UserRole) || "member";
+  const roleDisplay = userRole.charAt(0).toUpperCase() + userRole.slice(1);
 
   return (
     <DashboardShell
       fullName={fullName}
+      role={userRole}
       roleDisplay={roleDisplay}
       avatarUrl={avatarUrl}
       initials={initials}

@@ -16,8 +16,11 @@ import {
 import { createBrowserSupabaseClient } from "@/utils/supabase/client";
 import { cn } from "@/lib/utils";
 
+import { canManageBilling, canManageTeam, UserRole } from "@/lib/permissions";
+
 interface UserDropdownProps {
   fullName: string;
+  role?: UserRole | string;
   roleDisplay: string;
   avatarUrl: string | null;
   initials: string;
@@ -26,6 +29,7 @@ interface UserDropdownProps {
 
 export function UserDropdown({
   fullName,
+  role,
   roleDisplay,
   avatarUrl,
   initials,
@@ -35,12 +39,35 @@ export function UserDropdown({
   const [isSigningOut, setIsSigningOut] = useState(false);
   const [imgError, setImgError] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [currentRole, setCurrentRole] = useState<UserRole | string | undefined>(role);
   const { theme, setTheme } = useTheme();
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const router = useRouter();
+
+  useEffect(() => {
+    setCurrentRole(role);
+  }, [role]);
 
   useEffect(() => {
     setMounted(true);
+    async function loadClientProfile() {
+      try {
+        const supabase = createBrowserSupabaseClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("role")
+            .eq("id", user.id)
+            .maybeSingle();
+          if (profile?.role) {
+            setCurrentRole(profile.role as UserRole);
+          }
+        }
+      } catch (err) {
+        console.error("Error loading user dropdown role:", err);
+      }
+    }
+    loadClientProfile();
   }, []);
 
   useEffect(() => {
@@ -82,6 +109,16 @@ export function UserDropdown({
     }
   };
 
+  const activeRole = currentRole || "member";
+  const displayRoleText = activeRole.charAt(0).toUpperCase() + activeRole.slice(1);
+
+  const roleBadgeStyle =
+    activeRole === "owner"
+      ? "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20"
+      : activeRole === "admin"
+      ? "bg-violet-500/10 text-violet-600 dark:text-violet-400 border-violet-500/20"
+      : "bg-slate-500/10 text-slate-600 dark:text-slate-400 border-slate-500/20";
+
   return (
     <div className="relative inline-block text-left" ref={dropdownRef}>
       {/* Trigger Button */}
@@ -110,7 +147,7 @@ export function UserDropdown({
             {fullName}
           </span>
           <span className="text-[10px] text-neutral-500 dark:text-neutral-400 max-w-[120px] truncate leading-tight">
-            {roleDisplay}
+            {displayRoleText}
           </span>
         </div>
       </button>
@@ -144,8 +181,8 @@ export function UserDropdown({
                   {userEmail}
                 </p>
               )}
-              <span className="inline-block mt-0.5 text-[10px] font-semibold text-neutral-400 dark:text-neutral-500">
-                {roleDisplay}
+              <span className={cn("inline-block mt-1 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider rounded-full border", roleBadgeStyle)}>
+                {displayRoleText}
               </span>
             </div>
           </div>
@@ -161,24 +198,28 @@ export function UserDropdown({
               <User className="w-3.5 h-3.5 text-neutral-400" />
               <span>Profile Settings</span>
             </Link>
-            <Link
-              href="/dashboard/settings/team"
-              onClick={() => setIsOpen(false)}
-              className="flex items-center gap-2.5 px-4 py-2 text-xs font-medium text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
-              role="menuitem"
-            >
-              <Users className="w-3.5 h-3.5 text-neutral-400" />
-              <span>Team Settings</span>
-            </Link>
-            <Link
-              href="/dashboard/settings/billing"
-              onClick={() => setIsOpen(false)}
-              className="flex items-center gap-2.5 px-4 py-2 text-xs font-medium text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
-              role="menuitem"
-            >
-              <CreditCard className="w-3.5 h-3.5 text-neutral-400" />
-              <span>Billing & Plans</span>
-            </Link>
+            {canManageTeam(activeRole) && (
+              <Link
+                href="/dashboard/settings/team"
+                onClick={() => setIsOpen(false)}
+                className="flex items-center gap-2.5 px-4 py-2 text-xs font-medium text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+                role="menuitem"
+              >
+                <Users className="w-3.5 h-3.5 text-neutral-400" />
+                <span>Team Settings</span>
+              </Link>
+            )}
+            {canManageBilling(activeRole) && (
+              <Link
+                href="/dashboard/settings/billing"
+                onClick={() => setIsOpen(false)}
+                className="flex items-center gap-2.5 px-4 py-2 text-xs font-medium text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+                role="menuitem"
+              >
+                <CreditCard className="w-3.5 h-3.5 text-neutral-400" />
+                <span>Billing & Plans</span>
+              </Link>
+            )}
           </div>
 
           {/* Theme Mode Selector */}
