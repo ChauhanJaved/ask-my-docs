@@ -82,7 +82,7 @@ function LoginFormContent() {
           .from("profiles")
           .select("onboarding_completed")
           .eq("id", authData.user.id)
-          .single();
+          .maybeSingle();
 
         if (!profile || profile.onboarding_completed === false) {
           window.location.href = "/onboarding";

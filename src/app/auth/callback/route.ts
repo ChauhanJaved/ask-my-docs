@@ -56,7 +56,7 @@ export async function GET(request: NextRequest) {
           .from("profiles")
           .select("onboarding_completed")
           .eq("id", user.id)
-          .single();
+          .maybeSingle();
 
         if (!profile || profile.onboarding_completed === false) {
           return NextResponse.redirect(new URL("/onboarding", request.url));
