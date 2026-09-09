@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
+import { createAdminClient } from "@/utils/supabase/admin";
 import { Resend } from "resend";
 import { EMAIL_CONFIG } from "@/lib/constants";
 
@@ -47,16 +48,34 @@ export async function POST(req: Request) {
     const orgName = org?.name || "FTChat Workspace";
     const inviterName = profile.full_name || profile.email || "A team administrator";
 
-    // 2. Check if user is already an active member of this organization
-    const { data: existingMember } = await supabase
+    const adminSupabase = createAdminClient();
+
+    // 2. Check if user is already an active member of ANY organization (Approach B)
+    const { data: existingMember } = await adminSupabase
       .from("profiles")
-      .select("id")
-      .eq("organization_id", profile.organization_id)
-      .eq("email", cleanEmail)
+      .select("id, organization_id")
+      .ilike("email", cleanEmail)
       .maybeSingle();
 
     if (existingMember) {
-      return NextResponse.json({ error: "User with this email is already a member of this workspace" }, { status: 400 });
+      if (existingMember.organization_id === profile.organization_id) {
+        return NextResponse.json({ error: "User with this email is already a member of this workspace" }, { status: 400 });
+      } else {
+        return NextResponse.json({ error: "User with this email is already a member of another organization" }, { status: 400 });
+      }
+    }
+
+    // Check if user has an active pending invitation to another organization
+    const { data: existingInvite } = await adminSupabase
+      .from("invitations")
+      .select("id, organization_id")
+      .ilike("email", cleanEmail)
+      .eq("status", "pending")
+      .gt("expires_at", new Date().toISOString())
+      .maybeSingle();
+
+    if (existingInvite && existingInvite.organization_id !== profile.organization_id) {
+      return NextResponse.json({ error: "User with this email already has a pending invitation to another organization" }, { status: 400 });
     }
 
     // 3. Upsert invitation in Supabase DB

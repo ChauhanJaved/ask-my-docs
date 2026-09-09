@@ -38,6 +38,31 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "This invitation link has expired. Please ask your administrator to resend it." }, { status: 400 });
     }
 
+    // 1b. Check if logged-in user's email matches the invited email
+    if (user.email && invitation.email && user.email.toLowerCase() !== invitation.email.toLowerCase()) {
+      return NextResponse.json({
+        error: `This invitation was issued to ${invitation.email}, but you are currently logged in as ${user.email}.`
+      }, { status: 400 });
+    }
+
+    // 1c. Check if user is already associated with another organization (Approach B)
+    const { data: existingUserProfile } = await adminSupabase
+      .from("profiles")
+      .select("organization_id")
+      .eq("id", user.id)
+      .maybeSingle();
+
+    if (
+      existingUserProfile &&
+      existingUserProfile.organization_id &&
+      existingUserProfile.organization_id !== invitation.organization_id
+    ) {
+      return NextResponse.json(
+        { error: "Your account is already associated with another organization. You cannot join multiple organizations." },
+        { status: 400 }
+      );
+    }
+
     // 2. Update current user's profile using admin client to set new org & role
     const { error: profileUpdateError } = await adminSupabase
       .from("profiles")
