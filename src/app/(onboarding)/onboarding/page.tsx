@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { 
@@ -14,16 +14,36 @@ import {
   Layers, 
   Code2, 
   ShieldCheck,
-  MessageSquare
+  MessageSquare,
+  Users,
+  UserCheck,
+  XCircle,
+  Loader2
 } from "lucide-react";
 
 import { createBrowserSupabaseClient } from "@/utils/supabase/client";
 import { ThemeToggle } from "@/components/theme-toggle";
 
+interface PendingInvite {
+  id: string;
+  token: string;
+  organizationId: string;
+  organizationName: string;
+  role: string;
+  inviterName: string;
+  expiresAt: string;
+}
+
 export default function OnboardingPage() {
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Pending Invite Choice Screen State (Pattern A)
+  const [pendingInvite, setPendingInvite] = useState<PendingInvite | null>(null);
+  const [checkingInvite, setCheckingInvite] = useState(true);
+  const [inviteActionLoading, setInviteActionLoading] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   // Form State
   const [orgName, setOrgName] = useState("");
@@ -36,6 +56,77 @@ export default function OnboardingPage() {
   const [ingestType, setIngestType] = useState<"url" | "file">("url");
 
   const supabase = createBrowserSupabaseClient();
+
+  useEffect(() => {
+    async function checkPending() {
+      try {
+        const res = await fetch("/api/invitations/check-pending");
+        if (res.ok) {
+          const data = await res.json();
+          if (data.pendingInvitation) {
+            setPendingInvite(data.pendingInvitation);
+          }
+        }
+      } catch (e) {
+        console.error("Failed to check pending invitation:", e);
+      } finally {
+        setCheckingInvite(false);
+      }
+    }
+    checkPending();
+  }, []);
+
+  const handleAcceptInvite = async () => {
+    if (!pendingInvite) return;
+    setInviteActionLoading(true);
+    setActionError(null);
+    try {
+      const res = await fetch("/api/invitations/accept", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          token: pendingInvite.token,
+          invitationId: pendingInvite.id,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to accept invitation");
+      }
+      localStorage.setItem("ftchat_onboarded", "true");
+      window.location.href = "/dashboard";
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "An error occurred while accepting the invitation.";
+      setActionError(msg);
+      setInviteActionLoading(false);
+    }
+  };
+
+  const handleDeclineInvite = async () => {
+    if (!pendingInvite) return;
+    setInviteActionLoading(true);
+    setActionError(null);
+    try {
+      const res = await fetch("/api/invitations/decline", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          token: pendingInvite.token,
+          invitationId: pendingInvite.id,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to decline invitation");
+      }
+      setPendingInvite(null);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "An error occurred while declining the invitation.";
+      setActionError(msg);
+    } finally {
+      setInviteActionLoading(false);
+    }
+  };
 
   const handleNextStep = () => {
     if (step < 4) {
@@ -209,26 +300,114 @@ export default function OnboardingPage() {
 
       {/* Main Container */}
       <main className="max-w-2xl mx-auto w-full px-6 py-8 z-10 flex-1 flex flex-col justify-center">
-        {/* Progress Bar */}
-        <div className="mb-8">
-          <div className="flex justify-between items-center text-xs font-medium mb-3 text-muted-foreground">
-            <span className="flex items-center gap-1.5 text-brand-600 dark:text-brand-400">
-              <Sparkles className="w-3.5 h-3.5" /> Step {step} of 4
-            </span>
-            <span>
-              {step === 1 && "Workspace Setup"}
-              {step === 2 && "Platform Overview"}
-              {step === 3 && "First Knowledge Item"}
-              {step === 4 && "Ready to Launch"}
-            </span>
+        {checkingInvite ? (
+          <div className="bg-card/90 border border-border rounded-2xl p-8 shadow-xl text-center backdrop-blur-xl animate-pulse flex flex-col items-center justify-center py-16">
+            <Loader2 className="w-8 h-8 text-brand-600 dark:text-brand-400 animate-spin mb-3" />
+            <p className="text-sm text-muted-foreground font-medium">Checking team invitations...</p>
           </div>
-          <div className="h-2 w-full bg-muted rounded-full p-0.5 border border-border overflow-hidden">
-            <div
-              className="h-full bg-gradient-to-r from-brand-500 to-violet-500 rounded-full transition-all duration-500 ease-out"
-              style={{ width: `${(step / 4) * 100}%` }}
-            />
+        ) : pendingInvite ? (
+          /* PATTERN A: INVITATION CHOICE SCREEN */
+          <div className="bg-card/90 border border-border rounded-2xl p-6 sm:p-8 shadow-xl backdrop-blur-xl animate-in fade-in slide-in-from-bottom-3 duration-300">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="p-3 rounded-xl bg-brand-500/10 border border-brand-500/20 text-brand-600 dark:text-brand-400">
+                <Users className="w-6 h-6" />
+              </div>
+              <div>
+                <span className="inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wider uppercase bg-brand-500/10 text-brand-600 dark:text-brand-400 mb-1">
+                  Team Invitation Received
+                </span>
+                <h2 className="text-xl font-bold text-foreground tracking-tight">
+                  You&apos;ve Been Invited to Join a Workspace
+                </h2>
+              </div>
+            </div>
+
+            {actionError && (
+              <div className="bg-red-500/10 border border-red-500/30 text-red-600 dark:text-red-400 p-3 rounded-xl mb-6 text-xs flex items-center gap-2">
+                <XCircle className="w-4 h-4 shrink-0" />
+                <span>{actionError}</span>
+              </div>
+            )}
+
+            <div className="bg-muted/40 border border-border rounded-xl p-5 mb-6 space-y-3">
+              <div className="flex justify-between items-center text-sm">
+                <span className="text-muted-foreground">Organization Name:</span>
+                <span className="font-semibold text-foreground">{pendingInvite.organizationName}</span>
+              </div>
+              <div className="flex justify-between items-center text-sm border-t border-border pt-2.5">
+                <span className="text-muted-foreground">Invited By:</span>
+                <span className="font-medium text-foreground">{pendingInvite.inviterName}</span>
+              </div>
+              <div className="flex justify-between items-center text-sm border-t border-border pt-2.5">
+                <span className="text-muted-foreground">Assigned Role:</span>
+                <span className="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-semibold uppercase tracking-wider bg-brand-600/10 text-brand-600 dark:text-brand-400">
+                  {pendingInvite.role}
+                </span>
+              </div>
+            </div>
+
+            <p className="text-xs text-muted-foreground leading-relaxed mb-6">
+              Would you like to accept this invitation and collaborate with <strong>{pendingInvite.organizationName}</strong>, or decline and build your own separate organization workspace?
+            </p>
+
+            <div className="flex flex-col sm:flex-row items-center gap-3">
+              <Button
+                onClick={handleAcceptInvite}
+                disabled={inviteActionLoading}
+                className="w-full sm:flex-1 bg-brand-600 hover:bg-brand-500 text-white font-medium gap-2 rounded-xl py-2.5 shadow-md shadow-brand-500/20"
+              >
+                {inviteActionLoading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>Accepting...</span>
+                  </>
+                ) : (
+                  <>
+                    <UserCheck className="w-4 h-4" />
+                    <span>Accept & Join {pendingInvite.organizationName}</span>
+                  </>
+                )}
+              </Button>
+
+              <Button
+                onClick={handleDeclineInvite}
+                disabled={inviteActionLoading}
+                variant="outline"
+                className="w-full sm:flex-1 border-border text-foreground hover:bg-muted font-medium gap-2 rounded-xl py-2.5"
+              >
+                {inviteActionLoading ? (
+                  <span>Processing...</span>
+                ) : (
+                  <>
+                    <XCircle className="w-4 h-4 text-muted-foreground" />
+                    <span>Decline & Create My Own Workspace</span>
+                  </>
+                )}
+              </Button>
+            </div>
           </div>
-        </div>
+        ) : (
+          <>
+            {/* Progress Bar */}
+            <div className="mb-8">
+              <div className="flex justify-between items-center text-xs font-medium mb-3 text-muted-foreground">
+                <span className="flex items-center gap-1.5 text-brand-600 dark:text-brand-400">
+                  <Sparkles className="w-3.5 h-3.5" /> Step {step} of 4
+                </span>
+                <span>
+                  {step === 1 && "Workspace Setup"}
+                  {step === 2 && "Platform Overview"}
+                  {step === 3 && "First Knowledge Item"}
+                  {step === 4 && "Ready to Launch"}
+                </span>
+              </div>
+              <div className="h-2 w-full bg-muted rounded-full p-0.5 border border-border overflow-hidden">
+                <div
+                  className="h-full bg-gradient-to-r from-brand-500 to-violet-500 rounded-full transition-all duration-500 ease-out"
+                  style={{ width: `${(step / 4) * 100}%` }}
+                />
+              </div>
+            </div>
 
         {/* STEP 1: Workspace & Bot Customization */}
         {step === 1 && (
@@ -540,6 +719,8 @@ export default function OnboardingPage() {
               )}
             </Button>
           </div>
+        )}
+        </>
         )}
       </main>
 

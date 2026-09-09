@@ -11,20 +11,26 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Authentication required to accept invitation" }, { status: 401 });
     }
 
-    const { token } = await req.json();
+    const { token, invitationId } = await req.json();
 
-    if (!token) {
-      return NextResponse.json({ error: "Missing invitation token" }, { status: 400 });
+    if (!token && !invitationId) {
+      return NextResponse.json({ error: "Missing invitation identifier" }, { status: 400 });
     }
 
     const adminSupabase = createAdminClient();
 
     // 1. Fetch invitation using admin client
-    const { data: invitation, error: inviteError } = await adminSupabase
+    let query = adminSupabase
       .from("invitations")
-      .select("id, organization_id, email, role, status, expires_at")
-      .eq("token", token)
-      .maybeSingle();
+      .select("id, organization_id, email, role, status, expires_at");
+
+    if (token) {
+      query = query.eq("token", token);
+    } else {
+      query = query.eq("id", invitationId);
+    }
+
+    const { data: invitation, error: inviteError } = await query.maybeSingle();
 
     if (inviteError || !invitation) {
       return NextResponse.json({ error: "Invalid invitation" }, { status: 404 });
