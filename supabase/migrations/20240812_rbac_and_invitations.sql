@@ -10,7 +10,7 @@ CREATE TABLE IF NOT EXISTS invitations (
     role TEXT NOT NULL DEFAULT 'member' CHECK (role IN ('admin', 'member')),
     invited_by UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
     token TEXT UNIQUE NOT NULL DEFAULT encode(gen_random_bytes(32), 'hex'),
-    status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'accepted', 'expired', 'revoked')),
+    status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'accepted', 'declined', 'expired', 'revoked')),
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     expires_at TIMESTAMPTZ NOT NULL DEFAULT (now() + INTERVAL '7 days'),
     UNIQUE(organization_id, email)
