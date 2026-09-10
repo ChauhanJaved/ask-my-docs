@@ -17,6 +17,30 @@ export function canManageTeam(role?: UserRole | string | null): boolean {
 }
 
 /**
+ * Checks if a user with actorRole has permission to remove a team member with targetRole.
+ * - Owners can remove Admins and Members.
+ * - Admins can remove Members, but MUST NOT remove other Admins or Owners.
+ * - Members cannot remove anyone.
+ */
+export function canRemoveMember(
+  actorRole?: UserRole | string | null,
+  targetRole?: UserRole | string | null
+): boolean {
+  if (!actorRole || !targetRole) return false;
+  if (targetRole === 'owner') return false;
+
+  if (actorRole === 'owner') {
+    return targetRole === 'admin' || targetRole === 'member';
+  }
+
+  if (actorRole === 'admin') {
+    return targetRole === 'member';
+  }
+
+  return false;
+}
+
+/**
  * Checks if a given role has permission to change member roles (e.g. promote Member to Admin).
  * Only workspace Owners can change member roles.
  */

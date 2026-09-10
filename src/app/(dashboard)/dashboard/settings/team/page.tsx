@@ -3,7 +3,7 @@
 import { Button } from "@/components/ui/button";
 import { useState, useEffect, useCallback } from "react";
 import { createBrowserSupabaseClient } from "@/utils/supabase/client";
-import { canManageTeam, canChangeRoles, UserRole } from "@/lib/permissions";
+import { canManageTeam, canChangeRoles, canRemoveMember, UserRole } from "@/lib/permissions";
 import { Copy, Check, RefreshCw, Trash2, Mail, Link as LinkIcon } from "lucide-react";
 
 interface Member {
@@ -207,8 +207,12 @@ export default function TeamSettingsPage() {
       return;
     }
 
-    if (!canManageTeam(currentRole)) {
-      setError("You do not have permission to remove team members.");
+    if (!canRemoveMember(currentRole, role)) {
+      if (currentRole === "admin" && role === "admin") {
+        setError("Admins cannot remove other Admins.");
+      } else {
+        setError("You do not have permission to remove this team member.");
+      }
       return;
     }
 
@@ -317,7 +321,7 @@ export default function TeamSettingsPage() {
           </div>
           <div className="p-3 bg-white dark:bg-neutral-900 rounded border border-neutral-200 dark:border-neutral-800">
             <span className="font-bold text-blue-600 dark:text-blue-400 block mb-1">⚡ Admin</span>
-            <p className="text-neutral-500 dark:text-neutral-400">Can invite members, manage documents & bot settings. Cannot touch billing.</p>
+            <p className="text-neutral-500 dark:text-neutral-400">Can invite & remove members (cannot remove admins), manage documents & bot settings. Cannot touch billing.</p>
           </div>
           <div className="p-3 bg-white dark:bg-neutral-900 rounded border border-neutral-200 dark:border-neutral-800">
             <span className="font-bold text-neutral-600 dark:text-neutral-300 block mb-1">👤 Member</span>
@@ -447,7 +451,7 @@ export default function TeamSettingsPage() {
                     )}
                   </td>
                   <td className="px-6 py-4 text-right">
-                    {member.role !== "owner" && canManageTeam(currentRole) ? (
+                    {canRemoveMember(currentRole, member.role) ? (
                       <button
                         className="text-rose-600 dark:text-rose-400 hover:text-rose-800 dark:hover:text-rose-300 font-semibold transition-colors disabled:opacity-30 text-xs"
                         onClick={() => handleRemoveMember(member.id, member.email, member.role)}
