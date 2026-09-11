@@ -260,42 +260,23 @@ export default function TeamSettingsPage() {
     return <div className="text-center py-12 text-neutral-500 dark:text-neutral-400 font-medium">Loading workspace team details...</div>;
   }
 
-  if (!canManageTeam(currentRole)) {
-    return (
-      <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-2xl p-8 shadow-sm text-center max-w-lg mx-auto my-12 space-y-4">
-        <div className="h-12 w-12 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center mx-auto text-xl font-bold">
-          🔒
-        </div>
-        <h2 className="text-xl font-bold font-display text-neutral-900 dark:text-white">
-          Access Restricted
-        </h2>
-        <p className="text-xs text-neutral-500 dark:text-neutral-400 leading-relaxed">
-          Only workspace <strong>Owners</strong> and <strong>Admins</strong> can view team member rosters or send invitations. You are currently logged in as a <strong className="capitalize text-neutral-700 dark:text-neutral-300">{currentRole}</strong>.
-        </p>
-        <div className="pt-2">
-          <Button
-            onClick={() => (window.location.href = "/dashboard")}
-            className="bg-brand-600 hover:bg-brand-700 text-white text-xs px-6 rounded-xl"
-          >
-            Return to Dashboard
-          </Button>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-8">
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
         <div>
-          <h1 className="text-2xl font-bold font-display text-neutral-900 dark:text-white">Team Workspace Settings</h1>
-          <p className="text-sm text-neutral-500 dark:text-neutral-400">Manage team collaboration, invite colleagues, and assign role-based access.</p>
+          <h1 className="text-2xl font-bold font-display text-neutral-900 dark:text-white">Team Workspace</h1>
+          <p className="text-sm text-neutral-500 dark:text-neutral-400">View team members, invite colleagues, and manage role-based access.</p>
         </div>
         <div className="flex items-center gap-2">
           <span className="text-xs font-semibold px-3 py-1 rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 border border-neutral-200 dark:border-neutral-700">
             Your Role: <strong className="capitalize text-brand-600 dark:text-brand-400">{currentRole}</strong>
           </span>
+          {!canManageTeam(currentRole) && (
+            <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+              Read-Only Access
+            </span>
+          )}
         </div>
       </div>
 
@@ -311,31 +292,12 @@ export default function TeamSettingsPage() {
         </div>
       )}
 
-      {/* Role Summary Banner */}
-      <div className="bg-neutral-50 dark:bg-neutral-900/60 border border-neutral-200 dark:border-neutral-800 rounded-lg p-5">
-        <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-500 dark:text-neutral-400 mb-3">Role Hierarchy Summary</h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
-          <div className="p-3 bg-white dark:bg-neutral-900 rounded border border-neutral-200 dark:border-neutral-800">
-            <span className="font-bold text-amber-600 dark:text-amber-400 block mb-1">👑 Owner</span>
-            <p className="text-neutral-500 dark:text-neutral-400">Full control over Billing, Plans, Team Invites, Role Changes, and Bot Config.</p>
-          </div>
-          <div className="p-3 bg-white dark:bg-neutral-900 rounded border border-neutral-200 dark:border-neutral-800">
-            <span className="font-bold text-blue-600 dark:text-blue-400 block mb-1">⚡ Admin</span>
-            <p className="text-neutral-500 dark:text-neutral-400">Can invite & remove members (cannot remove admins), manage documents & bot settings. Cannot touch billing.</p>
-          </div>
-          <div className="p-3 bg-white dark:bg-neutral-900 rounded border border-neutral-200 dark:border-neutral-800">
-            <span className="font-bold text-neutral-600 dark:text-neutral-300 block mb-1">👤 Member</span>
-            <p className="text-neutral-500 dark:text-neutral-400">Can upload/delete documents, view analytics & test playground. Read-only settings.</p>
-          </div>
-        </div>
-      </div>
-
       {/* Invite Member Section (Visible to Owner & Admin) */}
-      {canManageTeam(currentRole) ? (
+      {canManageTeam(currentRole) && (
         <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-lg p-6 shadow-sm">
           <h3 className="font-semibold text-sm text-neutral-900 dark:text-white font-display border-b border-neutral-200 dark:border-neutral-800 pb-4 flex items-center gap-2">
             <Mail className="w-4 h-4 text-brand-600 dark:text-brand-400" />
-            <span>Invite Team Member via Resend & Direct Link</span>
+            <span>Invite Team Member</span>
           </h3>
           <form onSubmit={handleInviteMember} className="space-y-4 pt-4">
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -373,7 +335,7 @@ export default function TeamSettingsPage() {
             <div className="flex items-center justify-between pt-2">
               <p className="text-[11px] text-neutral-500 dark:text-neutral-400 flex items-center gap-1">
                 <LinkIcon className="w-3 h-3 text-brand-500" />
-                <span>An invite email will be sent via Resend, and a shareable join link generated instantly.</span>
+                <span>An invitation email will be sent along with a shareable join link.</span>
               </p>
               <Button
                 type="submit"
@@ -384,10 +346,6 @@ export default function TeamSettingsPage() {
               </Button>
             </div>
           </form>
-        </div>
-      ) : (
-        <div className="bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900 rounded-lg p-4 text-xs text-amber-800 dark:text-amber-300">
-          ℹ️ You are logged in as a <strong>Member</strong>. Contact your workspace Owner or Admin to invite new colleagues.
         </div>
       )}
 
@@ -475,7 +433,6 @@ export default function TeamSettingsPage() {
           <div className="p-5 border-b border-neutral-200 dark:border-neutral-800 flex justify-between items-center">
             <h3 className="font-semibold text-sm text-neutral-900 dark:text-white flex items-center gap-2">
               <span>Pending Invitations ({invitations.length})</span>
-              <span className="text-xs font-normal text-neutral-500 dark:text-neutral-400">(Sent via Resend & Direct Link)</span>
             </h3>
           </div>
           <table className="w-full text-left border-collapse">
@@ -532,7 +489,7 @@ export default function TeamSettingsPage() {
                       onClick={() => handleResendInvitation(inv.id)}
                       disabled={resendingId === inv.id}
                       className="inline-flex items-center gap-1 text-neutral-700 dark:text-neutral-300 hover:text-brand-600 dark:hover:text-brand-400 font-semibold text-xs transition-colors bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 px-2.5 py-1 rounded disabled:opacity-50"
-                      title="Resend email via Resend"
+                      title="Resend invitation email"
                     >
                       <RefreshCw className={`w-3 h-3 ${resendingId === inv.id ? "animate-spin" : ""}`} />
                       <span>{resendingId === inv.id ? "Sending..." : "Resend"}</span>

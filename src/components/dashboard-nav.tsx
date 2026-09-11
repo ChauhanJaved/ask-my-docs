@@ -142,15 +142,11 @@ export function DashboardNav({
       href: "/dashboard/settings/profile",
       icon: User,
     },
-    ...(canManageTeam(activeRole)
-      ? [
-          {
-            title: "Team Settings",
-            href: "/dashboard/settings/team",
-            icon: Users,
-          },
-        ]
-      : []),
+    {
+      title: "Team Settings",
+      href: "/dashboard/settings/team",
+      icon: Users,
+    },
     ...(canManageBilling(activeRole)
       ? [
           {
