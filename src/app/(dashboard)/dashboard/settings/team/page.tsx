@@ -3,8 +3,29 @@
 import { Button } from "@/components/ui/button";
 import { useState, useEffect, useCallback } from "react";
 import { createBrowserSupabaseClient } from "@/utils/supabase/client";
-import { canManageTeam, canChangeRoles, canRemoveMember, UserRole } from "@/lib/permissions";
-import { Copy, Check, RefreshCw, Trash2, Mail, Link as LinkIcon, Users, Clock, ShieldCheck } from "lucide-react";
+import {
+  canManageTeam,
+  canChangeRoles,
+  canRemoveMember,
+  canManageOrganization,
+  UserRole,
+} from "@/lib/permissions";
+import {
+  Copy,
+  Check,
+  RefreshCw,
+  Trash2,
+  Mail,
+  Link as LinkIcon,
+  Users,
+  Clock,
+  ShieldCheck,
+  Building2,
+  Pencil,
+  Save,
+  X,
+  Info,
+} from "lucide-react";
 
 interface Member {
   id: string;
@@ -28,10 +49,14 @@ export default function TeamSettingsPage() {
   const [currentRole, setCurrentRole] = useState<UserRole>("member");
   const [currentUserId, setCurrentUserId] = useState<string>("");
   const [orgId, setOrgId] = useState<string>("");
+  const [orgName, setOrgName] = useState<string>("");
+  const [editOrgName, setEditOrgName] = useState<string>("");
+  const [isEditingOrgName, setIsEditingOrgName] = useState<boolean>(false);
+  const [isSavingOrgName, setIsSavingOrgName] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
-  
+
   // Invite form state
   const [inviting, setInviting] = useState<boolean>(false);
   const [inviteEmail, setInviteEmail] = useState<string>("");
@@ -79,6 +104,20 @@ export default function TeamSettingsPage() {
       setCurrentRole(userRole);
       setOrgId(profile.organization_id);
 
+      // Fetch organization details
+      if (profile.organization_id) {
+        const { data: orgData, error: orgError } = await supabase
+          .from("organizations")
+          .select("id, name")
+          .eq("id", profile.organization_id)
+          .single();
+
+        if (!orgError && orgData) {
+          setOrgName(orgData.name || "My Organization");
+          setEditOrgName(orgData.name || "My Organization");
+        }
+      }
+
       // Get all active team members in organization
       const { data: membersData, error: membersError } = await supabase
         .from("profiles")
@@ -113,6 +152,46 @@ export default function TeamSettingsPage() {
   useEffect(() => {
     fetchTeamData();
   }, [fetchTeamData]);
+
+  const handleUpdateOrgName = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const trimmedName = editOrgName.trim();
+    if (!trimmedName) {
+      setError("Organization name cannot be empty.");
+      return;
+    }
+
+    if (!canManageOrganization(currentRole)) {
+      setError("Only the workspace Owner can change the organization name.");
+      return;
+    }
+
+    setIsSavingOrgName(true);
+    setError(null);
+    setSuccessMsg(null);
+
+    try {
+      const supabase = createBrowserSupabaseClient();
+      const { error: updateError } = await supabase
+        .from("organizations")
+        .update({
+          name: trimmedName,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", orgId);
+
+      if (updateError) throw updateError;
+
+      setOrgName(trimmedName);
+      setIsEditingOrgName(false);
+      setSuccessMsg("Organization name updated successfully.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to update organization name.");
+      console.error("Error updating organization name:", err);
+    } finally {
+      setIsSavingOrgName(false);
+    }
+  };
 
   const handleInviteMember = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -279,28 +358,20 @@ export default function TeamSettingsPage() {
 
   return (
     <div className="space-y-6 sm:space-y-8 max-w-7xl mx-auto w-full px-1 sm:px-2">
-      {/* Page Header */}
+      {/* Page Header (Role badge removed as role is shown in user avatar area) */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-neutral-200/80 dark:border-neutral-800">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-lg bg-brand-500/10 dark:bg-brand-500/20 text-brand-600 dark:text-brand-400 flex items-center justify-center border border-brand-500/20">
               <Users className="w-4 h-4" />
             </div>
-            <h1 className="text-xl sm:text-2xl font-bold font-display text-neutral-900 dark:text-white tracking-tight">Team Workspace</h1>
+            <h1 className="text-xl sm:text-2xl font-bold font-display text-neutral-900 dark:text-white tracking-tight">
+              Team Workspace
+            </h1>
           </div>
-          <p className="text-xs sm:text-sm text-neutral-500 dark:text-neutral-400">View team members, invite colleagues, and manage role-based access control.</p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2 pt-1 md:pt-0">
-          <span className="text-xs font-semibold px-3 py-1.5 rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 border border-neutral-200 dark:border-neutral-700/80 shadow-2xs flex items-center gap-1.5">
-            <ShieldCheck className="w-3.5 h-3.5 text-brand-600 dark:text-brand-400" />
-            <span>Your Role:</span>
-            <strong className="capitalize text-brand-600 dark:text-brand-400">{currentRole}</strong>
-          </span>
-          {!canManageTeam(currentRole) && (
-            <span className="text-xs font-medium px-2.5 py-1.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
-              Read-Only Access
-            </span>
-          )}
+          <p className="text-xs sm:text-sm text-neutral-500 dark:text-neutral-400">
+            View team members, invite colleagues, and manage organization settings and access control.
+          </p>
         </div>
       </div>
 
@@ -316,16 +387,102 @@ export default function TeamSettingsPage() {
         </div>
       )}
 
+      {/* Organization Settings Section (Owner can change org name as per industry standard) */}
+      <div className="bg-white dark:bg-neutral-900 border border-neutral-200/80 dark:border-neutral-800 rounded-xl p-4 sm:p-6 shadow-xs">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-neutral-100 dark:border-neutral-800/80 pb-4">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-brand-500/10 dark:bg-brand-500/20 text-brand-600 dark:text-brand-400 flex items-center justify-center border border-brand-500/20 shrink-0">
+              <Building2 className="w-4 h-4" />
+            </div>
+            <div>
+              <h2 className="font-semibold text-sm text-neutral-900 dark:text-white font-display">Organization Profile</h2>
+              <p className="text-xs text-neutral-500 dark:text-neutral-400">Manage primary workspace identity and organization settings.</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="pt-4">
+          {isEditingOrgName && canManageOrganization(currentRole) ? (
+            <form onSubmit={handleUpdateOrgName} className="space-y-3 max-w-xl">
+              <div>
+                <label htmlFor="orgNameInput" className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1.5">
+                  Organization Name
+                </label>
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                  <input
+                    id="orgNameInput"
+                    type="text"
+                    value={editOrgName}
+                    onChange={(e) => setEditOrgName(e.target.value)}
+                    className="flex-1 bg-white dark:bg-neutral-950 border border-neutral-300 dark:border-neutral-700 text-neutral-900 dark:text-white rounded-lg px-3.5 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 transition-all font-medium"
+                    placeholder="Enter organization name"
+                    disabled={isSavingOrgName}
+                    required
+                  />
+                  <div className="flex items-center gap-2">
+                    <Button
+                      type="submit"
+                      disabled={isSavingOrgName}
+                      className="bg-brand-600 hover:bg-brand-700 text-white text-xs font-medium px-4 py-2 rounded-lg transition-colors flex items-center gap-1.5 shadow-2xs"
+                    >
+                      <Save className="w-3.5 h-3.5" />
+                      <span>{isSavingOrgName ? "Saving..." : "Save"}</span>
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      disabled={isSavingOrgName}
+                      onClick={() => {
+                        setEditOrgName(orgName);
+                        setIsEditingOrgName(false);
+                      }}
+                      className="text-neutral-700 dark:text-neutral-300 border-neutral-300 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-800 text-xs px-3 py-2 rounded-lg transition-colors flex items-center gap-1"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                      <span>Cancel</span>
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </form>
+          ) : (
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-xl bg-neutral-50/80 dark:bg-neutral-950/60 border border-neutral-200/60 dark:border-neutral-800/80">
+              <div className="space-y-1">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">Organization Name</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-base font-bold text-neutral-900 dark:text-white font-display">{orgName || "Loading..."}</span>
+                </div>
+              </div>
+
+              {canManageOrganization(currentRole) ? (
+                <Button
+                  type="button"
+                  onClick={() => setIsEditingOrgName(true)}
+                  className="w-full sm:w-auto bg-white dark:bg-neutral-900 hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-800 dark:text-neutral-200 border border-neutral-300 dark:border-neutral-700 text-xs font-medium px-3.5 py-2 rounded-lg transition-colors flex items-center justify-center gap-1.5 shadow-2xs"
+                >
+                  <Pencil className="w-3.5 h-3.5 text-brand-600 dark:text-brand-400" />
+                  <span>Edit Name</span>
+                </Button>
+              ) : (
+                <span className="text-[11px] text-neutral-500 dark:text-neutral-400 italic bg-neutral-200/50 dark:bg-neutral-900 px-3 py-1 rounded-full border border-neutral-200/80 dark:border-neutral-800">
+                  Only Workspace Owner can edit org name
+                </span>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+
       {/* Invite Member Section (Visible to Owner & Admin) */}
       {canManageTeam(currentRole) && (
-        <div className="bg-white dark:bg-neutral-900 border border-neutral-200/80 dark:border-neutral-800 rounded-xl p-4 sm:p-6 shadow-xs">
+        <div className="bg-white dark:bg-neutral-900 border border-neutral-200/80 dark:border-neutral-800 rounded-xl p-4 sm:p-6 shadow-xs space-y-5">
           <h3 className="font-semibold text-sm text-neutral-900 dark:text-white font-display border-b border-neutral-100 dark:border-neutral-800/80 pb-3 flex items-center gap-2">
             <div className="w-7 h-7 rounded-lg bg-brand-50 dark:bg-brand-950/60 text-brand-600 dark:text-brand-400 flex items-center justify-center border border-brand-200/60 dark:border-brand-900/50">
               <Mail className="w-3.5 h-3.5" />
             </div>
             <span>Invite Team Member</span>
           </h3>
-          <form onSubmit={handleInviteMember} className="space-y-4 pt-4">
+          <form onSubmit={handleInviteMember} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-12 gap-3 md:gap-4">
               <div className="md:col-span-7 lg:col-span-8">
                 <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1.5" htmlFor="inviteEmail">
@@ -350,11 +507,11 @@ export default function TeamSettingsPage() {
                   id="inviteRole"
                   value={inviteRole}
                   onChange={(e) => setInviteRole(e.target.value as UserRole)}
-                  className="w-full bg-white dark:bg-neutral-950 border border-neutral-300 dark:border-neutral-700 text-neutral-900 dark:text-white rounded-lg px-3.5 py-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 transition-all"
+                  className="w-full bg-white dark:bg-neutral-950 border border-neutral-300 dark:border-neutral-700 text-neutral-900 dark:text-white rounded-lg px-3.5 py-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 transition-all font-medium"
                   disabled={inviting}
                 >
-                  <option value="member">Member (Upload docs & test bot)</option>
-                  <option value="admin">Admin (Manage team & bot settings)</option>
+                  <option value="member">Member</option>
+                  <option value="admin">Admin</option>
                 </select>
               </div>
             </div>
@@ -372,6 +529,51 @@ export default function TeamSettingsPage() {
               </Button>
             </div>
           </form>
+
+          {/* Industry Standard Role Permissions & Limitations Breakdown */}
+          <div className="pt-4 border-t border-neutral-100 dark:border-neutral-800/80">
+            <h4 className="text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-3 flex items-center gap-1.5">
+              <ShieldCheck className="w-3.5 h-3.5 text-brand-600 dark:text-brand-400" />
+              <span>Role Permissions & Limitations</span>
+            </h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+              <div className="p-3.5 rounded-xl bg-neutral-50/80 dark:bg-neutral-950/60 border border-neutral-200/60 dark:border-neutral-800/80 space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-neutral-900 dark:text-white flex items-center gap-1.5">
+                    Member
+                  </span>
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-neutral-200/80 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 font-semibold">
+                    Standard Role
+                  </span>
+                </div>
+                <p className="text-neutral-600 dark:text-neutral-400 text-[11px] leading-relaxed">
+                  Can upload knowledge base documents, manage chat sessions, and test AI chatbot features.
+                </p>
+                <div className="pt-1 text-[10px] text-amber-600 dark:text-amber-400 font-medium flex items-center gap-1">
+                  <Info className="w-3 h-3 shrink-0" />
+                  <span>Limitation: Cannot invite members, alter roles, or edit organization profile.</span>
+                </div>
+              </div>
+
+              <div className="p-3.5 rounded-xl bg-neutral-50/80 dark:bg-neutral-950/60 border border-neutral-200/60 dark:border-neutral-800/80 space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-neutral-900 dark:text-white flex items-center gap-1.5">
+                    Admin
+                  </span>
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-brand-500/10 text-brand-600 dark:text-brand-400 font-semibold">
+                    Management Role
+                  </span>
+                </div>
+                <p className="text-neutral-600 dark:text-neutral-400 text-[11px] leading-relaxed">
+                  Can invite new members, remove members, and configure chatbot parameters & document pipelines.
+                </p>
+                <div className="pt-1 text-[10px] text-amber-600 dark:text-amber-400 font-medium flex items-center gap-1">
+                  <Info className="w-3 h-3 shrink-0" />
+                  <span>Limitation: Cannot change member roles, edit organization name, or manage billing.</span>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
@@ -563,7 +765,9 @@ export default function TeamSettingsPage() {
                     </span>
                   </div>
                   <div className="flex items-center justify-between text-[11px] text-neutral-500 dark:text-neutral-400 pt-0.5">
-                    <span>Role: <strong className="capitalize text-neutral-700 dark:text-neutral-300">{inv.role}</strong></span>
+                    <span>
+                      Role: <strong className="capitalize text-neutral-700 dark:text-neutral-300">{inv.role}</strong>
+                    </span>
                     <span>Sent: {new Date(inv.created_at).toLocaleDateString()}</span>
                   </div>
                 </div>

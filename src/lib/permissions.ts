@@ -63,3 +63,12 @@ export function canManageBotSettings(role?: UserRole | string | null): boolean {
 export function canManageDocuments(role?: UserRole | string | null): boolean {
   return role === 'owner' || role === 'admin' || role === 'member';
 }
+
+/**
+ * Checks if a given role has permission to edit organization details (such as org name).
+ * Only workspace Owners can manage organization details.
+ */
+export function canManageOrganization(role?: UserRole | string | null): boolean {
+  return role === 'owner';
+}
+
