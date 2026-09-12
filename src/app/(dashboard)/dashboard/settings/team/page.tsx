@@ -3,6 +3,7 @@
 import { Button } from "@/components/ui/button";
 import { useState, useEffect, useCallback } from "react";
 import { createBrowserSupabaseClient } from "@/utils/supabase/client";
+import { DashboardPageSkeleton } from "@/components/ui/page-loader";
 import {
   canManageTeam,
   canChangeRoles,
@@ -348,12 +349,7 @@ export default function TeamSettingsPage() {
   };
 
   if (loading) {
-    return (
-      <div className="flex flex-col items-center justify-center py-16 space-y-3">
-        <div className="w-8 h-8 border-3 border-brand-600 border-t-transparent rounded-full animate-spin"></div>
-        <p className="text-xs text-neutral-500 dark:text-neutral-400 font-medium">Loading workspace team details...</p>
-      </div>
-    );
+    return <DashboardPageSkeleton title={true} statCards={2} tableRows={3} />;
   }
 
   return (

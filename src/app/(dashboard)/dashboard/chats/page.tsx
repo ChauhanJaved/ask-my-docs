@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { createBrowserSupabaseClient } from "@/utils/supabase/client";
+import { DashboardPageSkeleton } from "@/components/ui/page-loader";
 
 export default function ChatHistoryPage() {
   interface ChatMessage {
@@ -116,12 +117,7 @@ export default function ChatHistoryPage() {
   }, [fetchChatHistory]);
 
   if (loading) {
-    return <div className="flex min-h-[20vh] items-center justify-center">
-      <div className="text-center">
-        <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-brand-600 dark:border-brand-400"></div>
-        <p className="mt-2 text-sm text-neutral-500 dark:text-neutral-400">Loading chat history...</p>
-      </div>
-    </div>;
+    return <DashboardPageSkeleton title={true} statCards={2} tableRows={4} />;
   }
 
   if (error) {

@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
 import { createBrowserSupabaseClient } from "@/utils/supabase/client";
 import { canManageBilling, UserRole } from "@/lib/permissions";
+import { DashboardPageSkeleton } from "@/components/ui/page-loader";
 
 export default function BillingSettingsPage() {
   const [role, setRole] = useState<UserRole | null>(null);
@@ -37,7 +38,7 @@ export default function BillingSettingsPage() {
   const isOwner = canManageBilling(role);
 
   if (loading) {
-    return <div className="text-center py-12 text-neutral-500 dark:text-neutral-400 font-medium">Loading billing details...</div>;
+    return <DashboardPageSkeleton title={true} statCards={3} tableRows={2} />;
   }
 
   if (!isOwner) {
