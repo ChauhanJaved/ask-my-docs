@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Inter, Plus_Jakarta_Sans, JetBrains_Mono } from "next/font/google";
 import { siteConfig } from "@/config/site";
 import { ThemeProvider } from "@/components/theme-provider";
+import { Toaster } from "@/components/ui/toaster";
 import NextTopLoader from "nextjs-toploader";
 import "./globals.css";
 
@@ -109,6 +110,7 @@ export default function RootLayout({
             zIndex={1600}
           />
           {children}
+          <Toaster />
         </ThemeProvider>
         <script
           dangerouslySetInnerHTML={{

@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { useState, useEffect, useCallback } from "react";
 import { createBrowserSupabaseClient } from "@/utils/supabase/client";
 import { DashboardPageSkeleton } from "@/components/ui/page-loader";
+import { toast } from "sonner";
 import {
   canManageTeam,
   canChangeRoles,
@@ -55,8 +56,6 @@ export default function TeamSettingsPage() {
   const [isEditingOrgName, setIsEditingOrgName] = useState<boolean>(false);
   const [isSavingOrgName, setIsSavingOrgName] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
-  const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
   // Invite form state
   const [inviting, setInviting] = useState<boolean>(false);
@@ -81,13 +80,12 @@ export default function TeamSettingsPage() {
 
   const fetchTeamData = useCallback(async () => {
     setLoading(true);
-    setError(null);
     try {
       const supabase = createBrowserSupabaseClient();
       const { data: { user } } = await supabase.auth.getUser();
 
       if (!user) {
-        setError("User not authenticated");
+        toast.error("User not authenticated");
         return;
       }
       setCurrentUserId(user.id);
@@ -143,7 +141,7 @@ export default function TeamSettingsPage() {
         }
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "An unknown error occurred");
+      toast.error(err instanceof Error ? err.message : "An unknown error occurred while fetching team data.");
       console.error("Error fetching team data:", err);
     } finally {
       setLoading(false);
@@ -158,18 +156,16 @@ export default function TeamSettingsPage() {
     e.preventDefault();
     const trimmedName = editOrgName.trim();
     if (!trimmedName) {
-      setError("Organization name cannot be empty.");
+      toast.error("Organization name cannot be empty.");
       return;
     }
 
     if (!canManageOrganization(currentRole)) {
-      setError("Only the workspace Owner can change the organization name.");
+      toast.error("Only the workspace Owner can change the organization name.");
       return;
     }
 
     setIsSavingOrgName(true);
-    setError(null);
-    setSuccessMsg(null);
 
     try {
       const supabase = createBrowserSupabaseClient();
@@ -185,9 +181,9 @@ export default function TeamSettingsPage() {
 
       setOrgName(trimmedName);
       setIsEditingOrgName(false);
-      setSuccessMsg("Organization name updated successfully.");
+      toast.success("Organization name updated successfully.");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to update organization name.");
+      toast.error(err instanceof Error ? err.message : "Failed to update organization name.");
       console.error("Error updating organization name:", err);
     } finally {
       setIsSavingOrgName(false);
@@ -197,11 +193,9 @@ export default function TeamSettingsPage() {
   const handleInviteMember = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!inviteEmail.trim()) return;
-    setError(null);
-    setSuccessMsg(null);
 
     if (!canManageTeam(currentRole)) {
-      setError("Only workspace Owners and Admins can invite team members.");
+      toast.error("Only workspace Owners and Admins can invite team members.");
       return;
     }
 
@@ -220,12 +214,12 @@ export default function TeamSettingsPage() {
         throw new Error(data.error || "Failed to send invitation.");
       }
 
-      setSuccessMsg(data.message || `Invitation created for ${inviteEmail.trim()} as ${inviteRole.toUpperCase()}`);
+      toast.success(data.message || `Invitation created for ${inviteEmail.trim()} as ${inviteRole.toUpperCase()}`);
       setInviteEmail("");
       setInviteRole("member");
       await fetchTeamData();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to send invitation.");
+      toast.error(err instanceof Error ? err.message : "Failed to send invitation.");
       console.error("Error inviting member:", err);
     } finally {
       setInviting(false);
@@ -239,6 +233,7 @@ export default function TeamSettingsPage() {
 
     navigator.clipboard.writeText(inviteUrl);
     setCopiedId(id);
+    toast.success("Invitation link copied to clipboard");
     setTimeout(() => {
       setCopiedId(null);
     }, 2500);
@@ -246,8 +241,6 @@ export default function TeamSettingsPage() {
 
   const handleResendInvitation = async (invitationId: string) => {
     setResendingId(invitationId);
-    setError(null);
-    setSuccessMsg(null);
 
     try {
       const res = await fetch("/api/team/resend-invite", {
@@ -259,10 +252,10 @@ export default function TeamSettingsPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to resend invitation");
 
-      setSuccessMsg(data.message || "Invitation email resent successfully.");
+      toast.success(data.message || "Invitation email resent successfully.");
       await fetchTeamData();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to resend invitation.");
+      toast.error(err instanceof Error ? err.message : "Failed to resend invitation.");
     } finally {
       setResendingId(null);
     }
@@ -270,12 +263,9 @@ export default function TeamSettingsPage() {
 
   const handleRoleChange = async (memberId: string, newRole: UserRole) => {
     if (!canChangeRoles(currentRole)) {
-      setError("Only the workspace Owner can modify member roles.");
+      toast.error("Only the workspace Owner can modify member roles.");
       return;
     }
-
-    setError(null);
-    setSuccessMsg(null);
 
     try {
       const supabase = createBrowserSupabaseClient();
@@ -286,24 +276,24 @@ export default function TeamSettingsPage() {
 
       if (updateError) throw updateError;
 
-      setSuccessMsg("Member role updated successfully.");
+      toast.success("Member role updated successfully.");
       await fetchTeamData();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to update role.");
+      toast.error(err instanceof Error ? err.message : "Failed to update role.");
     }
   };
 
   const handleRemoveMember = async (memberId: string, memberEmail: string, role: string) => {
     if (role === "owner") {
-      setError("The workspace Owner cannot be removed.");
+      toast.error("The workspace Owner cannot be removed.");
       return;
     }
 
     if (!canRemoveMember(currentRole, role)) {
       if (currentRole === "admin" && role === "admin") {
-        setError("Admins cannot remove other Admins.");
+        toast.error("Admins cannot remove other Admins.");
       } else {
-        setError("You do not have permission to remove this team member.");
+        toast.error("You do not have permission to remove this team member.");
       }
       return;
     }
@@ -311,9 +301,6 @@ export default function TeamSettingsPage() {
     if (!window.confirm(`Are you sure you want to remove ${memberEmail} from this workspace?`)) {
       return;
     }
-
-    setError(null);
-    setSuccessMsg(null);
 
     try {
       const supabase = createBrowserSupabaseClient();
@@ -324,10 +311,10 @@ export default function TeamSettingsPage() {
 
       if (deleteError) throw deleteError;
 
-      setSuccessMsg(`Member ${memberEmail} removed successfully.`);
+      toast.success(`Member ${memberEmail} removed successfully.`);
       await fetchTeamData();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to remove member.");
+      toast.error(err instanceof Error ? err.message : "Failed to remove member.");
     }
   };
 
@@ -341,10 +328,10 @@ export default function TeamSettingsPage() {
 
       if (revokeError) throw revokeError;
 
-      setSuccessMsg("Invitation revoked successfully.");
+      toast.success("Invitation revoked successfully.");
       await fetchTeamData();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to revoke invitation.");
+      toast.error(err instanceof Error ? err.message : "Failed to revoke invitation.");
     }
   };
 
@@ -370,18 +357,6 @@ export default function TeamSettingsPage() {
           </p>
         </div>
       </div>
-
-      {/* Status Alerts */}
-      {error && (
-        <div className="bg-rose-50 dark:bg-rose-950/40 border-l-4 border-rose-500 text-rose-700 dark:text-rose-300 p-3.5 sm:p-4 rounded-r-xl text-xs shadow-2xs animate-in fade-in duration-200">
-          <p className="font-semibold">{error}</p>
-        </div>
-      )}
-      {successMsg && (
-        <div className="bg-emerald-50 dark:bg-emerald-950/40 border-l-4 border-emerald-500 text-emerald-700 dark:text-emerald-300 p-3.5 sm:p-4 rounded-r-xl text-xs shadow-2xs animate-in fade-in duration-200">
-          <p className="font-semibold">{successMsg}</p>
-        </div>
-      )}
 
       {/* Organization Settings Section (Owner can change org name as per industry standard) */}
       <div className="bg-white dark:bg-neutral-900 border border-neutral-200/80 dark:border-neutral-800 rounded-xl p-4 sm:p-6 shadow-xs">

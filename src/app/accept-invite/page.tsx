@@ -5,6 +5,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { createBrowserSupabaseClient } from "@/utils/supabase/client";
+import { toast } from "sonner";
 import { 
   Sparkles, 
   Building2, 
@@ -36,13 +37,10 @@ function AcceptInviteContent() {
   const [accepting, setAccepting] = useState(false);
   const [details, setDetails] = useState<InviteDetails | null>(null);
   const [user, setUser] = useState<unknown | null>(null);
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
   useEffect(() => {
     const checkAuthAndToken = async () => {
       setLoading(true);
-      setErrorMsg(null);
 
       // Check browser user session
       const supabase = createBrowserSupabaseClient();
@@ -72,7 +70,6 @@ function AcceptInviteContent() {
   const handleAcceptInvite = async () => {
     if (!token) return;
     setAccepting(true);
-    setErrorMsg(null);
 
     try {
       const res = await fetch("/api/invitations/accept", {
@@ -87,12 +84,12 @@ function AcceptInviteContent() {
         throw new Error(data.error || "Failed to accept invitation");
       }
 
-      setSuccessMsg(data.message || "Invitation accepted! Redirecting to workspace...");
+      toast.success(data.message || "Invitation accepted! Redirecting to workspace...");
       setTimeout(() => {
         window.location.href = "/dashboard";
       }, 1500);
     } catch (err) {
-      setErrorMsg(err instanceof Error ? err.message : "An error occurred");
+      toast.error(err instanceof Error ? err.message : "An error occurred");
     } finally {
       setAccepting(false);
     }
@@ -145,19 +142,6 @@ function AcceptInviteContent() {
       <p className="text-xs text-muted-foreground mb-6">
         You have been invited to collaborate on FTChat as an <strong className="text-foreground capitalize">{details.role}</strong>.
       </p>
-
-      {errorMsg && (
-        <div className="bg-rose-500/10 border border-rose-500/30 text-rose-600 dark:text-rose-400 p-3 rounded-xl mb-6 text-xs text-left">
-          <p className="font-semibold">{errorMsg}</p>
-        </div>
-      )}
-
-      {successMsg && (
-        <div className="bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 p-3 rounded-xl mb-6 text-xs text-left flex items-center gap-2">
-          <CheckCircle2 className="w-4 h-4 shrink-0" />
-          <p className="font-semibold">{successMsg}</p>
-        </div>
-      )}
 
       <div className="bg-muted/50 border border-border rounded-xl p-4 text-xs text-left mb-6 space-y-2">
         <div className="flex justify-between border-b border-border/60 pb-2">

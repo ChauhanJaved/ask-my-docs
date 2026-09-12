@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { createBrowserSupabaseClient } from "@/utils/supabase/client";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 import {
   User,
   Shield,
@@ -38,19 +39,16 @@ export function ProfileSettingsView({ initialFullName, userEmail }: ProfileSetti
   // --- Profile Info State ---
   const [fullName, setFullName] = useState(initialFullName);
   const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
-  const [profileMessage, setProfileMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   // --- Password State ---
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
-  const [passwordMessage, setPasswordMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   // --- 2FA / MFA State ---
   const [factors, setFactors] = useState<Factor[]>([]);
   const [loading2FA, setLoading2FA] = useState(true);
-  const [mfaMessage, setMfaMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   
   // 2FA Modal Enrollment State
   const [showEnrollModal, setShowEnrollModal] = useState(false);
@@ -101,7 +99,6 @@ export function ProfileSettingsView({ initialFullName, userEmail }: ProfileSetti
     if (!fullName.trim()) return;
 
     setIsUpdatingProfile(true);
-    setProfileMessage(null);
 
     try {
       const supabase = createBrowserSupabaseClient();
@@ -124,15 +121,12 @@ export function ProfileSettingsView({ initialFullName, userEmail }: ProfileSetti
 
       if (profileError) throw profileError;
 
-      setProfileMessage({ type: "success", text: "Profile updated successfully! Refreshing view..." });
+      toast.success("Profile updated successfully!");
       setTimeout(() => {
         window.location.reload();
       }, 1000);
     } catch (err) {
-      setProfileMessage({
-        type: "error",
-        text: err instanceof Error ? err.message : "Failed to update profile.",
-      });
+      toast.error(err instanceof Error ? err.message : "Failed to update profile.");
     } finally {
       setIsUpdatingProfile(false);
     }
@@ -141,15 +135,14 @@ export function ProfileSettingsView({ initialFullName, userEmail }: ProfileSetti
   // --- Handle Password Change ---
   const handleUpdatePassword = async (e: React.FormEvent) => {
     e.preventDefault();
-    setPasswordMessage(null);
 
     if (newPassword.length < 8) {
-      setPasswordMessage({ type: "error", text: "New password must be at least 8 characters long." });
+      toast.error("New password must be at least 8 characters long.");
       return;
     }
 
     if (newPassword !== confirmPassword) {
-      setPasswordMessage({ type: "error", text: "Passwords do not match." });
+      toast.error("Passwords do not match.");
       return;
     }
 
@@ -163,14 +156,11 @@ export function ProfileSettingsView({ initialFullName, userEmail }: ProfileSetti
 
       if (error) throw error;
 
-      setPasswordMessage({ type: "success", text: "Password changed successfully!" });
+      toast.success("Password changed successfully!");
       setNewPassword("");
       setConfirmPassword("");
     } catch (err) {
-      setPasswordMessage({
-        type: "error",
-        text: err instanceof Error ? err.message : "Failed to change password.",
-      });
+      toast.error(err instanceof Error ? err.message : "Failed to change password.");
     } finally {
       setIsUpdatingPassword(false);
     }
@@ -194,9 +184,8 @@ export function ProfileSettingsView({ initialFullName, userEmail }: ProfileSetti
     await fetch2FAStatus();
   };
 
-  // --- Start 2FA Enrollment ---
-  const handleStart2FAEnrollment = async () => {
-    setMfaMessage(null);
+  // --- Initialize 2FA Setup ---
+  const handleStartEnroll = async () => {
     setIsVerifyingCode(false);
     try {
       const supabase = createBrowserSupabaseClient();
@@ -230,10 +219,7 @@ export function ProfileSettingsView({ initialFullName, userEmail }: ProfileSetti
       setHasEnrollError(false);
       setShowEnrollModal(true);
     } catch (err) {
-      setMfaMessage({
-        type: "error",
-        text: err instanceof Error ? err.message : "Could not initialize 2FA setup.",
-      });
+      toast.error(err instanceof Error ? err.message : "Could not initialize 2FA setup.");
     }
   };
 
@@ -243,7 +229,6 @@ export function ProfileSettingsView({ initialFullName, userEmail }: ProfileSetti
     if (!enrollingFactor || !verifyCode.trim()) return;
 
     setIsVerifyingCode(true);
-    setMfaMessage(null);
     setEnrollModalError(null);
     setHasEnrollError(false);
 
@@ -278,7 +263,7 @@ export function ProfileSettingsView({ initialFullName, userEmail }: ProfileSetti
         return;
       }
 
-      setMfaMessage({ type: "success", text: "Two-Factor Authentication enabled successfully!" });
+      toast.success("Two-Factor Authentication enabled successfully!");
       setShowEnrollModal(false);
       setEnrollingFactor(null);
       setVerifyCode("");
@@ -303,7 +288,6 @@ export function ProfileSettingsView({ initialFullName, userEmail }: ProfileSetti
     if (!verifiedFactor) return;
 
     setIsDisabling2FA(true);
-    setMfaMessage(null);
     try {
       const supabase = createBrowserSupabaseClient();
       const { error } = await supabase.auth.mfa.unenroll({
@@ -312,14 +296,11 @@ export function ProfileSettingsView({ initialFullName, userEmail }: ProfileSetti
 
       if (error) throw error;
 
-      setMfaMessage({ type: "success", text: "Two-Factor Authentication has been disabled." });
+      toast.success("Two-Factor Authentication has been disabled.");
       setShowDisableModal(false);
       await fetch2FAStatus();
     } catch (err) {
-      setMfaMessage({
-        type: "error",
-        text: err instanceof Error ? err.message : "Failed to disable 2FA.",
-      });
+      toast.error(err instanceof Error ? err.message : "Failed to disable 2FA.");
     } finally {
       setIsDisabling2FA(false);
     }
@@ -328,6 +309,7 @@ export function ProfileSettingsView({ initialFullName, userEmail }: ProfileSetti
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
     setCopiedSecret(true);
+    toast.success("Secret key copied to clipboard");
     setTimeout(() => setCopiedSecret(false), 2000);
   };
 
@@ -375,23 +357,6 @@ export function ProfileSettingsView({ initialFullName, userEmail }: ProfileSetti
             </p>
           </div>
         </div>
-
-        {profileMessage && (
-          <div
-            className={`p-3.5 mb-6 rounded-xl flex items-center gap-2.5 text-xs font-medium ${
-              profileMessage.type === "success"
-                ? "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60"
-                : "bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800/60"
-            }`}
-          >
-            {profileMessage.type === "success" ? (
-              <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
-            ) : (
-              <AlertCircle className="w-4 h-4 text-rose-500 shrink-0" />
-            )}
-            <span>{profileMessage.text}</span>
-          </div>
-        )}
 
         <form onSubmit={handleUpdateProfile} className="space-y-5">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -459,23 +424,6 @@ export function ProfileSettingsView({ initialFullName, userEmail }: ProfileSetti
             </p>
           </div>
         </div>
-
-        {passwordMessage && (
-          <div
-            className={`p-3.5 mb-6 rounded-xl flex items-center gap-2.5 text-xs font-medium ${
-              passwordMessage.type === "success"
-                ? "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60"
-                : "bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800/60"
-            }`}
-          >
-            {passwordMessage.type === "success" ? (
-              <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
-            ) : (
-              <AlertCircle className="w-4 h-4 text-rose-500 shrink-0" />
-            )}
-            <span>{passwordMessage.text}</span>
-          </div>
-        )}
 
         <form onSubmit={handleUpdatePassword} className="space-y-5">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -578,23 +526,6 @@ export function ProfileSettingsView({ initialFullName, userEmail }: ProfileSetti
           </div>
         </div>
 
-        {mfaMessage && (
-          <div
-            className={`p-3.5 mb-6 rounded-xl flex items-center gap-2.5 text-xs font-medium ${
-              mfaMessage.type === "success"
-                ? "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60"
-                : "bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800/60"
-            }`}
-          >
-            {mfaMessage.type === "success" ? (
-              <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
-            ) : (
-              <AlertCircle className="w-4 h-4 text-rose-500 shrink-0" />
-            )}
-            <span>{mfaMessage.text}</span>
-          </div>
-        )}
-
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 rounded-xl bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800">
           <div className="flex items-center gap-3">
             <Smartphone className="w-8 h-8 text-neutral-400 dark:text-neutral-500 shrink-0" />
@@ -618,7 +549,7 @@ export function ProfileSettingsView({ initialFullName, userEmail }: ProfileSetti
               </Button>
             ) : (
               <Button
-                onClick={handleStart2FAEnrollment}
+                onClick={handleStartEnroll}
                 className="bg-brand-600 hover:bg-brand-700 text-white text-xs font-medium px-4 py-2 rounded-xl transition-all"
               >
                 Enable 2FA
