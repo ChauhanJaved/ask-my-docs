@@ -357,7 +357,7 @@ export default function TeamSettingsPage() {
   }
 
   return (
-    <div className="space-y-6 sm:space-y-8 max-w-7xl mx-auto w-full px-1 sm:px-2">
+    <div className="max-w-4xl space-y-6 sm:space-y-8 w-full pb-12">
       {/* Page Header (Role badge removed as role is shown in user avatar area) */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-neutral-200/80 dark:border-neutral-800">
         <div className="space-y-1">

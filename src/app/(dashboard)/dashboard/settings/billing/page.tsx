@@ -65,7 +65,7 @@ export default function BillingSettingsPage() {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="max-w-4xl space-y-8 pb-12">
       <div>
         <h1 className="text-2xl font-bold font-display text-neutral-900 dark:text-white">Billing & Quota Plan</h1>
         <p className="text-sm text-neutral-500 dark:text-neutral-400">View current plan parameters, usage caps, and invoices.</p>

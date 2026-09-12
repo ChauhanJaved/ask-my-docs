@@ -69,7 +69,7 @@ export default function WidgetSettingsPage() {
   };
 
   return (
-    <div className="space-y-8">
+    <div className="max-w-4xl space-y-8 pb-12">
       <div>
         <h1 className="text-2xl font-bold font-display text-neutral-900 dark:text-white">Widget Customization</h1>
         <p className="text-sm text-neutral-500 dark:text-neutral-400">Style your support bot and integrate it with your web app.</p>
