@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { useState, useEffect, useCallback } from "react";
-import { DashboardPageSkeleton } from "@/components/ui/page-loader";
+import { DocumentGridSkeleton } from "@/components/ui/page-loader";
 
 export default function DocumentsPage() {
   interface Document {
@@ -94,7 +94,7 @@ export default function DocumentsPage() {
   };
 
   if (loading) {
-    return <DashboardPageSkeleton title={true} statCards={2} tableRows={4} />;
+    return <DocumentGridSkeleton />;
   }
 
   if (error) {
