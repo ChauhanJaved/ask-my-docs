@@ -5,6 +5,7 @@ import { useState, useEffect, useCallback } from "react";
 import { createBrowserSupabaseClient } from "@/utils/supabase/client";
 import { DashboardPageSkeleton } from "@/components/ui/page-loader";
 import { toast } from "sonner";
+import { ConfirmModal } from "@/components/ui/confirm-modal";
 import {
   canManageTeam,
   canChangeRoles,
@@ -67,6 +68,7 @@ export default function TeamSettingsPage() {
   const [resendingId, setResendingId] = useState<string | null>(null);
   const [updatingMemberId, setUpdatingMemberId] = useState<string | null>(null);
   const [removingMemberId, setRemovingMemberId] = useState<string | null>(null);
+  const [memberToRemove, setMemberToRemove] = useState<Member | null>(null);
   const [revokingInviteId, setRevokingInviteId] = useState<string | null>(null);
 
   const getInitials = (name?: string | null, email?: string) => {
@@ -292,14 +294,14 @@ export default function TeamSettingsPage() {
     }
   };
 
-  const handleRemoveMember = async (memberId: string, memberEmail: string, role: string) => {
-    if (role === "owner") {
+  const handleInitiateRemoveMember = (member: Member) => {
+    if (member.role === "owner") {
       toast.error("The workspace Owner cannot be removed.");
       return;
     }
 
-    if (!canRemoveMember(currentRole, role)) {
-      if (currentRole === "admin" && role === "admin") {
+    if (!canRemoveMember(currentRole, member.role)) {
+      if (currentRole === "admin" && member.role === "admin") {
         toast.error("Admins cannot remove other Admins.");
       } else {
         toast.error("You do not have permission to remove this team member.");
@@ -307,9 +309,12 @@ export default function TeamSettingsPage() {
       return;
     }
 
-    if (!window.confirm(`Are you sure you want to remove ${memberEmail} from this workspace?`)) {
-      return;
-    }
+    setMemberToRemove(member);
+  };
+
+  const handleConfirmRemoveMember = async () => {
+    if (!memberToRemove) return;
+    const { id: memberId, email: memberEmail } = memberToRemove;
 
     setRemovingMemberId(memberId);
     try {
@@ -323,6 +328,7 @@ export default function TeamSettingsPage() {
 
       setMembers((prev) => prev.filter((m) => m.id !== memberId));
       toast.success(`Member ${memberEmail} removed successfully.`);
+      setMemberToRemove(null);
       await fetchTeamData(true);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to remove member.");
@@ -644,7 +650,7 @@ export default function TeamSettingsPage() {
                         <button
                           disabled={removingMemberId === member.id}
                           className="text-rose-600 dark:text-rose-400 hover:text-rose-800 dark:hover:text-rose-300 font-semibold text-xs px-2.5 py-1 rounded-lg border border-rose-200 dark:border-rose-900/50 bg-rose-50/50 dark:bg-rose-950/30 transition-colors disabled:opacity-50 inline-flex items-center gap-1"
-                          onClick={() => handleRemoveMember(member.id, member.email, member.role)}
+                          onClick={() => handleInitiateRemoveMember(member)}
                         >
                           {removingMemberId === member.id ? (
                             <>
@@ -733,7 +739,7 @@ export default function TeamSettingsPage() {
                           <button
                             disabled={removingMemberId === member.id}
                             className="text-rose-600 dark:text-rose-400 hover:text-rose-800 dark:hover:text-rose-300 font-semibold transition-colors disabled:opacity-50 text-xs px-2 py-1 rounded hover:bg-rose-50 dark:hover:bg-rose-950/40 inline-flex items-center gap-1"
-                            onClick={() => handleRemoveMember(member.id, member.email, member.role)}
+                            onClick={() => handleInitiateRemoveMember(member)}
                           >
                             {removingMemberId === member.id ? (
                               <>
@@ -926,6 +932,22 @@ export default function TeamSettingsPage() {
           </div>
         </div>
       )}
+
+      <ConfirmModal
+        isOpen={!!memberToRemove}
+        onClose={() => setMemberToRemove(null)}
+        onConfirm={handleConfirmRemoveMember}
+        title="Remove Team Member"
+        description={
+          <span>
+            Are you sure you want to remove <strong className="text-neutral-900 dark:text-white">{memberToRemove?.email}</strong> from this workspace? They will lose access immediately.
+          </span>
+        }
+        confirmText="Remove Member"
+        cancelText="Cancel"
+        variant="danger"
+        isLoading={!!removingMemberId}
+      />
     </div>
   );
 }
