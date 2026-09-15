@@ -65,6 +65,9 @@ export default function TeamSettingsPage() {
   // Interaction feedback states
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [resendingId, setResendingId] = useState<string | null>(null);
+  const [updatingMemberId, setUpdatingMemberId] = useState<string | null>(null);
+  const [removingMemberId, setRemovingMemberId] = useState<string | null>(null);
+  const [revokingInviteId, setRevokingInviteId] = useState<string | null>(null);
 
   const getInitials = (name?: string | null, email?: string) => {
     if (name && name.trim()) {
@@ -78,8 +81,8 @@ export default function TeamSettingsPage() {
     return "U";
   };
 
-  const fetchTeamData = useCallback(async () => {
-    setLoading(true);
+  const fetchTeamData = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true);
     try {
       const supabase = createBrowserSupabaseClient();
       const { data: { user } } = await supabase.auth.getUser();
@@ -144,7 +147,7 @@ export default function TeamSettingsPage() {
       toast.error(err instanceof Error ? err.message : "An unknown error occurred while fetching team data.");
       console.error("Error fetching team data:", err);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }, []);
 
@@ -217,7 +220,7 @@ export default function TeamSettingsPage() {
       toast.success(data.message || `Invitation created for ${inviteEmail.trim()} as ${inviteRole.toUpperCase()}`);
       setInviteEmail("");
       setInviteRole("member");
-      await fetchTeamData();
+      await fetchTeamData(true);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to send invitation.");
       console.error("Error inviting member:", err);
@@ -253,7 +256,7 @@ export default function TeamSettingsPage() {
       if (!res.ok) throw new Error(data.error || "Failed to resend invitation");
 
       toast.success(data.message || "Invitation email resent successfully.");
-      await fetchTeamData();
+      await fetchTeamData(true);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to resend invitation.");
     } finally {
@@ -267,6 +270,7 @@ export default function TeamSettingsPage() {
       return;
     }
 
+    setUpdatingMemberId(memberId);
     try {
       const supabase = createBrowserSupabaseClient();
       const { error: updateError } = await supabase
@@ -276,10 +280,15 @@ export default function TeamSettingsPage() {
 
       if (updateError) throw updateError;
 
+      setMembers((prev) =>
+        prev.map((m) => (m.id === memberId ? { ...m, role: newRole } : m))
+      );
       toast.success("Member role updated successfully.");
-      await fetchTeamData();
+      await fetchTeamData(true);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to update role.");
+    } finally {
+      setUpdatingMemberId(null);
     }
   };
 
@@ -302,6 +311,7 @@ export default function TeamSettingsPage() {
       return;
     }
 
+    setRemovingMemberId(memberId);
     try {
       const supabase = createBrowserSupabaseClient();
       const { error: deleteError } = await supabase
@@ -311,14 +321,18 @@ export default function TeamSettingsPage() {
 
       if (deleteError) throw deleteError;
 
+      setMembers((prev) => prev.filter((m) => m.id !== memberId));
       toast.success(`Member ${memberEmail} removed successfully.`);
-      await fetchTeamData();
+      await fetchTeamData(true);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to remove member.");
+    } finally {
+      setRemovingMemberId(null);
     }
   };
 
   const handleRevokeInvitation = async (invitationId: string) => {
+    setRevokingInviteId(invitationId);
     try {
       const supabase = createBrowserSupabaseClient();
       const { error: revokeError } = await supabase
@@ -328,10 +342,13 @@ export default function TeamSettingsPage() {
 
       if (revokeError) throw revokeError;
 
+      setInvitations((prev) => prev.filter((i) => i.id !== invitationId));
       toast.success("Invitation revoked successfully.");
-      await fetchTeamData();
+      await fetchTeamData(true);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to revoke invitation.");
+    } finally {
+      setRevokingInviteId(null);
     }
   };
 
@@ -593,14 +610,20 @@ export default function TeamSettingsPage() {
                   <div className="flex items-center justify-between pt-2 border-t border-neutral-100 dark:border-neutral-800/60">
                     <div>
                       {canChangeRoles(currentRole) && member.role !== "owner" ? (
-                        <select
-                          value={member.role}
-                          onChange={(e) => handleRoleChange(member.id, e.target.value as UserRole)}
-                          className="bg-neutral-50 dark:bg-neutral-950 border border-neutral-300 dark:border-neutral-700 rounded-lg px-2.5 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-brand-500 font-medium"
-                        >
-                          <option value="member">Member</option>
-                          <option value="admin">Admin</option>
-                        </select>
+                        <div className="flex items-center gap-1.5">
+                          <select
+                            value={member.role}
+                            disabled={updatingMemberId === member.id}
+                            onChange={(e) => handleRoleChange(member.id, e.target.value as UserRole)}
+                            className="bg-neutral-50 dark:bg-neutral-950 border border-neutral-300 dark:border-neutral-700 rounded-lg px-2.5 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-brand-500 font-medium disabled:opacity-50"
+                          >
+                            <option value="member">Member</option>
+                            <option value="admin">Admin</option>
+                          </select>
+                          {updatingMemberId === member.id && (
+                            <RefreshCw className="w-3 h-3 animate-spin text-brand-600 dark:text-brand-400" />
+                          )}
+                        </div>
                       ) : (
                         <span
                           className={`inline-block px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
@@ -619,10 +642,18 @@ export default function TeamSettingsPage() {
                     <div>
                       {canRemoveMember(currentRole, member.role) ? (
                         <button
-                          className="text-rose-600 dark:text-rose-400 hover:text-rose-800 dark:hover:text-rose-300 font-semibold text-xs px-2.5 py-1 rounded-lg border border-rose-200 dark:border-rose-900/50 bg-rose-50/50 dark:bg-rose-950/30 transition-colors"
+                          disabled={removingMemberId === member.id}
+                          className="text-rose-600 dark:text-rose-400 hover:text-rose-800 dark:hover:text-rose-300 font-semibold text-xs px-2.5 py-1 rounded-lg border border-rose-200 dark:border-rose-900/50 bg-rose-50/50 dark:bg-rose-950/30 transition-colors disabled:opacity-50 inline-flex items-center gap-1"
                           onClick={() => handleRemoveMember(member.id, member.email, member.role)}
                         >
-                          Remove
+                          {removingMemberId === member.id ? (
+                            <>
+                              <RefreshCw className="w-3 h-3 animate-spin" />
+                              <span>Removing...</span>
+                            </>
+                          ) : (
+                            <span>Remove</span>
+                          )}
                         </button>
                       ) : (
                         <span className="text-neutral-400 text-xs">—</span>
@@ -669,14 +700,20 @@ export default function TeamSettingsPage() {
                       </td>
                       <td className="px-4 py-3.5 md:px-6 md:py-4 whitespace-nowrap">
                         {canChangeRoles(currentRole) && member.role !== "owner" ? (
-                          <select
-                            value={member.role}
-                            onChange={(e) => handleRoleChange(member.id, e.target.value as UserRole)}
-                            className="bg-neutral-50 dark:bg-neutral-950 border border-neutral-300 dark:border-neutral-700 rounded-md px-2.5 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-brand-500 font-medium"
-                          >
-                            <option value="member">Member</option>
-                            <option value="admin">Admin</option>
-                          </select>
+                          <div className="flex items-center gap-1.5">
+                            <select
+                              value={member.role}
+                              disabled={updatingMemberId === member.id}
+                              onChange={(e) => handleRoleChange(member.id, e.target.value as UserRole)}
+                              className="bg-neutral-50 dark:bg-neutral-950 border border-neutral-300 dark:border-neutral-700 rounded-md px-2.5 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-brand-500 font-medium disabled:opacity-50"
+                            >
+                              <option value="member">Member</option>
+                              <option value="admin">Admin</option>
+                            </select>
+                            {updatingMemberId === member.id && (
+                              <RefreshCw className="w-3 h-3 animate-spin text-brand-600 dark:text-brand-400" />
+                            )}
+                          </div>
                         ) : (
                           <span
                             className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
@@ -694,10 +731,18 @@ export default function TeamSettingsPage() {
                       <td className="px-4 py-3.5 md:px-6 md:py-4 text-right whitespace-nowrap">
                         {canRemoveMember(currentRole, member.role) ? (
                           <button
-                            className="text-rose-600 dark:text-rose-400 hover:text-rose-800 dark:hover:text-rose-300 font-semibold transition-colors disabled:opacity-30 text-xs px-2 py-1 rounded hover:bg-rose-50 dark:hover:bg-rose-950/40"
+                            disabled={removingMemberId === member.id}
+                            className="text-rose-600 dark:text-rose-400 hover:text-rose-800 dark:hover:text-rose-300 font-semibold transition-colors disabled:opacity-50 text-xs px-2 py-1 rounded hover:bg-rose-50 dark:hover:bg-rose-950/40 inline-flex items-center gap-1"
                             onClick={() => handleRemoveMember(member.id, member.email, member.role)}
                           >
-                            Remove
+                            {removingMemberId === member.id ? (
+                              <>
+                                <RefreshCw className="w-3 h-3 animate-spin" />
+                                <span>Removing...</span>
+                              </>
+                            ) : (
+                              <span>Remove</span>
+                            )}
                           </button>
                         ) : (
                           <span className="text-neutral-400 text-[11px]">—</span>
@@ -776,12 +821,17 @@ export default function TeamSettingsPage() {
 
                   {/* Revoke Button */}
                   <button
-                    className="inline-flex items-center gap-1 text-rose-600 dark:text-rose-400 hover:text-rose-800 dark:hover:text-rose-300 font-semibold text-xs transition-colors px-2.5 py-1.5 rounded-lg border border-rose-200 dark:border-rose-900/50 bg-rose-50/50 dark:bg-rose-950/30"
+                    disabled={revokingInviteId === inv.id}
+                    className="inline-flex items-center gap-1 text-rose-600 dark:text-rose-400 hover:text-rose-800 dark:hover:text-rose-300 font-semibold text-xs transition-colors px-2.5 py-1.5 rounded-lg border border-rose-200 dark:border-rose-900/50 bg-rose-50/50 dark:bg-rose-950/30 disabled:opacity-50"
                     onClick={() => handleRevokeInvitation(inv.id)}
                     title="Revoke invitation"
                   >
-                    <Trash2 className="w-3.5 h-3.5" />
-                    <span>Revoke</span>
+                    {revokingInviteId === inv.id ? (
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <Trash2 className="w-3.5 h-3.5" />
+                    )}
+                    <span>{revokingInviteId === inv.id ? "Revoking..." : "Revoke"}</span>
                   </button>
                 </div>
               </div>
@@ -855,12 +905,17 @@ export default function TeamSettingsPage() {
 
                         {/* Revoke Button */}
                         <button
-                          className="inline-flex items-center gap-1 text-rose-600 dark:text-rose-400 hover:text-rose-800 dark:hover:text-rose-300 font-semibold text-xs transition-colors px-2 py-1 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-md"
+                          disabled={revokingInviteId === inv.id}
+                          className="inline-flex items-center gap-1 text-rose-600 dark:text-rose-400 hover:text-rose-800 dark:hover:text-rose-300 font-semibold text-xs transition-colors px-2 py-1 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-md disabled:opacity-50"
                           onClick={() => handleRevokeInvitation(inv.id)}
                           title="Revoke invitation"
                         >
-                          <Trash2 className="w-3 h-3" />
-                          <span>Revoke</span>
+                          {revokingInviteId === inv.id ? (
+                            <RefreshCw className="w-3 h-3 animate-spin" />
+                          ) : (
+                            <Trash2 className="w-3 h-3" />
+                          )}
+                          <span>{revokingInviteId === inv.id ? "Revoking..." : "Revoke"}</span>
                         </button>
                       </div>
                     </td>
