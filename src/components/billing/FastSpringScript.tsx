@@ -7,7 +7,7 @@ declare global {
   interface Window {
     fastspring?: {
       builder: {
-        push: (data: any, callback?: Function) => void;
+        push: (data: Record<string, unknown>, callback?: () => void) => void;
         reset: () => void;
         checkout: (productId?: string) => void;
       };

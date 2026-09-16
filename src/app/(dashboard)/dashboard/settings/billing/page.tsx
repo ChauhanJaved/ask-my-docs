@@ -20,7 +20,7 @@ interface OrgBillingDetails {
   subscription_status: string;
   payment_provider: string;
   current_period_end?: string | null;
-  custom_entitlements?: Record<string, any>;
+  custom_entitlements?: Record<string, unknown>;
 }
 
 interface UsageStats {

@@ -149,11 +149,11 @@ export function getPlanDefinition(planId?: string | null): PlanDefinition {
  */
 export function getOrgEntitlements(
   planId?: string | null,
-  customEntitlements?: Record<string, any> | null
+  customEntitlements?: Record<string, unknown> | null
 ) {
   const basePlan = getPlanDefinition(planId);
-  const customQuotas = customEntitlements?.quotas || {};
-  const customFeatures = customEntitlements?.features || {};
+  const customQuotas = (customEntitlements?.quotas as Record<string, number>) || {};
+  const customFeatures = (customEntitlements?.features as Record<string, boolean>) || {};
 
   return {
     plan: basePlan,
@@ -168,7 +168,7 @@ export function getOrgEntitlements(
 export function isFeatureEnabled(
   planId: string | undefined | null,
   feature: FeatureKey,
-  customEntitlements?: Record<string, any> | null
+  customEntitlements?: Record<string, unknown> | null
 ): boolean {
   const entitlements = getOrgEntitlements(planId, customEntitlements);
   return !!entitlements.features[feature];
@@ -181,7 +181,7 @@ export function isQuotaExceeded(
   planId: string | undefined | null,
   quota: QuotaKey,
   currentUsage: number,
-  customEntitlements?: Record<string, any> | null
+  customEntitlements?: Record<string, unknown> | null
 ): boolean {
   const entitlements = getOrgEntitlements(planId, customEntitlements);
   const limit = entitlements.quotas[quota];
