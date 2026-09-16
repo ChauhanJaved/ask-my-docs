@@ -6,21 +6,21 @@ import {
   getSoftwareAppJsonLd,
   getBreadcrumbJsonLd,
 } from "@/components/seo/JsonLd";
+import { PLAN_DEFINITIONS } from "@/lib/plans";
 
-// Enforce Static Site Generation (SSG)
 export const dynamic = "force-static";
 
 export const metadata: Metadata = {
   title: "Pricing Plans & Tiers",
   description:
-    "Simple, transparent pricing for AI support chatbots. Start free with 5 docs & 100 messages/month, or scale up with Pro & Enterprise features.",
+    "Simple, transparent pricing for AI support chatbots. Start free with 100 messages/month, or scale up with Starter ($29/mo), Pro ($79/mo), & Business ($249/mo).",
   alternates: {
     canonical: "/pricing",
   },
   openGraph: {
     title: "Pricing Plans & Tiers — FTChat AI Support Assistant",
     description:
-      "Simple, transparent pricing for AI support chatbots. Choose from Free, Pro ($49/mo), and Enterprise tiers.",
+      "Simple, transparent pricing for AI support chatbots. Choose from Free, Starter ($29/mo), Pro ($79/mo), and Business ($249/mo) tiers.",
     url: "/pricing",
     siteName: "FTChat",
     images: [
@@ -52,7 +52,6 @@ export default function PricingPage() {
 
   return (
     <>
-      {/* Schema.org Structured Data Injection */}
       <JsonLd data={getBreadcrumbJsonLd(breadcrumbs)} />
       <JsonLd data={getSoftwareAppJsonLd()} />
 
@@ -62,75 +61,142 @@ export default function PricingPage() {
             Simple, Transparent Pricing
           </h1>
           <p className="mt-4 text-lg text-neutral-600 dark:text-neutral-300">
-            Choose the perfect plan for your business support needs.
+            Turn your knowledge base into an embeddable AI widget. Scale seamlessly as your traffic grows.
           </p>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-          {/* Free Plan */}
-          <div className="bg-white dark:bg-neutral-900 p-8 rounded-lg border border-neutral-200 dark:border-neutral-800 flex flex-col transition-colors">
-            <h2 className="text-lg font-bold text-neutral-900 dark:text-white">Free</h2>
-            <p className="mt-2 text-sm text-neutral-500 dark:text-neutral-400">For testing and personal side projects.</p>
-            <div className="mt-6 flex items-baseline">
-              <span className="text-4xl font-extrabold tracking-tight text-neutral-900 dark:text-white">$0</span>
-              <span className="ml-1 text-sm font-semibold text-neutral-500 dark:text-neutral-400">/month</span>
+        <div className="grid lg:grid-cols-4 md:grid-cols-2 gap-6 max-w-6xl mx-auto">
+          {/* Free Tier */}
+          <div className="bg-white dark:bg-neutral-900 p-6 rounded-2xl border border-neutral-200 dark:border-neutral-800 flex flex-col justify-between transition-colors">
+            <div>
+              <h2 className="text-lg font-bold text-neutral-900 dark:text-white font-display">
+                {PLAN_DEFINITIONS.free.name}
+              </h2>
+              <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400 min-h-[32px]">
+                {PLAN_DEFINITIONS.free.description}
+              </p>
+              <div className="mt-4 flex items-baseline">
+                <span className="text-3xl font-extrabold tracking-tight text-neutral-900 dark:text-white font-display">
+                  $0
+                </span>
+                <span className="ml-1 text-xs font-semibold text-neutral-500 dark:text-neutral-400">
+                  /month
+                </span>
+              </div>
+              <ul className="mt-6 space-y-3 text-xs text-neutral-600 dark:text-neutral-300">
+                {PLAN_DEFINITIONS.free.featureHighlights.map((item, i) => (
+                  <li key={i} className="flex items-center space-x-2">
+                    <span className="text-emerald-500 font-bold">✓</span>
+                    <span>{item}</span>
+                  </li>
+                ))}
+              </ul>
             </div>
-            <ul className="mt-8 space-y-4 text-sm text-neutral-600 dark:text-neutral-300 flex-1">
-              <li className="flex items-center">✓ 1 Chatbot Bot</li>
-              <li className="flex items-center">✓ Up to 3 Documents (max 5MB each)</li>
-              <li className="flex items-center">✓ 50 AI Chats / month</li>
-              <li className="flex items-center">✓ Standard RAG logic</li>
-            </ul>
             <Link href="/signup" className="mt-8">
-              <Button variant="outline" className="w-full">
-                Sign Up Free
+              <Button variant="outline" className="w-full text-xs">
+                Get Started Free
               </Button>
             </Link>
           </div>
 
-          {/* Pro Plan */}
-          <div className="bg-white dark:bg-neutral-900 p-8 rounded-lg border-2 border-brand-500 shadow-md flex flex-col relative transition-colors">
-            <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-brand-500 text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">
-              Popular
+          {/* Starter Tier */}
+          <div className="bg-white dark:bg-neutral-900 p-6 rounded-2xl border border-neutral-200 dark:border-neutral-800 flex flex-col justify-between transition-colors">
+            <div>
+              <h2 className="text-lg font-bold text-neutral-900 dark:text-white font-display">
+                {PLAN_DEFINITIONS.starter.name}
+              </h2>
+              <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400 min-h-[32px]">
+                {PLAN_DEFINITIONS.starter.description}
+              </p>
+              <div className="mt-4 flex items-baseline">
+                <span className="text-3xl font-extrabold tracking-tight text-neutral-900 dark:text-white font-display">
+                  ${PLAN_DEFINITIONS.starter.priceMonthly}
+                </span>
+                <span className="ml-1 text-xs font-semibold text-neutral-500 dark:text-neutral-400">
+                  /month
+                </span>
+              </div>
+              <ul className="mt-6 space-y-3 text-xs text-neutral-600 dark:text-neutral-300">
+                {PLAN_DEFINITIONS.starter.featureHighlights.map((item, i) => (
+                  <li key={i} className="flex items-center space-x-2">
+                    <span className="text-emerald-500 font-bold">✓</span>
+                    <span>{item}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <Link href="/signup" className="mt-8">
+              <Button variant="outline" className="w-full text-xs">
+                Start Starter Plan
+              </Button>
+            </Link>
+          </div>
+
+          {/* Pro Tier (Featured) */}
+          <div className="bg-white dark:bg-neutral-900 p-6 rounded-2xl border-2 border-brand-500 shadow-lg flex flex-col justify-between relative transition-colors">
+            <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-brand-600 text-white text-[10px] font-bold px-3 py-0.5 rounded-full uppercase tracking-wider">
+              {PLAN_DEFINITIONS.pro.badge}
             </span>
-            <h2 className="text-lg font-bold text-brand-600 dark:text-brand-400">Pro</h2>
-            <p className="mt-2 text-sm text-neutral-500 dark:text-neutral-400">For growing businesses needing active support.</p>
-            <div className="mt-6 flex items-baseline">
-              <span className="text-4xl font-extrabold tracking-tight text-neutral-900 dark:text-white">$49</span>
-              <span className="ml-1 text-sm font-semibold text-neutral-500 dark:text-neutral-400">/month</span>
+            <div>
+              <h2 className="text-lg font-bold text-brand-600 dark:text-brand-400 font-display">
+                {PLAN_DEFINITIONS.pro.name}
+              </h2>
+              <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400 min-h-[32px]">
+                {PLAN_DEFINITIONS.pro.description}
+              </p>
+              <div className="mt-4 flex items-baseline">
+                <span className="text-3xl font-extrabold tracking-tight text-neutral-900 dark:text-white font-display">
+                  ${PLAN_DEFINITIONS.pro.priceMonthly}
+                </span>
+                <span className="ml-1 text-xs font-semibold text-neutral-500 dark:text-neutral-400">
+                  /month
+                </span>
+              </div>
+              <ul className="mt-6 space-y-3 text-xs text-neutral-600 dark:text-neutral-300">
+                {PLAN_DEFINITIONS.pro.featureHighlights.map((item, i) => (
+                  <li key={i} className="flex items-center space-x-2">
+                    <span className="text-brand-500 font-bold">✓</span>
+                    <span>{item}</span>
+                  </li>
+                ))}
+              </ul>
             </div>
-            <ul className="mt-8 space-y-4 text-sm text-neutral-600 dark:text-neutral-300 flex-1">
-              <li className="flex items-center">✓ 3 Chatbot Bots</li>
-              <li className="flex items-center">✓ Up to 50 Documents (max 10MB each)</li>
-              <li className="flex items-center">✓ 1,000 AI Chats / month</li>
-              <li className="flex items-center">✓ Custom Theme Options & Chat Widgets</li>
-              <li className="flex items-center">✓ URL Scraping & Crawling</li>
-            </ul>
             <Link href="/signup" className="mt-8">
-              <Button className="w-full bg-brand-600 hover:bg-brand-700 text-white">
-                Start Pro Trial
+              <Button className="w-full bg-brand-600 hover:bg-brand-700 text-white text-xs shadow-md">
+                Start Pro Plan
               </Button>
             </Link>
           </div>
 
-          {/* Business Plan */}
-          <div className="bg-white dark:bg-neutral-900 p-8 rounded-lg border border-neutral-200 dark:border-neutral-800 flex flex-col transition-colors">
-            <h2 className="text-lg font-bold text-neutral-900 dark:text-white">Business</h2>
-            <p className="mt-2 text-sm text-neutral-500 dark:text-neutral-400">For high-traffic operations and enterprise.</p>
-            <div className="mt-6 flex items-baseline">
-              <span className="text-4xl font-extrabold tracking-tight text-neutral-900 dark:text-white">$149</span>
-              <span className="ml-1 text-sm font-semibold text-neutral-500 dark:text-neutral-400">/month</span>
+          {/* Business Tier */}
+          <div className="bg-white dark:bg-neutral-900 p-6 rounded-2xl border border-neutral-200 dark:border-neutral-800 flex flex-col justify-between transition-colors">
+            <div>
+              <h2 className="text-lg font-bold text-neutral-900 dark:text-white font-display">
+                {PLAN_DEFINITIONS.business.name}
+              </h2>
+              <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400 min-h-[32px]">
+                {PLAN_DEFINITIONS.business.description}
+              </p>
+              <div className="mt-4 flex items-baseline">
+                <span className="text-3xl font-extrabold tracking-tight text-neutral-900 dark:text-white font-display">
+                  ${PLAN_DEFINITIONS.business.priceMonthly}
+                </span>
+                <span className="ml-1 text-xs font-semibold text-neutral-500 dark:text-neutral-400">
+                  /month
+                </span>
+              </div>
+              <ul className="mt-6 space-y-3 text-xs text-neutral-600 dark:text-neutral-300">
+                {PLAN_DEFINITIONS.business.featureHighlights.map((item, i) => (
+                  <li key={i} className="flex items-center space-x-2">
+                    <span className="text-emerald-500 font-bold">✓</span>
+                    <span>{item}</span>
+                  </li>
+                ))}
+              </ul>
             </div>
-            <ul className="mt-8 space-y-4 text-sm text-neutral-600 dark:text-neutral-300 flex-1">
-              <li className="flex items-center">✓ Unlimited Chatbot Bots</li>
-              <li className="flex items-center">✓ Up to 500 Documents (max 20MB each)</li>
-              <li className="flex items-center">✓ 10,000 AI Chats / month</li>
-              <li className="flex items-center">✓ Custom System Prompt Overrides</li>
-              <li className="flex items-center">✓ Priority support and API access</li>
-            </ul>
             <Link href="/signup" className="mt-8">
-              <Button variant="outline" className="w-full">
-                Contact Sales
+              <Button variant="outline" className="w-full text-xs">
+                Get Business Plan
               </Button>
             </Link>
           </div>

@@ -72,3 +72,6 @@ export function canManageOrganization(role?: UserRole | string | null): boolean 
   return role === 'owner';
 }
 
+export { isFeatureEnabled, isQuotaExceeded, getOrgEntitlements } from "./plans";
+
+
