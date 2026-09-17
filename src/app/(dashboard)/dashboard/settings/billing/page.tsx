@@ -61,14 +61,25 @@ export default function BillingSettingsPage() {
 
         const { data: orgData } = await supabase
           .from("organizations")
-          .select("id, name, plan, subscription_status, payment_provider, current_period_end, custom_entitlements")
+          .select("id, name")
           .eq("id", profile.organization_id)
           .single();
 
+        const { data: subData } = await supabase
+          .from("subscriptions")
+          .select("plan, status, payment_provider, current_period_end, custom_entitlements")
+          .eq("organization_id", profile.organization_id)
+          .maybeSingle();
+
         if (orgData) {
           setOrg({
-            ...orgData,
-            plan: (orgData.plan || "free") as PlanId,
+            id: orgData.id,
+            name: orgData.name,
+            plan: (subData?.plan || "free") as PlanId,
+            subscription_status: subData?.status,
+            payment_provider: subData?.payment_provider,
+            current_period_end: subData?.current_period_end,
+            custom_entitlements: subData?.custom_entitlements,
           });
 
           const [docsRes, seatsRes, messagesRes] = await Promise.all([

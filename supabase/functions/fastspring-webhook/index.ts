@@ -107,60 +107,60 @@ serve(async (req: Request) => {
 
       console.log(`Processing event: ${eventType}, org: ${organizationId}, sub: ${subscriptionId}`);
 
-      const updateOrg = async (updateData: Record<string, any>) => {
+      const updateSubscription = async (updateData: Record<string, any>) => {
         updateData.updated_at = new Date().toISOString();
         if (organizationId) {
-          await supabase.from("organizations").update(updateData).eq("id", organizationId);
+          await supabase.from("subscriptions").update(updateData).eq("organization_id", organizationId);
         } else if (subscriptionId) {
-          await supabase.from("organizations").update(updateData).eq("provider_subscription_id", subscriptionId);
+          await supabase.from("subscriptions").update(updateData).eq("payment_subscription_id", subscriptionId);
         }
       };
 
       switch (eventType) {
         case "subscription.charge.completed":
         case "order.completed":
-          await updateOrg({
+          await updateSubscription({
             payment_provider: "fastspring",
             ...(targetPlan ? { plan: targetPlan } : {}),
-            ...(customerId ? { provider_customer_id: customerId } : {}),
-            ...(subscriptionId ? { provider_subscription_id: subscriptionId } : {}),
-            subscription_status: "active",
+            ...(customerId ? { payment_customer_id: customerId } : {}),
+            ...(subscriptionId ? { payment_subscription_id: subscriptionId } : {}),
+            status: "active",
             ...(periodEnd ? { current_period_end: periodEnd } : {}),
           });
           break;
 
         case "subscription.updated":
-          await updateOrg({
+          await updateSubscription({
             payment_provider: "fastspring",
             ...(targetPlan ? { plan: targetPlan } : {}),
-            subscription_status: "active",
+            status: "active",
             ...(periodEnd ? { current_period_end: periodEnd } : {}),
           });
           break;
 
         case "subscription.charge.failed":
-          await updateOrg({
-            subscription_status: "past_due",
+          await updateSubscription({
+            status: "past_due",
           });
           break;
 
         case "subscription.canceled":
-          await updateOrg({
-            subscription_status: "canceled",
+          await updateSubscription({
+            status: "canceled",
           });
           break;
 
         case "subscription.uncanceled":
-          await updateOrg({
-            subscription_status: "active",
+          await updateSubscription({
+            status: "active",
           });
           break;
 
         case "subscription.deactivated":
         case "return.created":
-          await updateOrg({
+          await updateSubscription({
             plan: "free",
-            subscription_status: "deactivated",
+            status: "deactivated",
           });
           break;
 

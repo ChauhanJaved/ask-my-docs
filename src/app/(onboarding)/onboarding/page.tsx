@@ -212,7 +212,6 @@ export default function OnboardingPage() {
             id: newOrgId,
             name: finalOrgName,
             slug: uniqueSlug,
-            plan: "free",
             settings: {
               bot_name: botName || "FTChat Assistant",
               tone: "friendly",

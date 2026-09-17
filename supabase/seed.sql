@@ -2,25 +2,31 @@
 -- This script populates sample data for testing
 
 -- Insert sample organizations
-INSERT INTO organizations (id, name, slug, plan, settings) VALUES
-('11111111-1111-1111-1111-111111111111', 'Acme Corp', 'acme-corp', 'pro', '{
+INSERT INTO organizations (id, name, slug, settings) VALUES
+('11111111-1111-1111-1111-111111111111', 'Acme Corp', 'acme-corp', '{
     "bot_name": "AcmeBot",
     "tone": "professional",
     "primary_color": "#1e40af",
     "greeting_message": "Hello! How can I assist you with Acme products today?"
 }'::jsonb),
-('22222222-2222-2222-2222-222222222222', 'Tech Startup Inc', 'tech-startup', 'free', '{
+('22222222-2222-2222-2222-222222222222', 'Tech Startup Inc', 'tech-startup', '{
     "bot_name": "HelperBot",
     "tone": "friendly",
     "primary_color": "#6366f1",
     "greeting_message": "Hi there! How can I help you?"
 }'::jsonb),
-('33333333-3333-3333-3333-333333333333', 'Enterprise Solutions', 'enterprise-solutions', 'business', '{
+('33333333-3333-3333-3333-333333333333', 'Enterprise Solutions', 'enterprise-solutions', '{
     "bot_name": "EnterpriseAssistant",
     "tone": "formal",
     "primary_color": "#059669",
     "greeting_message": "Good day! How may I be of service?"
 }'::jsonb);
+
+-- Insert sample subscriptions
+INSERT INTO subscriptions (organization_id, plan, status) VALUES
+('11111111-1111-1111-1111-111111111111', 'pro', 'active'),
+('22222222-2222-2222-2222-222222222222', 'free', 'active'),
+('33333333-3333-3333-3333-333333333333', 'business', 'active');
 
 -- Note: In a real scenario, we would need actual auth.users entries
 -- For seed purposes, we'll insert placeholder profiles that would normally
