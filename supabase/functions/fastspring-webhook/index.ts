@@ -16,6 +16,20 @@ const PRODUCT_TO_PLAN: Record<string, string> = {
 };
 
 /**
+ * Resolves plan ID from product path or sku string
+ */
+function resolvePlanId(productPath?: string | null): string | undefined {
+  if (!productPath) return undefined;
+  const lower = productPath.toLowerCase();
+  if (PRODUCT_TO_PLAN[lower]) return PRODUCT_TO_PLAN[lower];
+  if (lower.includes("business")) return "business";
+  if (lower.includes("pro")) return "pro";
+  if (lower.includes("starter")) return "starter";
+  if (lower.includes("free")) return "free";
+  return undefined;
+}
+
+/**
  * Verifies FastSpring HMAC SHA256 base64 signature
  */
 async function verifyFastSpringSignature(
@@ -88,77 +102,127 @@ serve(async (req: Request) => {
       const eventType = event.type;
       const data = event.data || {};
 
+      // Extract organizationId from all potential tag locations
       const organizationId =
         data.tags?.organization_id ||
         data.account?.tags?.organization_id ||
-        data.tags?.org_id;
+        data.tags?.org_id ||
+        data.custom?.organization_id ||
+        data.items?.[0]?.tags?.organization_id ||
+        data.subscriptions?.[0]?.tags?.organization_id ||
+        data.subscriptions?.[0]?.subscribers?.[0]?.tags?.organization_id;
 
-      const subscriptionId = data.subscription || data.id;
-      const customerId = data.account || data.customer;
+      const subscriptionId =
+        data.subscription ||
+        data.id ||
+        data.subscriptions?.[0]?.id ||
+        data.subscriptions?.[0]?.subscription;
+
+      const customerId =
+        (typeof data.account === "string" ? data.account : data.account?.id) ||
+        (typeof data.customer === "string" ? data.customer : data.customer?.id) ||
+        data.subscriptions?.[0]?.customer;
 
       let productPath = data.product;
       if (!productPath && data.items && data.items.length > 0) {
-        productPath = data.items[0].product;
+        productPath = data.items[0].product || data.items[0].path || data.items[0].sku;
       }
 
-      const targetPlan = productPath ? PRODUCT_TO_PLAN[productPath] : undefined;
-      const nextInflowDate = data.nextInflowDate || data.end;
-      const periodEnd = nextInflowDate ? new Date(nextInflowDate).toISOString() : null;
+      const targetPlan = resolvePlanId(productPath);
 
-      console.log(`Processing event: ${eventType}, org: ${organizationId}, sub: ${subscriptionId}`);
+      // Extract period start and end dates
+      const rawStart = data.begin || data.started || data.currentPeriodStart || data.beginInflowDate || data.created;
+      const periodStart = rawStart ? new Date(rawStart).toISOString() : new Date().toISOString();
 
-      const updateSubscription = async (updateData: Record<string, any>) => {
+      const rawEnd = data.nextInflowDate || data.end || data.currentPeriodEnd || data.nextInflow;
+      const periodEnd = rawEnd ? new Date(rawEnd).toISOString() : null;
+
+      console.log(`Processing event: ${eventType}, org: ${organizationId}, sub: ${subscriptionId}, plan: ${targetPlan}`);
+
+      const upsertSubscription = async (updateData: Record<string, any>) => {
         updateData.updated_at = new Date().toISOString();
-        if (organizationId) {
-          await supabase.from("subscriptions").update(updateData).eq("organization_id", organizationId);
-        } else if (subscriptionId) {
-          await supabase.from("subscriptions").update(updateData).eq("payment_subscription_id", subscriptionId);
+
+        let targetOrgId = organizationId;
+
+        // If organizationId is missing in payload tags, lookup existing row by payment_subscription_id
+        if (!targetOrgId && subscriptionId) {
+          const { data: existingSub } = await supabase
+            .from("subscriptions")
+            .select("organization_id")
+            .eq("payment_subscription_id", subscriptionId)
+            .maybeSingle();
+
+          if (existingSub?.organization_id) {
+            targetOrgId = existingSub.organization_id;
+          }
+        }
+
+        if (targetOrgId) {
+          const { error } = await supabase.from("subscriptions").upsert(
+            {
+              organization_id: targetOrgId,
+              ...updateData,
+            },
+            { onConflict: "organization_id" }
+          );
+
+          if (error) {
+            console.error(`Supabase upsert error for org ${targetOrgId}:`, error);
+          } else {
+            console.log(`Successfully upserted subscription for org ${targetOrgId}`);
+          }
+        } else {
+          console.warn("Could not determine organization_id for event:", eventType, data);
         }
       };
 
       switch (eventType) {
         case "subscription.charge.completed":
         case "order.completed":
-          await updateSubscription({
+          await upsertSubscription({
             payment_provider: "fastspring",
             ...(targetPlan ? { plan: targetPlan } : {}),
             ...(customerId ? { payment_customer_id: customerId } : {}),
             ...(subscriptionId ? { payment_subscription_id: subscriptionId } : {}),
             status: "active",
+            current_period_start: periodStart,
             ...(periodEnd ? { current_period_end: periodEnd } : {}),
           });
           break;
 
         case "subscription.updated":
-          await updateSubscription({
+          await upsertSubscription({
             payment_provider: "fastspring",
             ...(targetPlan ? { plan: targetPlan } : {}),
             status: "active",
+            current_period_start: periodStart,
             ...(periodEnd ? { current_period_end: periodEnd } : {}),
           });
           break;
 
         case "subscription.charge.failed":
-          await updateSubscription({
+          await upsertSubscription({
             status: "past_due",
           });
           break;
 
         case "subscription.canceled":
-          await updateSubscription({
+          await upsertSubscription({
             status: "canceled",
+            cancel_at_period_end: true,
           });
           break;
 
         case "subscription.uncanceled":
-          await updateSubscription({
+          await upsertSubscription({
             status: "active",
+            cancel_at_period_end: false,
           });
           break;
 
         case "subscription.deactivated":
         case "return.created":
-          await updateSubscription({
+          await upsertSubscription({
             plan: "free",
             status: "deactivated",
           });

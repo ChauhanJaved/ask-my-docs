@@ -190,3 +190,26 @@ export function isQuotaExceeded(
   if (limit === -1) return false;
   return currentUsage >= limit;
 }
+
+export const PLAN_RANKS: Record<PlanId, number> = {
+  free: 0,
+  starter: 1,
+  pro: 2,
+  business: 3,
+};
+
+/**
+ * Returns numerical rank of a plan to determine upgrade vs downgrade.
+ */
+export function getPlanRank(planId?: string | null): number {
+  const normalizedId = (planId?.toLowerCase() || 'free') as PlanId;
+  return PLAN_RANKS[normalizedId] ?? 0;
+}
+
+/**
+ * Checks if target plan is a downgrade from current plan.
+ */
+export function isPlanDowngrade(currentPlanId: string | undefined | null, targetPlanId: PlanId): boolean {
+  return getPlanRank(targetPlanId) < getPlanRank(currentPlanId);
+}
+
