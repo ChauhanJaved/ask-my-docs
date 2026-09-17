@@ -1,7 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { createBrowserSupabaseClient } from "@/utils/supabase/client";
 import { canManageBilling, UserRole } from "@/lib/permissions";
 import { DashboardPageSkeleton } from "@/components/ui/page-loader";
@@ -34,76 +34,88 @@ export default function BillingSettingsPage() {
   const [loading, setLoading] = useState<boolean>(true);
   const [org, setOrg] = useState<OrgBillingDetails | null>(null);
   const [billingInterval, setBillingInterval] = useState<BillingInterval>("monthly");
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [usage, setUsage] = useState<UsageStats>({
     documentsCount: 0,
     messagesCount: 0,
     teamSeatsCount: 0,
   });
 
-  useEffect(() => {
-    async function loadBillingData() {
-      try {
-        const supabase = createBrowserSupabaseClient();
-        const {
-          data: { user },
-        } = await supabase.auth.getUser();
+  const loadBillingData = useCallback(async () => {
+    try {
+      const supabase = createBrowserSupabaseClient();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
 
-        if (!user) return;
+      if (!user) return;
 
-        // Fetch user profile and org details
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("role, organization_id")
-          .eq("id", user.id)
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("role, organization_id")
+        .eq("id", user.id)
+        .single();
+
+      if (profile) {
+        setRole(profile.role as UserRole);
+
+        const { data: orgData } = await supabase
+          .from("organizations")
+          .select("id, name, plan, subscription_status, payment_provider, current_period_end, custom_entitlements")
+          .eq("id", profile.organization_id)
           .single();
 
-        if (profile) {
-          setRole(profile.role as UserRole);
+        if (orgData) {
+          setOrg({
+            ...orgData,
+            plan: (orgData.plan || "free") as PlanId,
+          });
 
-          const { data: orgData } = await supabase
-            .from("organizations")
-            .select("id, name, plan, subscription_status, payment_provider, current_period_end, custom_entitlements")
-            .eq("id", profile.organization_id)
-            .single();
+          const [docsRes, seatsRes, messagesRes] = await Promise.all([
+            supabase
+              .from("documents")
+              .select("id", { count: "exact", head: true })
+              .eq("organization_id", orgData.id),
+            supabase
+              .from("profiles")
+              .select("id", { count: "exact", head: true })
+              .eq("organization_id", orgData.id),
+            supabase
+              .from("chat_messages")
+              .select("id", { count: "exact", head: true })
+              .eq("organization_id", orgData.id),
+          ]);
 
-          if (orgData) {
-            setOrg({
-              ...orgData,
-              plan: (orgData.plan || "free") as PlanId,
-            });
-
-            // Fetch actual resource usage counts
-            const [docsRes, seatsRes, messagesRes] = await Promise.all([
-              supabase
-                .from("documents")
-                .select("id", { count: "exact", head: true })
-                .eq("organization_id", orgData.id),
-              supabase
-                .from("profiles")
-                .select("id", { count: "exact", head: true })
-                .eq("organization_id", orgData.id),
-              supabase
-                .from("chat_messages")
-                .select("id", { count: "exact", head: true })
-                .eq("organization_id", orgData.id),
-            ]);
-
-            setUsage({
-              documentsCount: docsRes.count || 0,
-              teamSeatsCount: seatsRes.count || 0,
-              messagesCount: messagesRes.count || 0,
-            });
-          }
+          setUsage({
+            documentsCount: docsRes.count || 0,
+            teamSeatsCount: seatsRes.count || 0,
+            messagesCount: messagesRes.count || 0,
+          });
         }
-      } catch (err) {
-        console.error("Error loading billing details:", err);
-      } finally {
-        setLoading(false);
       }
+    } catch (err) {
+      console.error("Error loading billing details:", err);
+    } finally {
+      setLoading(false);
     }
-
-    loadBillingData();
   }, []);
+
+  useEffect(() => {
+    loadBillingData();
+  }, [loadBillingData]);
+
+  const handlePopupClosed = useCallback(
+    (data: Record<string, unknown> | null) => {
+      console.log("FastSpring popup modal closed with payload:", data);
+      if (data && (data.id || data.reference)) {
+        setSuccessMessage("🎉 Order completed! Your subscription is updating...");
+        setTimeout(() => setSuccessMessage(null), 8000);
+      }
+      // Re-fetch org data to reflect any webhook update
+      loadBillingData();
+    },
+    [loadBillingData]
+  );
 
   const isOwner = canManageBilling(role);
 
@@ -139,7 +151,7 @@ export default function BillingSettingsPage() {
   const entitlements = getOrgEntitlements(org?.plan, org?.custom_entitlements);
 
   const calculatePercentage = (used: number, limit: number) => {
-    if (limit === -1) return 0; // Unlimited
+    if (limit === -1) return 0;
     if (limit === 0) return 100;
     return Math.min(Math.round((used / limit) * 100), 100);
   };
@@ -152,7 +164,19 @@ export default function BillingSettingsPage() {
 
   return (
     <div className="max-w-5xl space-y-8 pb-16">
-      <FastSpringScript />
+      <FastSpringScript onPopupClosed={handlePopupClosed} />
+
+      {successMessage && (
+        <div className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 dark:text-emerald-300 p-4 rounded-xl text-xs font-semibold flex items-center justify-between animate-fade-in">
+          <span>{successMessage}</span>
+          <button
+            onClick={() => setSuccessMessage(null)}
+            className="text-emerald-500 hover:text-emerald-700 font-bold ml-4"
+          >
+            ✕
+          </button>
+        </div>
+      )}
 
       <div>
         <h1 className="text-2xl font-bold font-display text-neutral-900 dark:text-white">

@@ -1,7 +1,9 @@
 "use client";
 
 import Script from "next/script";
-import { FASTSPRING_STOREFRONT_URL } from "@/lib/plans";
+import { useEffect } from "react";
+
+export const FASTSPRING_POPUP_STOREFRONT = "frameworkteam.onfastspring.com/popup-frameworkteam";
 
 declare global {
   interface Window {
@@ -12,18 +14,35 @@ declare global {
         checkout: (productId?: string) => void;
       };
     };
+    onFastSpringPopupClosed?: (data: Record<string, unknown> | null) => void;
   }
 }
 
-export function FastSpringScript() {
-  // Extract storefront path from URL e.g. "frameworkteam.onfastspring.com"
-  const storefrontPath = FASTSPRING_STOREFRONT_URL.replace(/^https?:\/\//, "").replace(/\/$/, "");
+interface FastSpringScriptProps {
+  onPopupClosed?: (data: Record<string, unknown> | null) => void;
+}
+
+export function FastSpringScript({ onPopupClosed }: FastSpringScriptProps) {
+  useEffect(() => {
+    // Register global callback for FastSpring SBL popup close event
+    window.onFastSpringPopupClosed = (data) => {
+      console.log("FastSpring popup closed:", data);
+      if (onPopupClosed) {
+        onPopupClosed(data);
+      }
+    };
+
+    return () => {
+      delete window.onFastSpringPopupClosed;
+    };
+  }, [onPopupClosed]);
 
   return (
     <Script
-      id="fsl"
-      src="https://d1f8f9xcsvx3ha.cloudfront.net/sbl/0.8.0/fastspring-builder.min.js"
-      data-storefront={storefrontPath}
+      id="fsc-api"
+      src="https://sbl.onfastspring.com/sbl/1.0.9/fastspring-builder.min.js"
+      data-storefront={FASTSPRING_POPUP_STOREFRONT}
+      data-popup-closed="onFastSpringPopupClosed"
       data-debug="false"
       strategy="afterInteractive"
     />
@@ -31,20 +50,34 @@ export function FastSpringScript() {
 }
 
 /**
- * Triggers FastSpring popup checkout for a product with the current organization ID in tags.
+ * Triggers FastSpring popup overlay checkout for a product with the current organization ID in tags.
+ * Launches as an embedded in-app modal (PWA experience).
  */
 export function openFastSpringCheckout(productId: string, organizationId: string) {
   if (typeof window === "undefined" || !window.fastspring) {
-    console.warn("FastSpring SBL script not loaded yet. Redirecting to storefront.");
-    window.open(`${FASTSPRING_STOREFRONT_URL}/${productId}?tags[organization_id]=${organizationId}`, "_blank");
+    console.warn("FastSpring SBL script not loaded yet. Opening popup storefront window.");
+    window.open(
+      `https://${FASTSPRING_POPUP_STOREFRONT}/${productId}?tags[organization_id]=${organizationId}`,
+      "_blank"
+    );
     return;
   }
 
-  // Push product & organization tag to FastSpring builder
-  window.fastspring.builder.push({
-    products: [{ path: productId, quantity: 1 }],
-    tags: {
-      organization_id: organizationId,
-    },
-  });
+  try {
+    // Reset previous builder session
+    window.fastspring.builder.reset();
+
+    // Push product & organization tag to FastSpring popup builder
+    window.fastspring.builder.push({
+      products: [{ path: productId, quantity: 1 }],
+      tags: {
+        organization_id: organizationId,
+      },
+    });
+
+    // Launch the in-app popup modal overlay
+    window.fastspring.builder.checkout();
+  } catch (err) {
+    console.error("Error triggering FastSpring popup checkout:", err);
+  }
 }
