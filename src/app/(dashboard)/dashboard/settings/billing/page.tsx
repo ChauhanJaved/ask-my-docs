@@ -689,7 +689,7 @@ export default function BillingSettingsPage() {
                   </span>
                   <p className="leading-relaxed">
                     Your workspace currently has {usage.documentsCount} document(s) and {usage.teamSeatsCount} team seat(s).
-                    Excess data won't be deleted automatically, but you won't be able to add new items until usage is reduced.
+                    Excess data won&apos;t be deleted automatically, but you won&apos;t be able to add new items until usage is reduced.
                   </p>
                 </div>
               ) : null}
