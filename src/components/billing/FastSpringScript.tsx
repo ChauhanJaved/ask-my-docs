@@ -3,7 +3,7 @@
 import Script from "next/script";
 import { useEffect } from "react";
 
-export const FASTSPRING_POPUP_STOREFRONT = "frameworkteam.onfastspring.com/popup-frameworkteam";
+export const FASTSPRING_POPUP_STOREFRONT = "frameworkteam.test.onfastspring.com/popup-frameworkteam";
 
 declare global {
   interface Window {
@@ -43,6 +43,7 @@ export function FastSpringScript({ onPopupClosed }: FastSpringScriptProps) {
       src="https://sbl.onfastspring.com/sbl/1.0.9/fastspring-builder.min.js"
       data-storefront={FASTSPRING_POPUP_STOREFRONT}
       data-popup-closed="onFastSpringPopupClosed"
+      data-test="true"
       data-debug="false"
       strategy="afterInteractive"
     />
@@ -51,7 +52,7 @@ export function FastSpringScript({ onPopupClosed }: FastSpringScriptProps) {
 
 /**
  * Triggers FastSpring popup overlay checkout for a product with the current organization ID in tags.
- * Launches as an embedded in-app modal (PWA experience).
+ * Launches in Test Mode as an embedded in-app modal (PWA experience).
  */
 export function openFastSpringCheckout(productId: string, organizationId: string) {
   if (typeof window === "undefined" || !window.fastspring) {
@@ -67,8 +68,9 @@ export function openFastSpringCheckout(productId: string, organizationId: string
     // Reset previous builder session
     window.fastspring.builder.reset();
 
-    // Push product & organization tag to FastSpring popup builder
+    // Push test mode flag, product & organization tag to FastSpring popup builder
     window.fastspring.builder.push({
+      test: true,
       products: [{ path: productId, quantity: 1 }],
       tags: {
         organization_id: organizationId,
