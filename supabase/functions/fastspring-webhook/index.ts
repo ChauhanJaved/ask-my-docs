@@ -177,14 +177,16 @@ serve(async (req: Request) => {
       };
 
       switch (eventType) {
-        case "subscription.charge.completed":
         case "order.completed":
+        case "subscription.activated":
+        case "subscription.charge.completed":
           await upsertSubscription({
             payment_provider: "fastspring",
             ...(targetPlan ? { plan: targetPlan } : {}),
             ...(customerId ? { payment_customer_id: customerId } : {}),
             ...(subscriptionId ? { payment_subscription_id: subscriptionId } : {}),
             status: "active",
+            cancel_at_period_end: false,
             current_period_start: periodStart,
             ...(periodEnd ? { current_period_end: periodEnd } : {}),
           });
@@ -214,9 +216,16 @@ serve(async (req: Request) => {
           break;
 
         case "subscription.uncanceled":
+        case "subscription.resumed":
           await upsertSubscription({
             status: "active",
             cancel_at_period_end: false,
+          });
+          break;
+
+        case "subscription.paused":
+          await upsertSubscription({
+            status: "paused",
           });
           break;
 
