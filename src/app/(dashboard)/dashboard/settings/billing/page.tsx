@@ -25,6 +25,9 @@ interface OrgBillingDetails {
   cancel_at_period_end?: boolean;
   created_at?: string | null;
   custom_entitlements?: Record<string, unknown>;
+  billing_interval?: string | null;
+  price_display?: string | null;
+  currency?: string | null;
 }
 
 interface UsageStats {
@@ -75,7 +78,7 @@ export default function BillingSettingsPage() {
         const { data: subData } = await supabase
           .from("subscriptions")
           .select(
-            "plan, status, payment_provider, current_period_start, current_period_end, cancel_at_period_end, created_at, custom_entitlements"
+            "plan, status, payment_provider, current_period_start, current_period_end, cancel_at_period_end, created_at, custom_entitlements, billing_interval, price_display, currency"
           )
           .eq("organization_id", profile.organization_id)
           .maybeSingle();
@@ -92,6 +95,9 @@ export default function BillingSettingsPage() {
             cancel_at_period_end: subData?.cancel_at_period_end ?? false,
             created_at: subData?.created_at,
             custom_entitlements: subData?.custom_entitlements,
+            billing_interval: subData?.billing_interval,
+            price_display: subData?.price_display,
+            currency: subData?.currency,
           });
 
           const [docsRes, seatsRes, messagesRes] = await Promise.all([
@@ -343,9 +349,19 @@ export default function BillingSettingsPage() {
                 <span className="text-[10px] font-bold text-brand-600 dark:text-brand-400 uppercase tracking-wider">
                   Current Workspace Plan
                 </span>
-                <h2 className="text-2xl font-extrabold text-neutral-900 dark:text-white font-display mt-0.5">
-                  {currentPlan.name}
+                <h2 className="text-2xl font-extrabold text-neutral-900 dark:text-white font-display mt-0.5 flex items-center gap-2">
+                  <span>{currentPlan.name}</span>
+                  {org?.billing_interval && org?.plan !== "free" && (
+                    <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-brand-500/10 text-brand-600 dark:text-brand-400 border border-brand-500/20 capitalize">
+                      {org.billing_interval}
+                    </span>
+                  )}
                 </h2>
+                {org?.price_display && org?.plan !== "free" && (
+                  <p className="text-sm font-bold text-neutral-800 dark:text-neutral-200 mt-1">
+                    {org.price_display} <span className="text-xs font-normal text-neutral-500">/ {org.billing_interval === "yearly" ? "year" : "month"}</span>
+                  </p>
+                )}
               </div>
               <span
                 className={`text-[10px] font-semibold px-2.5 py-1 rounded-full border capitalize ${
@@ -370,6 +386,14 @@ export default function BillingSettingsPage() {
                   {org?.payment_provider !== "none" ? org?.payment_provider : "None (Free Tier)"}
                 </span>
               </div>
+              {org?.billing_interval && org?.plan !== "free" && (
+                <div className="flex justify-between">
+                  <span className="text-neutral-400">Billing Cycle:</span>
+                  <span className="font-medium capitalize">
+                    {org.billing_interval}
+                  </span>
+                </div>
+              )}
               <div className="flex justify-between">
                 <span className="text-neutral-400">Plan Start Date:</span>
                 <span className="font-medium">
@@ -378,7 +402,7 @@ export default function BillingSettingsPage() {
               </div>
               <div className="flex justify-between">
                 <span className="text-neutral-400">Next Payment / Renewal:</span>
-                <span className="font-medium">
+                <span className="font-medium font-semibold text-brand-600 dark:text-brand-400">
                   {org?.plan === "free" ? "N/A (Free Plan)" : formatDate(org?.current_period_end)}
                 </span>
               </div>

@@ -130,14 +130,26 @@ serve(async (req: Request) => {
 
       const targetPlan = resolvePlanId(productPath);
 
-      // Extract period start and end dates
+      // Extract billing interval (monthly vs yearly)
+      let billingInterval: string | undefined = undefined;
+      if (data.intervalUnit === "year" || productPath?.toLowerCase().includes("yearly")) {
+        billingInterval = "yearly";
+      } else if (data.intervalUnit === "month" || productPath?.toLowerCase().includes("monthly")) {
+        billingInterval = "monthly";
+      }
+
+      // Extract price display and currency
+      const priceDisplay = data.nextChargeTotalDisplay || data.priceDisplay || data.subtotalDisplay || null;
+      const currency = data.nextChargeCurrency || data.currency || null;
+
+      // Extract period start and end dates (support timestamp numbers or ISO strings)
       const rawStart = data.begin || data.started || data.currentPeriodStart || data.beginInflowDate || data.created;
       const periodStart = rawStart ? new Date(rawStart).toISOString() : new Date().toISOString();
 
-      const rawEnd = data.nextInflowDate || data.end || data.currentPeriodEnd || data.nextInflow;
+      const rawEnd = data.nextChargeDate || data.next || data.nextValue || data.nextInflowDate || data.end || data.currentPeriodEnd || data.nextInflow;
       const periodEnd = rawEnd ? new Date(rawEnd).toISOString() : null;
 
-      console.log(`Processing event: ${eventType}, org: ${organizationId}, sub: ${subscriptionId}, plan: ${targetPlan}`);
+      console.log(`Processing event: ${eventType}, org: ${organizationId}, sub: ${subscriptionId}, plan: ${targetPlan}, interval: ${billingInterval}`);
 
       const upsertSubscription = async (updateData: Record<string, any>) => {
         updateData.updated_at = new Date().toISOString();
@@ -183,6 +195,9 @@ serve(async (req: Request) => {
           await upsertSubscription({
             payment_provider: "fastspring",
             ...(targetPlan ? { plan: targetPlan } : {}),
+            ...(billingInterval ? { billing_interval: billingInterval } : {}),
+            ...(priceDisplay ? { price_display: priceDisplay } : {}),
+            ...(currency ? { currency } : {}),
             ...(customerId ? { payment_customer_id: customerId } : {}),
             ...(subscriptionId ? { payment_subscription_id: subscriptionId } : {}),
             status: "active",
@@ -196,6 +211,9 @@ serve(async (req: Request) => {
           await upsertSubscription({
             payment_provider: "fastspring",
             ...(targetPlan ? { plan: targetPlan } : {}),
+            ...(billingInterval ? { billing_interval: billingInterval } : {}),
+            ...(priceDisplay ? { price_display: priceDisplay } : {}),
+            ...(currency ? { currency } : {}),
             status: "active",
             current_period_start: periodStart,
             ...(periodEnd ? { current_period_end: periodEnd } : {}),
