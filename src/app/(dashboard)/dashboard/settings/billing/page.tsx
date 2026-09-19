@@ -36,6 +36,13 @@ interface UsageStats {
   teamSeatsCount: number;
 }
 
+const NEXT_PLAN_MAP: Record<PlanId, PlanId | null> = {
+  free: "starter",
+  starter: "pro",
+  pro: "business",
+  business: null,
+};
+
 export default function BillingSettingsPage() {
   const [role, setRole] = useState<UserRole | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
@@ -219,6 +226,7 @@ export default function BillingSettingsPage() {
 
   const currentPlan = PLAN_DEFINITIONS[org?.plan || "free"];
   const entitlements = getOrgEntitlements(org?.plan, org?.custom_entitlements);
+  const nextPlanId = NEXT_PLAN_MAP[org?.plan || "free"];
 
   const calculatePercentage = (used: number, limit: number) => {
     if (limit === -1) return 0;
@@ -357,9 +365,12 @@ export default function BillingSettingsPage() {
                     </span>
                   )}
                 </h2>
-                {org?.price_display && org?.plan !== "free" && (
+                {org?.plan && org?.plan !== "free" && (
                   <p className="text-sm font-bold text-neutral-800 dark:text-neutral-200 mt-1">
-                    {org.price_display} <span className="text-xs font-normal text-neutral-500">/ {org.billing_interval === "yearly" ? "year" : "month"}</span>
+                    ${org.billing_interval === "yearly" ? currentPlan.priceYearly : currentPlan.priceMonthly}{" "}
+                    <span className="text-xs font-normal text-neutral-500">
+                      / {org.billing_interval === "yearly" ? "year" : "month"}
+                    </span>
                   </p>
                 )}
               </div>
@@ -416,21 +427,14 @@ export default function BillingSettingsPage() {
           </div>
 
           <div className="flex items-center space-x-3 pt-2">
-            {org?.plan !== "business" && (
+            {nextPlanId && (
               <Button
-                onClick={() => handleUpgrade("pro")}
+                onClick={() => {
+                  document.getElementById(`plan-card-${nextPlanId}`)?.scrollIntoView({ behavior: "smooth" });
+                }}
                 className="bg-brand-600 hover:bg-brand-700 text-white text-xs rounded-xl py-2.5 px-4 font-semibold shadow-md transition-all"
               >
                 Upgrade Plan
-              </Button>
-            )}
-            {org?.plan !== "free" && (
-              <Button
-                variant="outline"
-                onClick={() => setSelectedDowngradePlan("free")}
-                className="text-neutral-600 dark:text-neutral-300 border-neutral-200 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-800 text-xs rounded-xl py-2.5 px-4 font-semibold transition-all"
-              >
-                Switch to Free Plan
               </Button>
             )}
           </div>
@@ -528,7 +532,7 @@ export default function BillingSettingsPage() {
       </div>
 
       {/* Available Subscription Plans Section */}
-      <div className="pt-6 space-y-6">
+      <div id="available-plans" className="pt-6 space-y-6 scroll-mt-6">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-neutral-200 dark:border-neutral-800 pb-4">
           <div>
             <h2 className="text-xl font-bold font-display text-neutral-900 dark:text-white">
@@ -578,7 +582,8 @@ export default function BillingSettingsPage() {
             return (
               <div
                 key={planId}
-                className={`bg-white dark:bg-neutral-900 border rounded-2xl p-5 shadow-sm flex flex-col justify-between relative transition-all ${
+                id={`plan-card-${planId}`}
+                className={`bg-white dark:bg-neutral-900 border rounded-2xl p-5 shadow-sm flex flex-col justify-between relative transition-all scroll-mt-24 ${
                   isCurrent
                     ? "border-brand-500 dark:border-brand-500 ring-2 ring-brand-500/20"
                     : plan.badge
