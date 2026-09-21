@@ -20,6 +20,7 @@ interface OrgBillingDetails {
   plan: PlanId;
   subscription_status: string;
   payment_provider: string;
+  payment_subscription_id?: string | null;
   current_period_start?: string | null;
   current_period_end?: string | null;
   cancel_at_period_end?: boolean;
@@ -50,7 +51,10 @@ export default function BillingSettingsPage() {
   const [billingInterval, setBillingInterval] = useState<BillingInterval>("monthly");
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [selectedDowngradePlan, setSelectedDowngradePlan] = useState<PlanId | null>(null);
+  const [selectedUpgradePlan, setSelectedUpgradePlan] = useState<PlanId | null>(null);
   const [downgrading, setDowngrading] = useState<boolean>(false);
+  const [upgrading, setUpgrading] = useState<boolean>(false);
+  const [planChangeStatusText, setPlanChangeStatusText] = useState<string | null>(null);
 
   const [usage, setUsage] = useState<UsageStats>({
     documentsCount: 0,
@@ -85,7 +89,7 @@ export default function BillingSettingsPage() {
         const { data: subData } = await supabase
           .from("subscriptions")
           .select(
-            "plan, status, payment_provider, current_period_start, current_period_end, cancel_at_period_end, created_at, custom_entitlements, billing_interval, price_display, currency"
+            "plan, status, payment_provider, payment_subscription_id, current_period_start, current_period_end, cancel_at_period_end, created_at, custom_entitlements, billing_interval, price_display, currency"
           )
           .eq("organization_id", profile.organization_id)
           .maybeSingle();
@@ -97,6 +101,7 @@ export default function BillingSettingsPage() {
             plan: (subData?.plan || "free") as PlanId,
             subscription_status: subData?.status || "active",
             payment_provider: subData?.payment_provider || "none",
+            payment_subscription_id: subData?.payment_subscription_id,
             current_period_start: subData?.current_period_start,
             current_period_end: subData?.current_period_end,
             cancel_at_period_end: subData?.cancel_at_period_end ?? false,
@@ -140,9 +145,20 @@ export default function BillingSettingsPage() {
     loadBillingData();
   }, [loadBillingData]);
 
+  const scrollToTop = () => {
+    if (typeof window !== "undefined") {
+      const mainEl = document.querySelector("main");
+      if (mainEl) {
+        mainEl.scrollTo({ top: 0, behavior: "smooth" });
+      }
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  };
+
   const handlePopupClosed = useCallback(
     async (data: Record<string, unknown> | null) => {
       console.log("FastSpring popup modal closed with payload:", data);
+      scrollToTop();
       if (data && (data.id || data.reference)) {
         setSuccessMessage("🎉 Order completed! Syncing subscription...");
         setTimeout(() => setSuccessMessage(null), 8000);
@@ -242,16 +258,66 @@ export default function BillingSettingsPage() {
     return "bg-brand-500";
   };
 
-  const handleUpgrade = (planId: PlanId) => {
+  const cancelActiveFastSpringSubscription = async () => {
+    try {
+      const supabase = createBrowserSupabaseClient();
+      const { data, error } = await supabase.functions.invoke("fastspring-subscription", {
+        body: { action: "cancel" },
+      });
+      if (error) {
+        console.warn("Edge function cancellation warning:", error);
+      }
+      return data;
+    } catch (err) {
+      console.error("Error invoking fastspring-subscription edge function:", err);
+      return null;
+    }
+  };
+
+  const handleUpgradeClick = (planId: PlanId) => {
+    if (!org) return;
+    if (org.plan !== "free" && org.payment_provider === "fastspring" && org.payment_subscription_id) {
+      setSelectedUpgradePlan(planId);
+    } else {
+      executeFastSpringCheckout(planId);
+    }
+  };
+
+  const executeFastSpringCheckout = (planId: PlanId) => {
     if (!org) return;
     const productId = `ftchat-${planId}-${billingInterval}`;
     openFastSpringCheckout(productId, org.id);
   };
 
+  const handleConfirmUpgrade = async () => {
+    if (!org || !selectedUpgradePlan) return;
+    setUpgrading(true);
+    setPlanChangeStatusText("Canceling current FastSpring subscription...");
+
+    try {
+      await cancelActiveFastSpringSubscription();
+      setPlanChangeStatusText("Opening FastSpring checkout window...");
+      const targetPlan = selectedUpgradePlan;
+      setSelectedUpgradePlan(null);
+      executeFastSpringCheckout(targetPlan);
+    } catch (err) {
+      console.error("Error upgrading plan:", err);
+      alert("An error occurred while switching plans. Please try again.");
+    } finally {
+      setUpgrading(false);
+      setPlanChangeStatusText(null);
+    }
+  };
+
   const handleConfirmDowngrade = async () => {
     if (!org || !selectedDowngradePlan) return;
     setDowngrading(true);
+    setPlanChangeStatusText("Canceling active FastSpring subscription...");
     try {
+      if (org.payment_provider === "fastspring" && org.payment_subscription_id) {
+        await cancelActiveFastSpringSubscription();
+      }
+
       const supabase = createBrowserSupabaseClient();
       const isFree = selectedDowngradePlan === "free";
 
@@ -276,6 +342,7 @@ export default function BillingSettingsPage() {
             ? "Workspace successfully switched to the Free Plan."
             : `Workspace plan updated to ${targetName}.`
         );
+        scrollToTop();
         setTimeout(() => setSuccessMessage(null), 8000);
         setSelectedDowngradePlan(null);
         await loadBillingData();
@@ -284,6 +351,7 @@ export default function BillingSettingsPage() {
       console.error("Error during plan downgrade:", err);
     } finally {
       setDowngrading(false);
+      setPlanChangeStatusText(null);
     }
   };
 
@@ -633,7 +701,7 @@ export default function BillingSettingsPage() {
                     if (isDowngrade) {
                       setSelectedDowngradePlan(planId);
                     } else {
-                      handleUpgrade(planId);
+                      handleUpgradeClick(planId);
                     }
                   }}
                   disabled={isCurrent}
@@ -658,6 +726,69 @@ export default function BillingSettingsPage() {
           })}
         </div>
       </div>
+
+      {/* Plan Upgrade / Switch Confirmation Modal */}
+      {selectedUpgradePlan && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
+          <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-5">
+            <div className="flex justify-between items-start border-b border-neutral-100 dark:border-neutral-800 pb-3">
+              <div>
+                <span className="text-[10px] font-bold text-brand-600 dark:text-brand-400 uppercase tracking-wider">
+                  Switch Plan
+                </span>
+                <h3 className="text-lg font-bold text-neutral-900 dark:text-white font-display">
+                  Upgrade to {PLAN_DEFINITIONS[selectedUpgradePlan].name}
+                </h3>
+              </div>
+              <button
+                onClick={() => setSelectedUpgradePlan(null)}
+                className="text-neutral-400 hover:text-neutral-600 dark:hover:text-white text-lg font-bold"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="space-y-3 text-xs text-neutral-600 dark:text-neutral-300">
+              <p>
+                You are switching your workspace plan from <strong>{currentPlan.name}</strong> to{" "}
+                <strong>{PLAN_DEFINITIONS[selectedUpgradePlan].name}</strong> ({billingInterval}).
+              </p>
+              <div className="bg-brand-500/10 border border-brand-500/20 text-brand-900 dark:text-brand-200 p-3 rounded-xl space-y-1">
+                <span className="font-bold flex items-center gap-1">
+                  ℹ️ Active Subscription Notice
+                </span>
+                <p className="leading-relaxed">
+                  Your current FastSpring subscription will be automatically canceled before launching the new checkout popup.
+                </p>
+              </div>
+
+              {planChangeStatusText && (
+                <div className="bg-neutral-100 dark:bg-neutral-800 p-3 rounded-xl text-center text-xs font-semibold text-brand-600 dark:text-brand-400 animate-pulse">
+                  {planChangeStatusText}
+                </div>
+              )}
+            </div>
+
+            <div className="flex justify-end space-x-3 pt-2">
+              <Button
+                variant="outline"
+                onClick={() => setSelectedUpgradePlan(null)}
+                disabled={upgrading}
+                className="text-xs rounded-xl"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleConfirmUpgrade}
+                disabled={upgrading}
+                className="bg-brand-600 hover:bg-brand-700 text-white text-xs rounded-xl px-5 font-semibold"
+              >
+                {upgrading ? planChangeStatusText || "Processing..." : `Proceed to Checkout`}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Plan Downgrade Confirmation Modal */}
       {selectedDowngradePlan && targetDowngradePlan && (
@@ -722,6 +853,12 @@ export default function BillingSettingsPage() {
                   </p>
                 </div>
               ) : null}
+
+              {planChangeStatusText && (
+                <div className="bg-neutral-100 dark:bg-neutral-800 p-3 rounded-xl text-center text-xs font-semibold text-amber-600 dark:text-amber-400 animate-pulse">
+                  {planChangeStatusText}
+                </div>
+              )}
             </div>
 
             <div className="flex justify-end space-x-3 pt-2">
@@ -738,7 +875,7 @@ export default function BillingSettingsPage() {
                 disabled={downgrading}
                 className="bg-amber-600 hover:bg-amber-700 text-white text-xs rounded-xl px-5 font-semibold"
               >
-                {downgrading ? "Downgrading..." : `Confirm Downgrade to ${targetDowngradePlan.name}`}
+                {downgrading ? planChangeStatusText || "Downgrading..." : `Confirm Downgrade to ${targetDowngradePlan.name}`}
               </Button>
             </div>
           </div>
