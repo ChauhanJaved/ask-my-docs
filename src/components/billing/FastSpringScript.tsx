@@ -12,6 +12,10 @@ declare global {
         push: (data: Record<string, unknown>, callback?: () => void) => void;
         reset: () => void;
         checkout: (productId?: string) => void;
+        account?: {
+          open: () => void;
+          managementUrl?: () => string;
+        };
       };
     };
     onFastSpringPopupClosed?: (data: Record<string, unknown> | null) => void;
@@ -83,3 +87,24 @@ export function openFastSpringCheckout(productId: string, organizationId: string
     console.error("Error triggering FastSpring popup checkout:", err);
   }
 }
+
+/**
+ * Opens the FastSpring Customer Account Portal (for active subscription & invoice management).
+ */
+export function openFastSpringAccountPortal() {
+  if (typeof window === "undefined") return;
+
+  if (window.fastspring?.builder?.account?.open) {
+    try {
+      window.fastspring.builder.account.open();
+      return;
+    } catch (err) {
+      console.warn("FastSpring SBL account open error, falling back to direct URL portal:", err);
+    }
+  }
+
+  // Direct FastSpring Account Portal fallback URL
+  const portalUrl = `https://frameworkteam.test.onfastspring.com/account`;
+  window.open(portalUrl, "_blank", "noopener,noreferrer");
+}
+

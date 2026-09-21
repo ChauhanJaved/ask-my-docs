@@ -12,7 +12,11 @@ import {
   BillingInterval,
   isPlanDowngrade,
 } from "@/lib/plans";
-import { FastSpringScript, openFastSpringCheckout } from "@/components/billing/FastSpringScript";
+import {
+  FastSpringScript,
+  openFastSpringCheckout,
+  openFastSpringAccountPortal,
+} from "@/components/billing/FastSpringScript";
 
 interface OrgBillingDetails {
   id: string;
@@ -54,6 +58,8 @@ export default function BillingSettingsPage() {
   const [selectedUpgradePlan, setSelectedUpgradePlan] = useState<PlanId | null>(null);
   const [downgrading, setDowngrading] = useState<boolean>(false);
   const [upgrading, setUpgrading] = useState<boolean>(false);
+  const [canceling, setCanceling] = useState<boolean>(false);
+  const [showCancelModal, setShowCancelModal] = useState<boolean>(false);
   const [planChangeStatusText, setPlanChangeStatusText] = useState<string | null>(null);
 
   const [usage, setUsage] = useState<UsageStats>({
@@ -271,6 +277,25 @@ export default function BillingSettingsPage() {
     } catch (err) {
       console.error("Error invoking fastspring-subscription edge function:", err);
       return null;
+    }
+  };
+
+  const handleConfirmCancel = async () => {
+    setCanceling(true);
+    try {
+      await cancelActiveFastSpringSubscription();
+      setSuccessMessage(
+        "Subscription cancellation requested. Your access will remain active until the end of your billing cycle."
+      );
+      scrollToTop();
+      setTimeout(() => setSuccessMessage(null), 8000);
+      setShowCancelModal(false);
+      await loadBillingData();
+    } catch (err) {
+      console.error("Error canceling subscription:", err);
+      alert("Failed to cancel subscription. Please try again or manage directly on FastSpring.");
+    } finally {
+      setCanceling(false);
     }
   };
 
@@ -494,7 +519,7 @@ export default function BillingSettingsPage() {
             </div>
           </div>
 
-          <div className="flex items-center space-x-3 pt-2">
+          <div className="flex flex-wrap items-center gap-3 pt-2">
             {nextPlanId && (
               <Button
                 onClick={() => {
@@ -503,6 +528,27 @@ export default function BillingSettingsPage() {
                 className="bg-brand-600 hover:bg-brand-700 text-white text-xs rounded-xl py-2.5 px-4 font-semibold shadow-md transition-all"
               >
                 Upgrade Plan
+              </Button>
+            )}
+
+            {org?.payment_provider === "fastspring" && (
+              <Button
+                variant="outline"
+                onClick={openFastSpringAccountPortal}
+                className="border-neutral-300 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-800 dark:text-neutral-200 text-xs rounded-xl py-2.5 px-4 font-semibold transition-all flex items-center gap-1.5"
+              >
+                <span>Manage on FastSpring</span>
+                <span className="text-xs">↗</span>
+              </Button>
+            )}
+
+            {org?.plan !== "free" && org?.payment_provider === "fastspring" && !org?.cancel_at_period_end && (
+              <Button
+                variant="ghost"
+                onClick={() => setShowCancelModal(true)}
+                className="text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 text-xs rounded-xl py-2.5 px-3 font-semibold transition-all"
+              >
+                Cancel Subscription
               </Button>
             )}
           </div>
@@ -876,6 +922,68 @@ export default function BillingSettingsPage() {
                 className="bg-amber-600 hover:bg-amber-700 text-white text-xs rounded-xl px-5 font-semibold"
               >
                 {downgrading ? planChangeStatusText || "Downgrading..." : `Confirm Downgrade to ${targetDowngradePlan.name}`}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* FastSpring Subscription Cancellation Confirmation Modal */}
+      {showCancelModal && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
+          <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-5">
+            <div className="flex justify-between items-start border-b border-neutral-100 dark:border-neutral-800 pb-3">
+              <div>
+                <span className="text-[10px] font-bold text-rose-600 dark:text-rose-400 uppercase tracking-wider">
+                  Cancel Subscription
+                </span>
+                <h3 className="text-lg font-bold text-neutral-900 dark:text-white font-display">
+                  Cancel {currentPlan.name} Subscription?
+                </h3>
+              </div>
+              <button
+                onClick={() => setShowCancelModal(false)}
+                className="text-neutral-400 hover:text-neutral-600 dark:hover:text-white text-lg font-bold"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="space-y-3 text-xs text-neutral-600 dark:text-neutral-300">
+              <p>
+                Are you sure you want to cancel your <strong>{currentPlan.name}</strong> subscription?
+              </p>
+              <div className="bg-amber-500/10 border border-amber-500/20 text-amber-900 dark:text-amber-200 p-3.5 rounded-xl space-y-1.5">
+                <span className="font-bold flex items-center gap-1 text-amber-700 dark:text-amber-400">
+                  ℹ️ What happens next:
+                </span>
+                <ul className="list-disc list-inside space-y-1 text-[11px] leading-relaxed">
+                  <li>
+                    Your plan will remain active until <strong>{formatDate(org?.current_period_end)}</strong>.
+                  </li>
+                  <li>You will not be charged again for future billing cycles.</li>
+                  <li>
+                    You can also view invoices, manage payment methods, or resume your subscription anytime via the FastSpring Account Portal.
+                  </li>
+                </ul>
+              </div>
+            </div>
+
+            <div className="flex justify-end space-x-3 pt-2 border-t border-neutral-100 dark:border-neutral-800">
+              <Button
+                variant="outline"
+                onClick={() => setShowCancelModal(false)}
+                disabled={canceling}
+                className="text-xs rounded-xl"
+              >
+                Keep Subscription
+              </Button>
+              <Button
+                onClick={handleConfirmCancel}
+                disabled={canceling}
+                className="bg-rose-600 hover:bg-rose-700 text-white text-xs rounded-xl px-5 font-semibold"
+              >
+                {canceling ? "Canceling..." : "Confirm Cancellation"}
               </Button>
             </div>
           </div>
