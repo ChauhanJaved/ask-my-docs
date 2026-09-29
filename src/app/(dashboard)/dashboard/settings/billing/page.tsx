@@ -101,7 +101,7 @@ export default function BillingSettingsPage() {
           .maybeSingle();
 
         if (orgData) {
-          setOrg({
+          const loadedOrg: OrgBillingDetails = {
             id: orgData.id,
             name: orgData.name,
             plan: (subData?.plan || "free") as PlanId,
@@ -116,6 +116,17 @@ export default function BillingSettingsPage() {
             billing_interval: subData?.billing_interval,
             price_display: subData?.price_display,
             currency: subData?.currency,
+          };
+
+          setOrg(loadedOrg);
+          console.log("[BILLING_ACTION] 📊 Loaded billing state:", {
+            orgId: loadedOrg.id,
+            plan: loadedOrg.plan,
+            status: loadedOrg.subscription_status,
+            provider: loadedOrg.payment_provider,
+            subscriptionId: loadedOrg.payment_subscription_id,
+            interval: loadedOrg.billing_interval,
+            cancelAtPeriodEnd: loadedOrg.cancel_at_period_end,
           });
 
           const [docsRes, seatsRes, messagesRes] = await Promise.all([
@@ -141,7 +152,7 @@ export default function BillingSettingsPage() {
         }
       }
     } catch (err) {
-      console.error("Error loading billing details:", err);
+      console.error("[BILLING_ACTION] ❌ Error loading billing details:", err);
     } finally {
       setLoading(false);
     }
@@ -163,9 +174,10 @@ export default function BillingSettingsPage() {
 
   const handlePopupClosed = useCallback(
     async (data: Record<string, unknown> | null) => {
-      console.log("FastSpring popup modal closed with payload:", data);
+      console.log("[BILLING_ACTION] 🚪 FastSpring popup modal closed with payload:", data);
       scrollToTop();
       if (data && (data.id || data.reference)) {
+        console.log("[BILLING_ACTION] ✅ FastSpring order completed successfully. Order ref:", data.id || data.reference);
         setSuccessMessage("🎉 Order completed! Syncing subscription...");
         setTimeout(() => setSuccessMessage(null), 8000);
 
@@ -188,6 +200,8 @@ export default function BillingSettingsPage() {
               const nextMonth = new Date(now);
               nextMonth.setMonth(nextMonth.getMonth() + 1);
 
+              console.log("[BILLING_ACTION] 🔄 Triggering client fallback DB sync for org:", profile.organization_id);
+
               await supabase.from("subscriptions").upsert(
                 {
                   organization_id: profile.organization_id,
@@ -199,16 +213,18 @@ export default function BillingSettingsPage() {
                 },
                 { onConflict: "organization_id" }
               );
+              console.log("[BILLING_ACTION] 🌟 Client fallback subscription sync successful");
             }
           }
         } catch (err) {
-          console.error("Error in client-side payment sync fallback:", err);
+          console.error("[BILLING_ACTION] ❌ Error in client-side payment sync fallback:", err);
         }
 
         setTimeout(() => {
           loadBillingData();
         }, 1000);
       } else {
+        console.log("[BILLING_ACTION] ℹ️ Popup closed without order completion.");
         loadBillingData();
       }
     },
@@ -265,22 +281,26 @@ export default function BillingSettingsPage() {
   };
 
   const cancelActiveFastSpringSubscription = async () => {
+    console.log("[BILLING_ACTION] 🛑 Invoking Edge Function fastspring-subscription (action: cancel)...");
     try {
       const supabase = createBrowserSupabaseClient();
       const { data, error } = await supabase.functions.invoke("fastspring-subscription", {
         body: { action: "cancel" },
       });
       if (error) {
-        console.warn("Edge function cancellation warning:", error);
+        console.warn("[BILLING_ACTION] ⚠️ Edge function cancellation warning:", error);
+      } else {
+        console.log("[BILLING_ACTION] ✅ Edge function cancellation response:", data);
       }
       return data;
     } catch (err) {
-      console.error("Error invoking fastspring-subscription edge function:", err);
+      console.error("[BILLING_ACTION] ❌ Error invoking fastspring-subscription edge function:", err);
       return null;
     }
   };
 
   const handleConfirmCancel = async () => {
+    console.log("[BILLING_ACTION] 🚫 User confirmed cancellation of active subscription");
     setCanceling(true);
     try {
       await cancelActiveFastSpringSubscription();
@@ -292,7 +312,7 @@ export default function BillingSettingsPage() {
       setShowCancelModal(false);
       await loadBillingData();
     } catch (err) {
-      console.error("Error canceling subscription:", err);
+      console.error("[BILLING_ACTION] ❌ Error canceling subscription:", err);
       alert("Failed to cancel subscription. Please try again or manage directly on FastSpring.");
     } finally {
       setCanceling(false);
@@ -301,9 +321,12 @@ export default function BillingSettingsPage() {
 
   const handleUpgradeClick = (planId: PlanId) => {
     if (!org) return;
+    console.log(`[BILLING_ACTION] ⬆️ Upgrade clicked | Target Plan: ${planId} | Current Plan: ${org.plan}`);
     if (org.plan !== "free" && org.payment_provider === "fastspring" && org.payment_subscription_id) {
+      console.log("[BILLING_ACTION] ℹ️ Active FastSpring subscription detected. Showing upgrade confirmation modal to handle cancellation first.");
       setSelectedUpgradePlan(planId);
     } else {
+      console.log("[BILLING_ACTION] ℹ️ No existing FastSpring subscription to cancel. Launching checkout directly.");
       executeFastSpringCheckout(planId);
     }
   };
@@ -311,22 +334,26 @@ export default function BillingSettingsPage() {
   const executeFastSpringCheckout = (planId: PlanId) => {
     if (!org) return;
     const productId = `ftchat-${planId}-${billingInterval}`;
+    console.log(`[BILLING_ACTION] 🛒 Executing FastSpring checkout for product: ${productId}`);
     openFastSpringCheckout(productId, org.id);
   };
 
   const handleConfirmUpgrade = async () => {
     if (!org || !selectedUpgradePlan) return;
+    console.log(`[BILLING_ACTION] ⚡ Confirming plan upgrade to ${selectedUpgradePlan}`);
     setUpgrading(true);
     setPlanChangeStatusText("Canceling current FastSpring subscription...");
 
     try {
+      console.log("[BILLING_ACTION] 1️⃣ Step 1: Canceling active FastSpring subscription before starting new checkout...");
       await cancelActiveFastSpringSubscription();
       setPlanChangeStatusText("Opening FastSpring checkout window...");
       const targetPlan = selectedUpgradePlan;
       setSelectedUpgradePlan(null);
+      console.log(`[BILLING_ACTION] 2️⃣ Step 2: Opening checkout for target plan: ${targetPlan}`);
       executeFastSpringCheckout(targetPlan);
     } catch (err) {
-      console.error("Error upgrading plan:", err);
+      console.error("[BILLING_ACTION] ❌ Error upgrading plan:", err);
       alert("An error occurred while switching plans. Please try again.");
     } finally {
       setUpgrading(false);
@@ -336,15 +363,19 @@ export default function BillingSettingsPage() {
 
   const handleConfirmDowngrade = async () => {
     if (!org || !selectedDowngradePlan) return;
+    console.log(`[BILLING_ACTION] ⬇️ Confirming plan downgrade to ${selectedDowngradePlan}`);
     setDowngrading(true);
     setPlanChangeStatusText("Canceling active FastSpring subscription...");
     try {
       if (org.payment_provider === "fastspring" && org.payment_subscription_id) {
+        console.log("[BILLING_ACTION] 1️⃣ Step 1: Canceling active FastSpring subscription before downgrading...");
         await cancelActiveFastSpringSubscription();
       }
 
       const supabase = createBrowserSupabaseClient();
       const isFree = selectedDowngradePlan === "free";
+
+      console.log(`[BILLING_ACTION] 2️⃣ Step 2: Updating local database subscription to plan: ${selectedDowngradePlan}`);
 
       const { error } = await supabase
         .from("subscriptions")
@@ -358,10 +389,11 @@ export default function BillingSettingsPage() {
         .eq("organization_id", org.id);
 
       if (error) {
-        console.error("Error performing plan downgrade:", error);
+        console.error("[BILLING_ACTION] ❌ Error performing plan downgrade:", error);
         alert("Failed to downgrade plan. Please try again or contact support.");
       } else {
         const targetName = PLAN_DEFINITIONS[selectedDowngradePlan].name;
+        console.log(`[BILLING_ACTION] 🎉 Downgrade successful! Workspace is now on ${targetName}`);
         setSuccessMessage(
           isFree
             ? "Workspace successfully switched to the Free Plan."
@@ -373,7 +405,7 @@ export default function BillingSettingsPage() {
         await loadBillingData();
       }
     } catch (err) {
-      console.error("Error during plan downgrade:", err);
+      console.error("[BILLING_ACTION] ❌ Error during plan downgrade:", err);
     } finally {
       setDowngrading(false);
       setPlanChangeStatusText(null);
@@ -660,7 +692,10 @@ export default function BillingSettingsPage() {
           {/* Monthly / Yearly Toggle */}
           <div className="flex items-center space-x-2 bg-neutral-100 dark:bg-neutral-800/80 p-1 rounded-xl border border-neutral-200 dark:border-neutral-700 self-start">
             <button
-              onClick={() => setBillingInterval("monthly")}
+              onClick={() => {
+                console.log("[BILLING_ACTION] 🗓️ Switched billing interval view to: monthly");
+                setBillingInterval("monthly");
+              }}
               className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${
                 billingInterval === "monthly"
                   ? "bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white shadow-sm"
@@ -670,7 +705,10 @@ export default function BillingSettingsPage() {
               Monthly Billing
             </button>
             <button
-              onClick={() => setBillingInterval("yearly")}
+              onClick={() => {
+                console.log("[BILLING_ACTION] 🗓️ Switched billing interval view to: yearly");
+                setBillingInterval("yearly");
+              }}
               className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all flex items-center space-x-1 ${
                 billingInterval === "yearly"
                   ? "bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white shadow-sm"
@@ -815,19 +853,19 @@ export default function BillingSettingsPage() {
               )}
             </div>
 
-            <div className="flex justify-end space-x-3 pt-2">
+            <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2.5 sm:space-x-3 sm:gap-0 pt-2">
               <Button
                 variant="outline"
                 onClick={() => setSelectedUpgradePlan(null)}
                 disabled={upgrading}
-                className="text-xs rounded-xl"
+                className="w-full sm:w-auto text-xs rounded-xl"
               >
                 Cancel
               </Button>
               <Button
                 onClick={handleConfirmUpgrade}
                 disabled={upgrading}
-                className="bg-brand-600 hover:bg-brand-700 text-white text-xs rounded-xl px-5 font-semibold"
+                className="w-full sm:w-auto bg-brand-600 hover:bg-brand-700 text-white text-xs rounded-xl px-5 font-semibold"
               >
                 {upgrading ? planChangeStatusText || "Processing..." : `Proceed to Checkout`}
               </Button>
@@ -907,19 +945,19 @@ export default function BillingSettingsPage() {
               )}
             </div>
 
-            <div className="flex justify-end space-x-3 pt-2">
+            <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2.5 sm:space-x-3 sm:gap-0 pt-2">
               <Button
                 variant="outline"
                 onClick={() => setSelectedDowngradePlan(null)}
                 disabled={downgrading}
-                className="text-xs rounded-xl"
+                className="w-full sm:w-auto text-xs rounded-xl"
               >
                 Cancel
               </Button>
               <Button
                 onClick={handleConfirmDowngrade}
                 disabled={downgrading}
-                className="bg-amber-600 hover:bg-amber-700 text-white text-xs rounded-xl px-5 font-semibold"
+                className="w-full sm:w-auto bg-amber-600 hover:bg-amber-700 text-white text-xs rounded-xl px-5 font-semibold"
               >
                 {downgrading ? planChangeStatusText || "Downgrading..." : `Confirm Downgrade to ${targetDowngradePlan.name}`}
               </Button>
@@ -969,19 +1007,19 @@ export default function BillingSettingsPage() {
               </div>
             </div>
 
-            <div className="flex justify-end space-x-3 pt-2 border-t border-neutral-100 dark:border-neutral-800">
+            <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2.5 sm:space-x-3 sm:gap-0 pt-2 border-t border-neutral-100 dark:border-neutral-800">
               <Button
                 variant="outline"
                 onClick={() => setShowCancelModal(false)}
                 disabled={canceling}
-                className="text-xs rounded-xl"
+                className="w-full sm:w-auto text-xs rounded-xl"
               >
                 Keep Subscription
               </Button>
               <Button
                 onClick={handleConfirmCancel}
                 disabled={canceling}
-                className="bg-rose-600 hover:bg-rose-700 text-white text-xs rounded-xl px-5 font-semibold"
+                className="w-full sm:w-auto bg-rose-600 hover:bg-rose-700 text-white text-xs rounded-xl px-5 font-semibold"
               >
                 {canceling ? "Canceling..." : "Confirm Cancellation"}
               </Button>

@@ -59,8 +59,9 @@ export function FastSpringScript({ onPopupClosed }: FastSpringScriptProps) {
  * Launches in Test Mode as an embedded in-app modal (PWA experience).
  */
 export function openFastSpringCheckout(productId: string, organizationId: string) {
+  console.log(`[BILLING_ACTION] 🛒 Opening FastSpring Checkout | Product: ${productId} | Org: ${organizationId}`);
   if (typeof window === "undefined" || !window.fastspring) {
-    console.warn("FastSpring SBL script not loaded yet. Opening popup storefront window.");
+    console.warn("[BILLING_ACTION] ⚠️ FastSpring SBL script not loaded yet. Opening direct storefront window.");
     window.open(
       `https://${FASTSPRING_POPUP_STOREFRONT}/${productId}?tags[organization_id]=${organizationId}`,
       "_blank"
@@ -81,10 +82,11 @@ export function openFastSpringCheckout(productId: string, organizationId: string
       },
     });
 
+    console.log(`[BILLING_ACTION] 🚀 Triggering fastspring.builder.checkout() popup`);
     // Launch the in-app popup modal overlay
     window.fastspring.builder.checkout();
   } catch (err) {
-    console.error("Error triggering FastSpring popup checkout:", err);
+    console.error("[BILLING_ACTION] ❌ Error triggering FastSpring popup checkout:", err);
   }
 }
 
@@ -92,6 +94,7 @@ export function openFastSpringCheckout(productId: string, organizationId: string
  * Opens the FastSpring Customer Account Portal (for active subscription & invoice management).
  */
 export function openFastSpringAccountPortal() {
+  console.log("[BILLING_ACTION] 🔑 Opening FastSpring Customer Account Management Portal");
   if (typeof window === "undefined") return;
 
   if (window.fastspring?.builder?.account?.open) {
@@ -99,7 +102,7 @@ export function openFastSpringAccountPortal() {
       window.fastspring.builder.account.open();
       return;
     } catch (err) {
-      console.warn("FastSpring SBL account open error, falling back to direct URL portal:", err);
+      console.warn("[BILLING_ACTION] ⚠️ FastSpring SBL account open error, falling back to direct URL portal:", err);
     }
   }
 

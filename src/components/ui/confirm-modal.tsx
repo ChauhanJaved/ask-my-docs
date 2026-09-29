@@ -103,13 +103,13 @@ export function ConfirmModal({
           {description}
         </div>
 
-        <div className="mt-6 flex items-center justify-end gap-3 pt-4 border-t border-neutral-100 dark:border-neutral-800/80">
+        <div className="mt-6 flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-2.5 sm:gap-3 pt-4 border-t border-neutral-100 dark:border-neutral-800/80">
           <Button
             type="button"
             variant="outline"
             onClick={onClose}
             disabled={isLoading}
-            className="text-xs px-4 py-2 rounded-xl"
+            className="w-full sm:w-auto text-xs px-4 py-2 rounded-xl"
           >
             {cancelText}
           </Button>
@@ -117,7 +117,7 @@ export function ConfirmModal({
             type="button"
             onClick={onConfirm}
             disabled={isLoading}
-            className={`text-xs px-4 py-2 rounded-xl transition-colors inline-flex items-center gap-2 font-medium disabled:opacity-50 cursor-pointer ${confirmBtnClass}`}
+            className={`w-full sm:w-auto justify-center text-xs px-4 py-2 rounded-xl transition-colors inline-flex items-center gap-2 font-medium disabled:opacity-50 cursor-pointer ${confirmBtnClass}`}
           >
             {isLoading ? "Processing..." : confirmText}
           </button>
