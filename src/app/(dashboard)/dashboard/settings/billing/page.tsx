@@ -59,7 +59,9 @@ export default function BillingSettingsPage() {
   const [downgrading, setDowngrading] = useState<boolean>(false);
   const [upgrading, setUpgrading] = useState<boolean>(false);
   const [canceling, setCanceling] = useState<boolean>(false);
+  const [resuming, setResuming] = useState<boolean>(false);
   const [showCancelModal, setShowCancelModal] = useState<boolean>(false);
+  const [showResumeModal, setShowResumeModal] = useState<boolean>(false);
   const [planChangeStatusText, setPlanChangeStatusText] = useState<string | null>(null);
 
   const [usage, setUsage] = useState<UsageStats>({
@@ -284,8 +286,14 @@ export default function BillingSettingsPage() {
     console.log("[BILLING_ACTION] 🛑 Invoking Edge Function fastspring-subscription (action: cancel)...");
     try {
       const supabase = createBrowserSupabaseClient();
+      const { data: { session } } = await supabase.auth.getSession();
+      const headers: Record<string, string> = session?.access_token
+        ? { Authorization: `Bearer ${session.access_token}` }
+        : {};
+
       const { data, error } = await supabase.functions.invoke("fastspring-subscription", {
         body: { action: "cancel" },
+        headers,
       });
       if (error) {
         console.warn("[BILLING_ACTION] ⚠️ Edge function cancellation warning:", error);
@@ -316,6 +324,49 @@ export default function BillingSettingsPage() {
       alert("Failed to cancel subscription. Please try again or manage directly on FastSpring.");
     } finally {
       setCanceling(false);
+    }
+  };
+
+  const resumeActiveFastSpringSubscription = async () => {
+    console.log("[BILLING_ACTION] 🔄 Invoking Edge Function fastspring-subscription (action: resume)...");
+    try {
+      const supabase = createBrowserSupabaseClient();
+      const { data: { session } } = await supabase.auth.getSession();
+      const headers: Record<string, string> = session?.access_token
+        ? { Authorization: `Bearer ${session.access_token}` }
+        : {};
+
+      const { data, error } = await supabase.functions.invoke("fastspring-subscription", {
+        body: { action: "resume" },
+        headers,
+      });
+      if (error) {
+        console.warn("[BILLING_ACTION] ⚠️ Edge function resume warning:", error);
+      } else {
+        console.log("[BILLING_ACTION] ✅ Edge function resume response:", data);
+      }
+      return data;
+    } catch (err) {
+      console.error("[BILLING_ACTION] ❌ Error invoking fastspring-subscription edge function (resume):", err);
+      return null;
+    }
+  };
+
+  const handleConfirmResume = async () => {
+    console.log("[BILLING_ACTION] ▶️ User confirmed resuming subscription auto-renewal");
+    setResuming(true);
+    try {
+      await resumeActiveFastSpringSubscription();
+      setSuccessMessage("🎉 Subscription auto-renewal has been successfully resumed!");
+      scrollToTop();
+      setTimeout(() => setSuccessMessage(null), 8000);
+      setShowResumeModal(false);
+      await loadBillingData();
+    } catch (err) {
+      console.error("[BILLING_ACTION] ❌ Error resuming subscription:", err);
+      alert("Failed to resume subscription. Please try again or manage directly on FastSpring.");
+    } finally {
+      setResuming(false);
     }
   };
 
@@ -463,6 +514,41 @@ export default function BillingSettingsPage() {
         </div>
       )}
 
+      {/* Scheduled Cancellation Industry-Standard Alert Banner */}
+      {org?.cancel_at_period_end && org?.plan !== "free" && (
+        <div className="bg-amber-500/10 border border-amber-500/30 text-amber-900 dark:text-amber-200 p-5 rounded-2xl text-xs space-y-3 shadow-sm">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="space-y-1">
+              <div className="flex items-center space-x-2 font-bold text-amber-700 dark:text-amber-400 text-sm">
+                <span>⏳</span>
+                <span>Subscription Scheduled for Cancellation</span>
+              </div>
+              <p className="leading-relaxed text-neutral-600 dark:text-neutral-300">
+                Your <strong>{currentPlan.name}</strong> subscription auto-renewal is turned off. Access remains fully active until{" "}
+                <strong>{formatDate(org?.current_period_end)}</strong>, after which your account will revert to the Free tier.
+              </p>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <Button
+                onClick={() => setShowResumeModal(true)}
+                className="bg-brand-600 hover:bg-brand-700 text-white font-semibold text-xs px-4 py-2 rounded-xl shadow-sm transition-all"
+              >
+                Resume Auto-Renewal
+              </Button>
+              {org?.payment_provider === "fastspring" && (
+                <Button
+                  variant="outline"
+                  onClick={openFastSpringAccountPortal}
+                  className="border-neutral-300 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-800 text-xs py-2 px-3 rounded-xl font-medium"
+                >
+                  FastSpring Portal ↗
+                </Button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       <div>
         <h1 className="text-2xl font-bold font-display text-neutral-900 dark:text-white">
           Billing & Subscription Plan
@@ -501,14 +587,16 @@ export default function BillingSettingsPage() {
               </div>
               <span
                 className={`text-[10px] font-semibold px-2.5 py-1 rounded-full border capitalize ${
-                  org?.subscription_status === "active"
+                  org?.cancel_at_period_end
+                    ? "bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border-amber-200 dark:border-amber-800"
+                    : org?.subscription_status === "active"
                     ? "bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800"
                     : org?.subscription_status === "canceled"
                     ? "bg-rose-100 dark:bg-rose-950/60 text-rose-800 dark:text-rose-300 border-rose-200 dark:border-rose-800"
                     : "bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border-amber-200 dark:border-amber-800"
                 }`}
               >
-                {org?.subscription_status || "Active"}
+                {org?.cancel_at_period_end ? "Pending Cancellation" : org?.subscription_status || "Active"}
               </span>
             </div>
             <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-2">
@@ -539,13 +627,17 @@ export default function BillingSettingsPage() {
               <div className="flex justify-between">
                 <span className="text-neutral-400">Next Payment / Renewal:</span>
                 <span className="font-medium font-semibold text-brand-600 dark:text-brand-400">
-                  {org?.plan === "free" ? "N/A (Free Plan)" : formatDate(org?.current_period_end)}
+                  {org?.plan === "free"
+                    ? "N/A (Free Plan)"
+                    : org?.cancel_at_period_end
+                    ? `Cancels on ${formatDate(org?.current_period_end)}`
+                    : formatDate(org?.current_period_end)}
                 </span>
               </div>
               {org?.cancel_at_period_end && (
                 <div className="flex justify-between text-rose-600 dark:text-rose-400 font-medium">
                   <span>Auto-Renewal:</span>
-                  <span>Cancels on {formatDate(org?.current_period_end)}</span>
+                  <span>Off (Active until period end)</span>
                 </div>
               )}
             </div>
@@ -571,6 +663,15 @@ export default function BillingSettingsPage() {
               >
                 <span>Manage on FastSpring</span>
                 <span className="text-xs">↗</span>
+              </Button>
+            )}
+
+            {org?.plan !== "free" && org?.payment_provider === "fastspring" && org?.cancel_at_period_end && (
+              <Button
+                onClick={() => setShowResumeModal(true)}
+                className="bg-brand-600 hover:bg-brand-700 text-white text-xs rounded-xl py-2.5 px-4 font-semibold transition-all"
+              >
+                Resume Auto-Renewal
               </Button>
             )}
 
@@ -1022,6 +1123,66 @@ export default function BillingSettingsPage() {
                 className="w-full sm:w-auto bg-rose-600 hover:bg-rose-700 text-white text-xs rounded-xl px-5 font-semibold"
               >
                 {canceling ? "Canceling..." : "Confirm Cancellation"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* FastSpring Resume Subscription Modal */}
+      {showResumeModal && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
+          <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-5">
+            <div className="flex justify-between items-start border-b border-neutral-100 dark:border-neutral-800 pb-3">
+              <div>
+                <span className="text-[10px] font-bold text-brand-600 dark:text-brand-400 uppercase tracking-wider">
+                  Resume Subscription
+                </span>
+                <h3 className="text-lg font-bold text-neutral-900 dark:text-white font-display">
+                  Resume {currentPlan.name} Auto-Renewal?
+                </h3>
+              </div>
+              <button
+                onClick={() => setShowResumeModal(false)}
+                className="text-neutral-400 hover:text-neutral-600 dark:hover:text-white text-lg font-bold"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="space-y-3 text-xs text-neutral-600 dark:text-neutral-300">
+              <p>
+                By resuming auto-renewal, your workspace will stay on the <strong>{currentPlan.name}</strong> plan without any interruption.
+              </p>
+              <div className="bg-brand-500/10 border border-brand-500/20 text-brand-900 dark:text-brand-200 p-3.5 rounded-xl space-y-1.5">
+                <span className="font-bold flex items-center gap-1 text-brand-700 dark:text-brand-400">
+                  ✨ Resume Benefits:
+                </span>
+                <ul className="list-disc list-inside space-y-1 text-[11px] leading-relaxed">
+                  <li>
+                    Your plan will automatically renew on <strong>{formatDate(org?.current_period_end)}</strong>.
+                  </li>
+                  <li>Continuous access to all AI models, document limits, and team seats.</li>
+                  <li>No additional immediate charges—regular billing resumes on your renewal date.</li>
+                </ul>
+              </div>
+            </div>
+
+            <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2.5 sm:space-x-3 sm:gap-0 pt-2 border-t border-neutral-100 dark:border-neutral-800">
+              <Button
+                variant="outline"
+                onClick={() => setShowResumeModal(false)}
+                disabled={resuming}
+                className="w-full sm:w-auto text-xs rounded-xl"
+              >
+                Back
+              </Button>
+              <Button
+                onClick={handleConfirmResume}
+                disabled={resuming}
+                className="w-full sm:w-auto bg-brand-600 hover:bg-brand-700 text-white text-xs rounded-xl px-5 font-semibold shadow-md"
+              >
+                {resuming ? "Resuming..." : "Confirm Resume Auto-Renewal"}
               </Button>
             </div>
           </div>

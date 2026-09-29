@@ -22,28 +22,25 @@ serve(async (req: Request) => {
     }
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
-    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY") || "";
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
+    const adminSupabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Authenticate user with token
-    const clientSupabase = createClient(supabaseUrl, supabaseAnonKey, {
-      global: { headers: { Authorization: authHeader } },
-    });
-
+    const token = authHeader.replace(/^Bearer\s+/i, "");
     const {
       data: { user },
       error: authError,
-    } = await clientSupabase.auth.getUser();
+    } = await adminSupabase.auth.getUser(token);
 
     if (authError || !user) {
-      return new Response(JSON.stringify({ error: "Unauthorized user session" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      console.error("Auth error in edge function:", authError);
+      return new Response(
+        JSON.stringify({ error: `Unauthorized user session: ${authError?.message || "Invalid token"}` }),
+        {
+          status: 401,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
     }
-
-    // Admin client to read & update subscriptions securely
-    const adminSupabase = createClient(supabaseUrl, supabaseServiceKey);
 
     // Fetch user profile
     const { data: profile, error: profileError } = await adminSupabase
@@ -90,7 +87,7 @@ serve(async (req: Request) => {
       return new Response(
         JSON.stringify({
           success: true,
-          message: "No active paid FastSpring subscription found to cancel.",
+          message: "No active paid FastSpring subscription found to manage.",
           alreadyCanceled: true,
         }),
         {
@@ -103,62 +100,77 @@ serve(async (req: Request) => {
     const fsUsername = Deno.env.get("FASTSPRING_API_USERNAME");
     const fsPassword = Deno.env.get("FASTSPRING_API_PASSWORD");
 
-    let apiSuccess = false;
-    let apiErrorMessage = "";
-
-    if (fsUsername && fsPassword) {
-      try {
-        const credentials = btoa(`${fsUsername}:${fsPassword}`);
-        const fsResponse = await fetch(
-          `https://api.fastspring.com/subscriptions/${sub.payment_subscription_id}`,
-          {
-            method: "DELETE",
-            headers: {
-              Authorization: `Basic ${credentials}`,
-              "Content-Type": "application/json",
-            },
-          }
-        );
-
-        if (fsResponse.ok) {
-          apiSuccess = true;
-        } else {
-          const errText = await fsResponse.text();
-          console.error("FastSpring API cancel failed:", fsResponse.status, errText);
-          apiErrorMessage = `FastSpring API error (${fsResponse.status}): ${errText}`;
+    if (!fsUsername || !fsPassword) {
+      console.error("Missing FastSpring API credentials in environment secrets.");
+      return new Response(
+        JSON.stringify({
+          error:
+            "FastSpring API credentials (FASTSPRING_API_USERNAME, FASTSPRING_API_PASSWORD) are not configured in Supabase secrets.",
+        }),
+        {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
         }
-      } catch (err: any) {
-        console.error("FastSpring API request error:", err);
-        apiErrorMessage = err.message || "Failed to reach FastSpring API";
-      }
-    } else {
-      console.warn(
-        "FASTSPRING_API_USERNAME or FASTSPRING_API_PASSWORD environment secrets not configured in Supabase. Proceeding to update database subscription status."
       );
     }
 
-    // Update subscription in database to marked canceled/canceled at period end
-    const { error: updateError } = await adminSupabase
-      .from("subscriptions")
-      .update({
-        cancel_at_period_end: true,
-        status: "canceled",
-        updated_at: new Date().toISOString(),
-      })
-      .eq("organization_id", profile.organization_id);
+    const credentials = btoa(`${fsUsername}:${fsPassword}`);
+    const isResumeAction = action === "resume" || action === "uncancel" || action === "reactivate";
 
-    if (updateError) {
-      console.error("Error updating local subscription status:", updateError);
+    let fsUrl = `https://api.fastspring.com/subscriptions/${sub.payment_subscription_id}`;
+    let fsMethod = "DELETE";
+    let fsBody: string | undefined = undefined;
+
+    if (isResumeAction) {
+      fsMethod = "POST";
+      fsBody = JSON.stringify({
+        subscriptions: [
+          {
+            subscription: sub.payment_subscription_id,
+            deactivation: null,
+            active: true,
+          },
+        ],
+      });
     }
 
+    console.log(`Sending ${action} request to FastSpring API for sub: ${sub.payment_subscription_id}`);
+
+    const fsResponse = await fetch(fsUrl, {
+      method: fsMethod,
+      headers: {
+        Authorization: `Basic ${credentials}`,
+        "Content-Type": "application/json",
+      },
+      ...(fsBody ? { body: fsBody } : {}),
+    });
+
+    if (!fsResponse.ok) {
+      const errText = await fsResponse.text();
+      console.error(`FastSpring API ${action} failed:`, fsResponse.status, errText);
+      return new Response(
+        JSON.stringify({
+          error: `FastSpring API error (${fsResponse.status}): ${errText}`,
+        }),
+        {
+          status: fsResponse.status,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    const responsePayload = await fsResponse.json().catch(() => ({}));
+
+    // Success response: Database will be updated asynchronously by FastSpring Webhook
     return new Response(
       JSON.stringify({
         success: true,
-        canceledSubscriptionId: sub.payment_subscription_id,
-        fastSpringApiCalled: Boolean(fsUsername && fsPassword),
-        fastSpringApiSuccess: apiSuccess,
-        apiError: apiErrorMessage || undefined,
-        message: "Current FastSpring subscription successfully processed for cancellation.",
+        action: isResumeAction ? "resume" : "cancel",
+        subscriptionId: sub.payment_subscription_id,
+        fastSpringResponse: responsePayload,
+        message: isResumeAction
+          ? "Subscription auto-renewal request sent to FastSpring. Database will update via Webhook."
+          : "Subscription cancellation request sent to FastSpring. Database will update via Webhook.",
       }),
       {
         status: 200,
