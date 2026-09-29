@@ -113,10 +113,11 @@ serve(async (req: Request) => {
         data.subscriptions?.[0]?.subscribers?.[0]?.tags?.organization_id;
 
       const subscriptionId =
-        data.subscription ||
-        data.id ||
         data.subscriptions?.[0]?.id ||
-        data.subscriptions?.[0]?.subscription;
+        data.subscriptions?.[0]?.subscription ||
+        data.items?.[0]?.subscription ||
+        data.subscription ||
+        (eventType.startsWith("subscription.") ? data.id : null);
 
       const customerId =
         (typeof data.account === "string" ? data.account : data.account?.id) ||

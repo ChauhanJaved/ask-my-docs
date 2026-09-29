@@ -117,22 +117,18 @@ serve(async (req: Request) => {
     const credentials = btoa(`${fsUsername}:${fsPassword}`);
     const isResumeAction = action === "resume" || action === "uncancel" || action === "reactivate";
 
-    let fsUrl = `https://api.fastspring.com/subscriptions/${sub.payment_subscription_id}`;
-    let fsMethod = "DELETE";
-    let fsBody: string | undefined = undefined;
-
-    if (isResumeAction) {
-      fsMethod = "POST";
-      fsBody = JSON.stringify({
-        subscriptions: [
-          {
-            subscription: sub.payment_subscription_id,
-            deactivation: null,
-            active: true,
-          },
-        ],
-      });
-    }
+    // FastSpring Official Subscription API endpoint
+    const fsUrl = `https://api.fastspring.com/subscriptions`;
+    const fsMethod = "POST";
+    const fsBody = JSON.stringify({
+      subscriptions: [
+        {
+          subscription: sub.payment_subscription_id,
+          deactivation: isResumeAction ? null : "cancellation",
+          ...(isResumeAction ? { active: true } : {}),
+        },
+      ],
+    });
 
     console.log(`Sending ${action} request to FastSpring API for sub: ${sub.payment_subscription_id}`);
 
@@ -142,7 +138,7 @@ serve(async (req: Request) => {
         Authorization: `Basic ${credentials}`,
         "Content-Type": "application/json",
       },
-      ...(fsBody ? { body: fsBody } : {}),
+      body: fsBody,
     });
 
     if (!fsResponse.ok) {
