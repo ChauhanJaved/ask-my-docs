@@ -16,16 +16,16 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lucide-react": "^1.28.0",
-    "mammoth": "^1.12.0",
+    "mammoth": "^1.13.0",
     "marked": "^18.0.9",
-    "next": "^15.5.25",
+    "next": "^16.4.0",
     "next-themes": "^0.4.6",
     "nextjs-toploader": "^3.9.17",
     "pdf-lib": "^1.17.1",
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "resend": "^6.21.0",
-    "shadcn": "^4.16.1",
+    "shadcn": "^1.0.0",
     "sonner": "^2.0.8",
     "tailwind-merge": "^3.6.0",
     "tailwindcss-animate": "^1.0.7",
@@ -38,12 +38,15 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
-    "eslint-config-next": "15.5.22",
+    "eslint-config-next": "^16.4.0",
     "tailwindcss": "^4",
     "typescript": "^5"
   },
   "overrides": {
+    "argparse": "^2.0.1",
+    "fast-glob": "^3.3.3",
     "postcss": "^8.5.25",
-    "sharp": "^0.35.2"
+    "sharp": "^0.35.2",
+    "braces": "^3.0.3"
   }
 }
