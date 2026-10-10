@@ -489,16 +489,16 @@ export default function BillingSettingsPage() {
   };
 
   return (
-    <div className="max-w-5xl space-y-8 pb-16">
+    <div className="max-w-5xl w-full mx-auto space-y-8 pb-16 min-w-0">
       <FastSpringScript onPopupClosed={handlePopupClosed} />
 
       {/* Success Notification */}
       {successMessage && (
-        <div className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 dark:text-emerald-300 p-4 rounded-xl text-xs font-semibold flex items-center justify-between animate-fade-in">
-          <span>{successMessage}</span>
+        <div className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 dark:text-emerald-300 p-4 rounded-xl text-xs font-semibold flex items-center justify-between animate-fade-in break-words">
+          <span className="min-w-0">{successMessage}</span>
           <button
             onClick={() => setSuccessMessage(null)}
-            className="text-emerald-500 hover:text-emerald-700 font-bold ml-4"
+            className="text-emerald-500 hover:text-emerald-700 font-bold ml-4 shrink-0"
           >
             ✕
           </button>
@@ -507,9 +507,9 @@ export default function BillingSettingsPage() {
 
       {/* Quota Overage Warning Banner */}
       {isAnyQuotaExceeded && (
-        <div className="bg-amber-500/10 border border-amber-500/30 text-amber-900 dark:text-amber-200 p-4 rounded-2xl text-xs font-medium space-y-1">
+        <div className="bg-amber-500/10 border border-amber-500/30 text-amber-900 dark:text-amber-200 p-4 rounded-2xl text-xs font-medium space-y-1.5 break-words">
           <div className="flex items-center space-x-2 font-bold text-amber-700 dark:text-amber-400">
-            <span className="text-base">⚠️</span>
+            <span className="text-base shrink-0">⚠️</span>
             <span>Usage Limit Alert</span>
           </div>
           <p className="leading-relaxed">
@@ -524,9 +524,9 @@ export default function BillingSettingsPage() {
 
       {/* Scheduled Cancellation Industry-Standard Alert Banner */}
       {org?.cancel_at_period_end && org?.plan !== "free" && (
-        <div className="bg-amber-500/10 border border-amber-500/30 text-amber-900 dark:text-amber-200 p-5 rounded-2xl text-xs space-y-3 shadow-sm">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div className="space-y-1">
+        <div className="bg-amber-500/10 border border-amber-500/30 text-amber-900 dark:text-amber-200 p-4 sm:p-5 rounded-2xl text-xs space-y-3 shadow-sm">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+            <div className="space-y-1 min-w-0">
               <div className="flex items-center space-x-2 font-bold text-amber-700 dark:text-amber-400 text-sm">
                 <span>⏳</span>
                 <span>Subscription Scheduled for Cancellation</span>
@@ -536,10 +536,10 @@ export default function BillingSettingsPage() {
                 <strong>{formatDate(org?.current_period_end)}</strong>, after which your account will revert to the Free tier.
               </p>
             </div>
-            <div className="flex items-center gap-2 shrink-0">
+            <div className="flex flex-wrap sm:flex-nowrap items-center gap-2.5 shrink-0 w-full lg:w-auto">
               <Button
                 onClick={() => setShowResumeModal(true)}
-                className="bg-brand-600 hover:bg-brand-700 text-white font-semibold text-xs px-4 py-2 rounded-xl shadow-sm transition-all"
+                className="w-full sm:w-auto bg-brand-600 hover:bg-brand-700 text-white font-semibold text-xs px-4 py-2.5 min-h-[38px] rounded-xl shadow-sm transition-all whitespace-normal sm:whitespace-nowrap text-center"
               >
                 Resume Auto-Renewal
               </Button>
@@ -547,7 +547,7 @@ export default function BillingSettingsPage() {
                 <Button
                   variant="outline"
                   onClick={openFastSpringAccountPortal}
-                  className="border-neutral-300 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-800 text-xs py-2 px-3 rounded-xl font-medium"
+                  className="w-full sm:w-auto border-neutral-300 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-800 text-xs py-2.5 px-3 min-h-[38px] rounded-xl font-medium whitespace-normal sm:whitespace-nowrap text-center"
                 >
                   FastSpring Portal ↗
                 </Button>
@@ -561,22 +561,22 @@ export default function BillingSettingsPage() {
         <h1 className="text-2xl font-bold font-display text-neutral-900 dark:text-white">
           Billing & Subscription Plan
         </h1>
-        <p className="text-sm text-neutral-500 dark:text-neutral-400">
+        <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">
           Complete transparency on workspace subscriptions, usage quotas, renewal dates, and plan management.
         </p>
       </div>
 
       {/* Active Subscription & Quota Usage Grid */}
-      <div className="grid md:grid-cols-2 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
         {/* Active plan card */}
-        <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-2xl p-6 shadow-sm space-y-6 flex flex-col justify-between transition-colors">
+        <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-2xl p-5 sm:p-6 shadow-sm flex flex-col justify-between transition-colors h-full">
           <div>
-            <div className="flex justify-between items-start">
-              <div>
-                <span className="text-[10px] font-bold text-brand-600 dark:text-brand-400 uppercase tracking-wider">
+            <div className="flex justify-between items-start gap-3">
+              <div className="min-w-0">
+                <span className="text-[10px] font-bold text-brand-600 dark:text-brand-400 uppercase tracking-wider block">
                   Current Workspace Plan
                 </span>
-                <h2 className="text-2xl font-extrabold text-neutral-900 dark:text-white font-display mt-0.5 flex items-center gap-2">
+                <h2 className="text-2xl font-extrabold text-neutral-900 dark:text-white font-display mt-0.5 flex flex-wrap items-center gap-2">
                   <span>{currentPlan.name}</span>
                   {org?.billing_interval && org?.plan !== "free" && (
                     <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-brand-500/10 text-brand-600 dark:text-brand-400 border border-brand-500/20 capitalize">
@@ -594,7 +594,7 @@ export default function BillingSettingsPage() {
                 )}
               </div>
               <span
-                className={`text-[10px] font-semibold px-2.5 py-1 rounded-full border capitalize ${
+                className={`text-[10px] font-semibold px-2.5 py-1 rounded-full border capitalize shrink-0 text-center ${
                   org?.cancel_at_period_end
                     ? "bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border-amber-200 dark:border-amber-800"
                     : org?.subscription_status === "active"
@@ -607,34 +607,34 @@ export default function BillingSettingsPage() {
                 {org?.cancel_at_period_end ? "Pending Cancellation" : org?.subscription_status || "Active"}
               </span>
             </div>
-            <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-2">
+            <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-2 leading-relaxed">
               {currentPlan.description}
             </p>
 
-            <div className="mt-6 pt-4 border-t border-neutral-100 dark:border-neutral-800 space-y-2 text-xs text-neutral-600 dark:text-neutral-300">
-              <div className="flex justify-between">
+            <div className="mt-6 pt-4 border-t border-neutral-100 dark:border-neutral-800 space-y-2.5 text-xs text-neutral-600 dark:text-neutral-300">
+              <div className="flex justify-between items-center gap-2">
                 <span className="text-neutral-400">Payment Gateway:</span>
-                <span className="font-medium capitalize">
+                <span className="font-medium capitalize text-right">
                   {org?.payment_provider !== "none" ? org?.payment_provider : "None (Free Tier)"}
                 </span>
               </div>
               {org?.billing_interval && org?.plan !== "free" && (
-                <div className="flex justify-between">
+                <div className="flex justify-between items-center gap-2">
                   <span className="text-neutral-400">Billing Cycle:</span>
-                  <span className="font-medium capitalize">
+                  <span className="font-medium capitalize text-right">
                     {org.billing_interval}
                   </span>
                 </div>
               )}
-              <div className="flex justify-between">
+              <div className="flex justify-between items-center gap-2">
                 <span className="text-neutral-400">Plan Start Date:</span>
-                <span className="font-medium">
+                <span className="font-medium text-right">
                   {formatDate(org?.current_period_start || org?.created_at)}
                 </span>
               </div>
-              <div className="flex justify-between">
+              <div className="flex justify-between items-center gap-2">
                 <span className="text-neutral-400">Next Payment / Renewal:</span>
-                <span className="font-medium font-semibold text-brand-600 dark:text-brand-400">
+                <span className="font-semibold text-brand-600 dark:text-brand-400 text-right">
                   {org?.plan === "free"
                     ? "N/A (Free Plan)"
                     : org?.cancel_at_period_end
@@ -643,23 +643,24 @@ export default function BillingSettingsPage() {
                 </span>
               </div>
               {org?.cancel_at_period_end && (
-                <div className="flex justify-between text-rose-600 dark:text-rose-400 font-medium">
+                <div className="flex justify-between items-center gap-2 text-rose-600 dark:text-rose-400 font-medium">
                   <span>Auto-Renewal:</span>
-                  <span>Off (Active until period end)</span>
+                  <span className="text-right">Off (Active until period end)</span>
                 </div>
               )}
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3 pt-2">
+          <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-2.5 pt-6 border-t border-neutral-100 dark:border-neutral-800 mt-6">
             {nextPlanId && (
               <Button
                 onClick={() => {
                   document.getElementById(`plan-card-${nextPlanId}`)?.scrollIntoView({ behavior: "smooth" });
                 }}
-                className="bg-brand-600 hover:bg-brand-700 text-white text-xs rounded-xl py-2.5 px-4 font-semibold shadow-md transition-all"
+                className="w-full sm:w-auto bg-brand-600 hover:bg-brand-700 text-white text-xs rounded-xl py-2.5 px-4 min-h-[40px] font-semibold shadow-sm transition-all whitespace-normal sm:whitespace-nowrap text-center flex items-center justify-center gap-1.5"
               >
-                Upgrade Plan
+                <span>⚡</span>
+                <span>Upgrade Plan</span>
               </Button>
             )}
 
@@ -667,139 +668,147 @@ export default function BillingSettingsPage() {
               <Button
                 variant="outline"
                 onClick={openFastSpringAccountPortal}
-                className="border-neutral-300 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-800 dark:text-neutral-200 text-xs rounded-xl py-2.5 px-4 font-semibold transition-all flex items-center gap-1.5"
+                className="w-full sm:w-auto border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 hover:bg-neutral-100 dark:hover:bg-neutral-700 text-neutral-800 dark:text-neutral-200 text-xs rounded-xl py-2.5 px-4 min-h-[40px] font-semibold transition-all flex items-center justify-center gap-1.5 whitespace-normal sm:whitespace-nowrap"
               >
-                <span>Manage on FastSpring</span>
-                <span className="text-xs">↗</span>
+                <span>💳</span>
+                <span>Manage Billing</span>
+                <span className="text-[10px] opacity-70">↗</span>
               </Button>
             )}
 
             {org?.plan !== "free" && org?.payment_provider === "fastspring" && org?.cancel_at_period_end && (
               <Button
                 onClick={() => setShowResumeModal(true)}
-                className="bg-brand-600 hover:bg-brand-700 text-white text-xs rounded-xl py-2.5 px-4 font-semibold transition-all"
+                className="w-full sm:w-auto bg-brand-600 hover:bg-brand-700 text-white text-xs rounded-xl py-2.5 px-4 min-h-[40px] font-semibold shadow-sm transition-all whitespace-normal sm:whitespace-nowrap text-center flex items-center justify-center gap-1.5"
               >
-                Resume Auto-Renewal
+                <span>🔄</span>
+                <span>Resume Auto-Renewal</span>
               </Button>
             )}
 
             {org?.plan !== "free" && org?.payment_provider === "fastspring" && !org?.cancel_at_period_end && (
               <Button
-                variant="ghost"
                 onClick={() => setShowCancelModal(true)}
-                className="text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 text-xs rounded-xl py-2.5 px-3 font-semibold transition-all"
+                className="w-full sm:w-auto border border-rose-200 dark:border-rose-900/60 bg-rose-50/60 dark:bg-rose-950/30 hover:bg-rose-100 dark:hover:bg-rose-900/50 text-rose-700 dark:text-rose-300 text-xs rounded-xl py-2.5 px-4 min-h-[40px] font-semibold transition-all whitespace-normal sm:whitespace-nowrap text-center flex items-center justify-center gap-1.5"
               >
-                Cancel Subscription
+                <span>🚫</span>
+                <span>Cancel Subscription</span>
               </Button>
             )}
           </div>
         </div>
 
         {/* Live Quota Usage Breakdown */}
-        <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-2xl p-6 shadow-sm space-y-5 transition-colors">
-          <h3 className="font-bold text-sm text-neutral-900 dark:text-white font-display border-b border-neutral-100 dark:border-neutral-800 pb-3">
-            Current Quota Usage
-          </h3>
+        <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-2xl p-5 sm:p-6 shadow-sm space-y-5 transition-colors h-full flex flex-col justify-between">
+          <div>
+            <h3 className="font-bold text-sm text-neutral-900 dark:text-white font-display border-b border-neutral-100 dark:border-neutral-800 pb-3">
+              Current Quota Usage
+            </h3>
 
-          <div className="space-y-4 text-xs">
-            {/* Monthly Messages */}
-            <div>
-              <div className="flex justify-between font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">
-                <span>Monthly AI Messages</span>
-                <span className={isMessagesExceeded ? "text-rose-600 dark:text-rose-400 font-bold" : ""}>
-                  {usage.messagesCount.toLocaleString()} /{" "}
-                  {entitlements.quotas.monthly_messages === -1
-                    ? "Unlimited"
-                    : entitlements.quotas.monthly_messages.toLocaleString()}
-                </span>
-              </div>
-              <div className="h-2 w-full bg-neutral-100 dark:bg-neutral-800 rounded-full overflow-hidden">
-                <div
-                  className={`h-full transition-all duration-500 ${getProgressBarColor(
-                    usage.messagesCount,
-                    entitlements.quotas.monthly_messages
-                  )}`}
-                  style={{
-                    width: `${calculatePercentage(
+            <div className="space-y-4 text-xs pt-2">
+              {/* Monthly Messages */}
+              <div>
+                <div className="flex justify-between font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">
+                  <span>Monthly AI Messages</span>
+                  <span className={isMessagesExceeded ? "text-rose-600 dark:text-rose-400 font-bold" : ""}>
+                    {usage.messagesCount.toLocaleString()} /{" "}
+                    {entitlements.quotas.monthly_messages === -1
+                      ? "Unlimited"
+                      : entitlements.quotas.monthly_messages.toLocaleString()}
+                  </span>
+                </div>
+                <div className="h-2 w-full bg-neutral-100 dark:bg-neutral-800 rounded-full overflow-hidden">
+                  <div
+                    className={`h-full transition-all duration-500 ${getProgressBarColor(
                       usage.messagesCount,
                       entitlements.quotas.monthly_messages
-                    )}%`,
-                  }}
-                />
+                    )}`}
+                    style={{
+                      width: `${calculatePercentage(
+                        usage.messagesCount,
+                        entitlements.quotas.monthly_messages
+                      )}%`,
+                    }}
+                  />
+                </div>
               </div>
-            </div>
 
-            {/* Documents */}
-            <div>
-              <div className="flex justify-between font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">
-                <span>Knowledge Documents</span>
-                <span className={isDocsExceeded ? "text-rose-600 dark:text-rose-400 font-bold" : ""}>
-                  {usage.documentsCount.toLocaleString()} /{" "}
-                  {entitlements.quotas.max_documents === -1
-                    ? "Unlimited"
-                    : entitlements.quotas.max_documents.toLocaleString()}
-                </span>
-              </div>
-              <div className="h-2 w-full bg-neutral-100 dark:bg-neutral-800 rounded-full overflow-hidden">
-                <div
-                  className={`h-full transition-all duration-500 ${getProgressBarColor(
-                    usage.documentsCount,
-                    entitlements.quotas.max_documents
-                  )}`}
-                  style={{
-                    width: `${calculatePercentage(
+              {/* Documents */}
+              <div>
+                <div className="flex justify-between font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">
+                  <span>Knowledge Documents</span>
+                  <span className={isDocsExceeded ? "text-rose-600 dark:text-rose-400 font-bold" : ""}>
+                    {usage.documentsCount.toLocaleString()} /{" "}
+                    {entitlements.quotas.max_documents === -1
+                      ? "Unlimited"
+                      : entitlements.quotas.max_documents.toLocaleString()}
+                  </span>
+                </div>
+                <div className="h-2 w-full bg-neutral-100 dark:bg-neutral-800 rounded-full overflow-hidden">
+                  <div
+                    className={`h-full transition-all duration-500 ${getProgressBarColor(
                       usage.documentsCount,
                       entitlements.quotas.max_documents
-                    )}%`,
-                  }}
-                />
+                    )}`}
+                    style={{
+                      width: `${calculatePercentage(
+                        usage.documentsCount,
+                        entitlements.quotas.max_documents
+                      )}%`,
+                    }}
+                  />
+                </div>
               </div>
-            </div>
 
-            {/* Team Seats */}
-            <div>
-              <div className="flex justify-between font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">
-                <span>Team Seats</span>
-                <span className={isSeatsExceeded ? "text-rose-600 dark:text-rose-400 font-bold" : ""}>
-                  {usage.teamSeatsCount.toLocaleString()} /{" "}
-                  {entitlements.quotas.team_seats === -1
-                    ? "Unlimited"
-                    : entitlements.quotas.team_seats.toLocaleString()}
-                </span>
-              </div>
-              <div className="h-2 w-full bg-neutral-100 dark:bg-neutral-800 rounded-full overflow-hidden">
-                <div
-                  className={`h-full transition-all duration-500 ${getProgressBarColor(
-                    usage.teamSeatsCount,
-                    entitlements.quotas.team_seats
-                  )}`}
-                  style={{
-                    width: `${calculatePercentage(
+              {/* Team Seats */}
+              <div>
+                <div className="flex justify-between font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">
+                  <span>Team Seats</span>
+                  <span className={isSeatsExceeded ? "text-rose-600 dark:text-rose-400 font-bold" : ""}>
+                    {usage.teamSeatsCount.toLocaleString()} /{" "}
+                    {entitlements.quotas.team_seats === -1
+                      ? "Unlimited"
+                      : entitlements.quotas.team_seats.toLocaleString()}
+                  </span>
+                </div>
+                <div className="h-2 w-full bg-neutral-100 dark:bg-neutral-800 rounded-full overflow-hidden">
+                  <div
+                    className={`h-full transition-all duration-500 ${getProgressBarColor(
                       usage.teamSeatsCount,
                       entitlements.quotas.team_seats
-                    )}%`,
-                  }}
-                />
+                    )}`}
+                    style={{
+                      width: `${calculatePercentage(
+                        usage.teamSeatsCount,
+                        entitlements.quotas.team_seats
+                      )}%`,
+                    }}
+                  />
+                </div>
               </div>
             </div>
+          </div>
+
+          <div className="pt-4 border-t border-neutral-100 dark:border-neutral-800 text-[11px] text-neutral-500 dark:text-neutral-400">
+            Quotas reset automatically at the beginning of each billing cycle.
           </div>
         </div>
       </div>
 
       {/* Available Subscription Plans Section */}
       <div id="available-plans" className="pt-6 space-y-6 scroll-mt-6">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-neutral-200 dark:border-neutral-800 pb-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-neutral-200 dark:border-neutral-800 pb-4">
           <div>
             <h2 className="text-xl font-bold font-display text-neutral-900 dark:text-white">
               Available Subscription Plans
             </h2>
-            <p className="text-xs text-neutral-500 dark:text-neutral-400">
+            <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
               Upgrade or downgrade your plan to fit your workspace size and AI workload.
             </p>
           </div>
 
           {/* Monthly / Yearly Toggle */}
-          <div className="flex items-center space-x-2 bg-neutral-100 dark:bg-neutral-800/80 p-1 rounded-xl border border-neutral-200 dark:border-neutral-700 self-start">
+          <div className="flex items-center space-x-1.5 bg-neutral-100 dark:bg-neutral-800/80 p-1 rounded-xl border border-neutral-200 dark:border-neutral-700 self-start sm:self-auto shrink-0">
             <button
               onClick={() => {
                 console.log("[BILLING_ACTION] 🗓️ Switched billing interval view to: monthly");
@@ -818,7 +827,7 @@ export default function BillingSettingsPage() {
                 console.log("[BILLING_ACTION] 🗓️ Switched billing interval view to: yearly");
                 setBillingInterval("yearly");
               }}
-              className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all flex items-center space-x-1 ${
+              className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all flex items-center space-x-1.5 ${
                 billingInterval === "yearly"
                   ? "bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white shadow-sm"
                   : "text-neutral-500 hover:text-neutral-900 dark:hover:text-white"
@@ -833,7 +842,7 @@ export default function BillingSettingsPage() {
         </div>
 
         {/* Plan Cards Grid (Free, Starter, Pro, Business) */}
-        <div className="grid md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5 items-stretch">
           {(["free", "starter", "pro", "business"] as PlanId[]).map((planId) => {
             const plan = PLAN_DEFINITIONS[planId];
             const isCurrent = org?.plan === planId;
@@ -844,7 +853,7 @@ export default function BillingSettingsPage() {
               <div
                 key={planId}
                 id={`plan-card-${planId}`}
-                className={`bg-white dark:bg-neutral-900 border rounded-2xl p-5 shadow-sm flex flex-col justify-between relative transition-all scroll-mt-24 ${
+                className={`bg-white dark:bg-neutral-900 border rounded-2xl p-5 sm:p-6 shadow-sm flex flex-col justify-between relative transition-all scroll-mt-24 h-full ${
                   isCurrent
                     ? "border-brand-500 dark:border-brand-500 ring-2 ring-brand-500/20"
                     : plan.badge
@@ -853,16 +862,16 @@ export default function BillingSettingsPage() {
                 }`}
               >
                 {plan.badge && (
-                  <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-brand-600 text-white text-[9px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full shadow-sm">
+                  <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-brand-600 text-white text-[9px] font-bold uppercase tracking-wider px-3 py-0.5 rounded-full shadow-sm z-10 whitespace-nowrap">
                     {plan.badge}
                   </span>
                 )}
 
-                <div>
+                <div className="flex-1 flex flex-col">
                   <h3 className="text-base font-bold text-neutral-900 dark:text-white font-display">
                     {plan.name}
                   </h3>
-                  <p className="text-[11px] text-neutral-500 dark:text-neutral-400 mt-1 min-h-[36px] leading-tight">
+                  <p className="text-[11px] text-neutral-500 dark:text-neutral-400 mt-1 min-h-[36px] leading-relaxed">
                     {plan.description}
                   </p>
 
@@ -870,7 +879,7 @@ export default function BillingSettingsPage() {
                     <span className="text-2xl font-extrabold text-neutral-900 dark:text-white font-display">
                       ${price}
                     </span>
-                    <span className="text-xs text-neutral-400 font-medium">/month</span>
+                    <span className="text-xs text-neutral-400 font-medium ml-1">/month</span>
                     {billingInterval === "yearly" && planId !== "free" && (
                       <p className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium mt-0.5">
                         Billed annually (${plan.priceYearly}/yr)
@@ -878,42 +887,44 @@ export default function BillingSettingsPage() {
                     )}
                   </div>
 
-                  <ul className="space-y-2 text-[11px] text-neutral-600 dark:text-neutral-300 border-t border-neutral-100 dark:border-neutral-800 pt-3 mb-5">
+                  <ul className="flex-1 space-y-2 text-[11px] text-neutral-600 dark:text-neutral-300 border-t border-neutral-100 dark:border-neutral-800 pt-3 mb-5">
                     {plan.featureHighlights.map((highlight, idx) => (
-                      <li key={idx} className="flex items-start space-x-1.5">
-                        <span className="text-brand-500 font-bold shrink-0">✓</span>
-                        <span>{highlight}</span>
+                      <li key={idx} className="flex items-start space-x-2">
+                        <span className="text-brand-500 font-bold shrink-0 leading-tight">✓</span>
+                        <span className="leading-tight">{highlight}</span>
                       </li>
                     ))}
                   </ul>
                 </div>
 
-                <Button
-                  onClick={() => {
-                    if (isCurrent) return;
-                    if (isDowngrade) {
-                      setSelectedDowngradePlan(planId);
-                    } else {
-                      handleUpgradeClick(planId);
-                    }
-                  }}
-                  disabled={isCurrent}
-                  className={`w-full text-xs py-2 rounded-xl font-semibold transition-all ${
-                    isCurrent
-                      ? "bg-neutral-100 dark:bg-neutral-800 text-neutral-400 cursor-not-allowed border border-neutral-200 dark:border-neutral-700"
+                <div className="mt-auto pt-4 border-t border-neutral-100 dark:border-neutral-800/60">
+                  <Button
+                    onClick={() => {
+                      if (isCurrent) return;
+                      if (isDowngrade) {
+                        setSelectedDowngradePlan(planId);
+                      } else {
+                        handleUpgradeClick(planId);
+                      }
+                    }}
+                    disabled={isCurrent}
+                    className={`w-full text-xs min-h-[42px] py-2.5 px-3 rounded-xl font-semibold transition-all whitespace-normal text-center leading-tight flex items-center justify-center ${
+                      isCurrent
+                        ? "bg-neutral-100 dark:bg-neutral-800 text-neutral-400 cursor-not-allowed border border-neutral-200 dark:border-neutral-700"
+                        : isDowngrade
+                        ? "bg-transparent border border-neutral-300 dark:border-neutral-700 text-neutral-700 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800"
+                        : plan.badge
+                        ? "bg-brand-600 hover:bg-brand-700 text-white shadow-md hover:shadow-brand-500/20"
+                        : "bg-neutral-900 hover:bg-neutral-800 text-white dark:bg-neutral-100 dark:hover:bg-white dark:text-neutral-900"
+                    }`}
+                  >
+                    {isCurrent
+                      ? "Current Active Plan"
                       : isDowngrade
-                      ? "bg-transparent border border-neutral-300 dark:border-neutral-700 text-neutral-700 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800"
-                      : plan.badge
-                      ? "bg-brand-600 hover:bg-brand-700 text-white shadow-md"
-                      : "bg-neutral-900 hover:bg-neutral-800 text-white dark:bg-neutral-100 dark:hover:bg-white dark:text-neutral-900"
-                  }`}
-                >
-                  {isCurrent
-                    ? "Current Active Plan"
-                    : isDowngrade
-                    ? `Downgrade to ${plan.name}`
-                    : `Upgrade to ${plan.name}`}
-                </Button>
+                      ? `Downgrade to ${plan.name}`
+                      : `Upgrade to ${plan.name}`}
+                  </Button>
+                </div>
               </div>
             );
           })}
@@ -935,7 +946,7 @@ export default function BillingSettingsPage() {
               </div>
               <button
                 onClick={() => setSelectedUpgradePlan(null)}
-                className="text-neutral-400 hover:text-neutral-600 dark:hover:text-white text-lg font-bold"
+                className="text-neutral-400 hover:text-neutral-600 dark:hover:text-white text-lg font-bold p-1 rounded-lg"
               >
                 ✕
               </button>
@@ -962,19 +973,19 @@ export default function BillingSettingsPage() {
               )}
             </div>
 
-            <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2.5 sm:space-x-3 sm:gap-0 pt-2">
+            <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2.5 pt-2 border-t border-neutral-100 dark:border-neutral-800">
               <Button
                 variant="outline"
                 onClick={() => setSelectedUpgradePlan(null)}
                 disabled={upgrading}
-                className="w-full sm:w-auto text-xs rounded-xl"
+                className="w-full sm:w-auto text-xs min-h-[40px] rounded-xl px-4 font-semibold"
               >
                 Cancel
               </Button>
               <Button
                 onClick={handleConfirmUpgrade}
                 disabled={upgrading}
-                className="w-full sm:w-auto bg-brand-600 hover:bg-brand-700 text-white text-xs rounded-xl px-5 font-semibold"
+                className="w-full sm:w-auto bg-brand-600 hover:bg-brand-700 text-white text-xs min-h-[40px] rounded-xl px-5 font-semibold whitespace-normal sm:whitespace-nowrap text-center leading-tight"
               >
                 {upgrading ? planChangeStatusText || "Processing..." : `Proceed to Checkout`}
               </Button>
@@ -998,7 +1009,7 @@ export default function BillingSettingsPage() {
               </div>
               <button
                 onClick={() => setSelectedDowngradePlan(null)}
-                className="text-neutral-400 hover:text-neutral-600 dark:hover:text-white text-lg font-bold"
+                className="text-neutral-400 hover:text-neutral-600 dark:hover:text-white text-lg font-bold p-1 rounded-lg"
               >
                 ✕
               </button>
@@ -1054,19 +1065,19 @@ export default function BillingSettingsPage() {
               )}
             </div>
 
-            <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2.5 sm:space-x-3 sm:gap-0 pt-2">
+            <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2.5 pt-2 border-t border-neutral-100 dark:border-neutral-800">
               <Button
                 variant="outline"
                 onClick={() => setSelectedDowngradePlan(null)}
                 disabled={downgrading}
-                className="w-full sm:w-auto text-xs rounded-xl"
+                className="w-full sm:w-auto text-xs min-h-[40px] rounded-xl px-4 font-semibold"
               >
                 Cancel
               </Button>
               <Button
                 onClick={handleConfirmDowngrade}
                 disabled={downgrading}
-                className="w-full sm:w-auto bg-amber-600 hover:bg-amber-700 text-white text-xs rounded-xl px-5 font-semibold"
+                className="w-full sm:w-auto bg-amber-600 hover:bg-amber-700 text-white text-xs min-h-[40px] rounded-xl px-5 font-semibold whitespace-normal sm:whitespace-nowrap text-center leading-tight"
               >
                 {downgrading ? planChangeStatusText || "Downgrading..." : `Confirm Downgrade to ${targetDowngradePlan.name}`}
               </Button>
@@ -1090,7 +1101,7 @@ export default function BillingSettingsPage() {
               </div>
               <button
                 onClick={() => setShowCancelModal(false)}
-                className="text-neutral-400 hover:text-neutral-600 dark:hover:text-white text-lg font-bold"
+                className="text-neutral-400 hover:text-neutral-600 dark:hover:text-white text-lg font-bold p-1 rounded-lg"
               >
                 ✕
               </button>
@@ -1116,19 +1127,19 @@ export default function BillingSettingsPage() {
               </div>
             </div>
 
-            <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2.5 sm:space-x-3 sm:gap-0 pt-2 border-t border-neutral-100 dark:border-neutral-800">
+            <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2.5 pt-2 border-t border-neutral-100 dark:border-neutral-800">
               <Button
                 variant="outline"
                 onClick={() => setShowCancelModal(false)}
                 disabled={canceling}
-                className="w-full sm:w-auto text-xs rounded-xl"
+                className="w-full sm:w-auto text-xs min-h-[40px] rounded-xl px-4 font-semibold"
               >
                 Keep Subscription
               </Button>
               <Button
                 onClick={handleConfirmCancel}
                 disabled={canceling}
-                className="w-full sm:w-auto bg-rose-600 hover:bg-rose-700 text-white text-xs rounded-xl px-5 font-semibold"
+                className="w-full sm:w-auto bg-rose-600 hover:bg-rose-700 text-white text-xs min-h-[40px] rounded-xl px-5 font-semibold whitespace-normal sm:whitespace-nowrap text-center leading-tight"
               >
                 {canceling ? "Canceling..." : "Confirm Cancellation"}
               </Button>
@@ -1152,7 +1163,7 @@ export default function BillingSettingsPage() {
               </div>
               <button
                 onClick={() => setShowResumeModal(false)}
-                className="text-neutral-400 hover:text-neutral-600 dark:hover:text-white text-lg font-bold"
+                className="text-neutral-400 hover:text-neutral-600 dark:hover:text-white text-lg font-bold p-1 rounded-lg"
               >
                 ✕
               </button>
@@ -1176,21 +1187,21 @@ export default function BillingSettingsPage() {
               </div>
             </div>
 
-            <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2.5 sm:space-x-3 sm:gap-0 pt-2 border-t border-neutral-100 dark:border-neutral-800">
+            <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2.5 pt-2 border-t border-neutral-100 dark:border-neutral-800">
               <Button
                 variant="outline"
                 onClick={() => setShowResumeModal(false)}
                 disabled={resuming}
-                className="w-full sm:w-auto text-xs rounded-xl"
+                className="w-full sm:w-auto text-xs min-h-[40px] rounded-xl px-4 font-semibold"
               >
-                Back
+                Keep As Is
               </Button>
               <Button
                 onClick={handleConfirmResume}
                 disabled={resuming}
-                className="w-full sm:w-auto bg-brand-600 hover:bg-brand-700 text-white text-xs rounded-xl px-5 font-semibold shadow-md"
+                className="w-full sm:w-auto bg-brand-600 hover:bg-brand-700 text-white text-xs min-h-[40px] rounded-xl px-5 font-semibold shadow-md whitespace-normal sm:whitespace-nowrap text-center leading-tight"
               >
-                {resuming ? "Resuming..." : "Confirm Resume Auto-Renewal"}
+                {resuming ? "Resuming..." : "Resume Auto-Renewal"}
               </Button>
             </div>
           </div>
