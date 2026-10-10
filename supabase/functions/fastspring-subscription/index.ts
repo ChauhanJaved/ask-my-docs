@@ -118,27 +118,41 @@ serve(async (req: Request) => {
     const isResumeAction = action === "resume" || action === "uncancel" || action === "reactivate";
 
     // FastSpring Official Subscription API endpoint
-    const fsUrl = `https://api.fastspring.com/subscriptions`;
-    const fsMethod = "POST";
-    const fsBody = JSON.stringify({
-      subscriptions: [
-        {
-          subscription: sub.payment_subscription_id,
-          deactivation: isResumeAction ? null : "cancellation",
-          ...(isResumeAction ? { active: true } : {}),
-        },
-      ],
-    });
+    let fsUrl = `https://api.fastspring.com/subscriptions`;
+    let fsMethod = "POST";
+    let fsBody: string | undefined = undefined;
 
-    console.log(`Sending ${action} request to FastSpring API for sub: ${sub.payment_subscription_id}`);
+    if (isResumeAction) {
+      // Official FastSpring payload to resume a canceled subscription:
+      // POST https://api.fastspring.com/subscriptions with { subscriptions: [{ subscription: id, deactivation: null }] }
+      fsUrl = `https://api.fastspring.com/subscriptions`;
+      fsMethod = "POST";
+      fsBody = JSON.stringify({
+        subscriptions: [
+          {
+            subscription: sub.payment_subscription_id,
+            deactivation: null,
+          },
+        ],
+      });
+    } else {
+      // Official FastSpring endpoint to cancel subscription at the end of billing period:
+      // DELETE https://api.fastspring.com/subscriptions/{subscription_id}?billingPeriod=1
+      fsUrl = `https://api.fastspring.com/subscriptions/${sub.payment_subscription_id}?billingPeriod=1`;
+      fsMethod = "DELETE";
+      fsBody = undefined;
+    }
+
+    console.log(`Sending ${action} request to FastSpring API (${fsMethod} ${fsUrl}) for sub: ${sub.payment_subscription_id}`);
 
     const fsResponse = await fetch(fsUrl, {
       method: fsMethod,
       headers: {
         Authorization: `Basic ${credentials}`,
-        "Content-Type": "application/json",
+        Accept: "application/json",
+        ...(fsBody ? { "Content-Type": "application/json" } : {}),
       },
-      body: fsBody,
+      ...(fsBody ? { body: fsBody } : {}),
     });
 
     if (!fsResponse.ok) {
@@ -157,7 +171,46 @@ serve(async (req: Request) => {
 
     const responsePayload = await fsResponse.json().catch(() => ({}));
 
-    // Success response: Database will be updated asynchronously by FastSpring Webhook
+    // Check if FastSpring reported an error inside the JSON response
+    const subResult = responsePayload?.subscriptions?.[0];
+    if (subResult && subResult.result === "error") {
+      const errorDetail = typeof subResult.error === "object"
+        ? JSON.stringify(subResult.error)
+        : String(subResult.error || "FastSpring operation failed");
+      console.error(`FastSpring API error for ${action}:`, errorDetail);
+      return new Response(
+        JSON.stringify({
+          error: `FastSpring API error: ${errorDetail}`,
+          fastSpringResponse: responsePayload,
+        }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    // Immediately update local database record for instant UI feedback
+    if (isResumeAction) {
+      await adminSupabase
+        .from("subscriptions")
+        .update({
+          cancel_at_period_end: false,
+          status: "active",
+          updated_at: new Date().toISOString(),
+        })
+        .eq("organization_id", profile.organization_id);
+    } else {
+      await adminSupabase
+        .from("subscriptions")
+        .update({
+          cancel_at_period_end: true,
+          status: "canceled",
+          updated_at: new Date().toISOString(),
+        })
+        .eq("organization_id", profile.organization_id);
+    }
+
     return new Response(
       JSON.stringify({
         success: true,
@@ -165,8 +218,8 @@ serve(async (req: Request) => {
         subscriptionId: sub.payment_subscription_id,
         fastSpringResponse: responsePayload,
         message: isResumeAction
-          ? "Subscription auto-renewal request sent to FastSpring. Database will update via Webhook."
-          : "Subscription cancellation request sent to FastSpring. Database will update via Webhook.",
+          ? "Subscription auto-renewal request sent to FastSpring. Auto-renewal has been resumed."
+          : "Subscription cancellation request sent to FastSpring. Access remains active until billing period ends.",
       }),
       {
         status: 200,

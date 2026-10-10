@@ -297,13 +297,14 @@ export default function BillingSettingsPage() {
       });
       if (error) {
         console.warn("[BILLING_ACTION] ⚠️ Edge function cancellation warning:", error);
+        return { error: error.message };
       } else {
         console.log("[BILLING_ACTION] ✅ Edge function cancellation response:", data);
+        return data;
       }
-      return data;
-    } catch (err) {
+    } catch (err: any) {
       console.error("[BILLING_ACTION] ❌ Error invoking fastspring-subscription edge function:", err);
-      return null;
+      return { error: err?.message || "Edge function invocation failed" };
     }
   };
 
@@ -311,7 +312,10 @@ export default function BillingSettingsPage() {
     console.log("[BILLING_ACTION] 🚫 User confirmed cancellation of active subscription");
     setCanceling(true);
     try {
-      await cancelActiveFastSpringSubscription();
+      const res = await cancelActiveFastSpringSubscription();
+      if (res?.error) {
+        throw new Error(res.error);
+      }
       setSuccessMessage(
         "Subscription cancellation requested. Your access will remain active until the end of your billing cycle."
       );
@@ -319,9 +323,9 @@ export default function BillingSettingsPage() {
       setTimeout(() => setSuccessMessage(null), 8000);
       setShowCancelModal(false);
       await loadBillingData();
-    } catch (err) {
+    } catch (err: any) {
       console.error("[BILLING_ACTION] ❌ Error canceling subscription:", err);
-      alert("Failed to cancel subscription. Please try again or manage directly on FastSpring.");
+      alert(err?.message || "Failed to cancel subscription. Please try again or manage directly on FastSpring.");
     } finally {
       setCanceling(false);
     }
@@ -342,13 +346,14 @@ export default function BillingSettingsPage() {
       });
       if (error) {
         console.warn("[BILLING_ACTION] ⚠️ Edge function resume warning:", error);
+        return { error: error.message };
       } else {
         console.log("[BILLING_ACTION] ✅ Edge function resume response:", data);
+        return data;
       }
-      return data;
-    } catch (err) {
+    } catch (err: any) {
       console.error("[BILLING_ACTION] ❌ Error invoking fastspring-subscription edge function (resume):", err);
-      return null;
+      return { error: err?.message || "Edge function invocation failed" };
     }
   };
 
@@ -356,15 +361,18 @@ export default function BillingSettingsPage() {
     console.log("[BILLING_ACTION] ▶️ User confirmed resuming subscription auto-renewal");
     setResuming(true);
     try {
-      await resumeActiveFastSpringSubscription();
+      const res = await resumeActiveFastSpringSubscription();
+      if (res?.error) {
+        throw new Error(res.error);
+      }
       setSuccessMessage("🎉 Subscription auto-renewal has been successfully resumed!");
       scrollToTop();
       setTimeout(() => setSuccessMessage(null), 8000);
       setShowResumeModal(false);
       await loadBillingData();
-    } catch (err) {
+    } catch (err: any) {
       console.error("[BILLING_ACTION] ❌ Error resuming subscription:", err);
-      alert("Failed to resume subscription. Please try again or manage directly on FastSpring.");
+      alert(err?.message || "Failed to resume subscription. Please try again or manage directly on FastSpring.");
     } finally {
       setResuming(false);
     }
