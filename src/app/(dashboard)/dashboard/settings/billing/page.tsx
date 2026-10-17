@@ -1,7 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { createBrowserSupabaseClient } from "@/utils/supabase/client";
 import { canManageBilling, UserRole } from "@/lib/permissions";
 import { DashboardPageSkeleton } from "@/components/ui/page-loader";
@@ -41,6 +41,25 @@ interface UsageStats {
   teamSeatsCount: number;
 }
 
+interface SubscriptionRow {
+  plan?: string | null;
+  status?: string | null;
+  payment_provider?: string | null;
+  payment_subscription_id?: string | null;
+  cancel_at_period_end?: boolean | null;
+  current_period_start?: string | null;
+  current_period_end?: string | null;
+  updated_at?: string | null;
+  [key: string]: any;
+}
+
+interface PendingSync {
+  isSyncing: boolean;
+  title: string;
+  message: string;
+  progress?: number;
+}
+
 const NEXT_PLAN_MAP: Record<PlanId, PlanId | null> = {
   free: "starter",
   starter: "pro",
@@ -63,6 +82,16 @@ export default function BillingSettingsPage() {
   const [showCancelModal, setShowCancelModal] = useState<boolean>(false);
   const [showResumeModal, setShowResumeModal] = useState<boolean>(false);
   const [planChangeStatusText, setPlanChangeStatusText] = useState<string | null>(null);
+  const [pendingSync, setPendingSync] = useState<PendingSync | null>(null);
+  const activePollingRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (activePollingRef.current) {
+        clearInterval(activePollingRef.current);
+      }
+    };
+  }, []);
 
   const [usage, setUsage] = useState<UsageStats>({
     documentsCount: 0,
@@ -174,63 +203,131 @@ export default function BillingSettingsPage() {
     }
   };
 
+  /**
+   * Short-polls the subscriptions table until the FastSpring webhook has authoritatively updated the record.
+   * Industry standard pattern: Client shows a pending feedback state while awaiting webhook confirmation.
+   */
+  const pollSubscriptionForChange = useCallback(
+    async (
+      predicate: (sub: SubscriptionRow) => boolean,
+      options: {
+        title: string;
+        message: string;
+        successMessage: string;
+        timeoutMessage?: string;
+        maxAttempts?: number;
+        intervalMs?: number;
+      }
+    ) => {
+      if (activePollingRef.current) {
+        clearInterval(activePollingRef.current);
+      }
+
+      const maxAttempts = options.maxAttempts || 14; // ~21s maximum
+      const intervalMs = options.intervalMs || 1500;
+      let attempt = 0;
+
+      setPendingSync({
+        isSyncing: true,
+        title: options.title,
+        message: options.message,
+        progress: 10,
+      });
+
+      const checkCondition = async (): Promise<boolean> => {
+        try {
+          const supabase = createBrowserSupabaseClient();
+          const {
+            data: { user },
+          } = await supabase.auth.getUser();
+          if (!user) return false;
+
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("organization_id")
+            .eq("id", user.id)
+            .single();
+
+          if (!profile?.organization_id) return false;
+
+          const { data: subData } = await supabase
+            .from("subscriptions")
+            .select(
+              "plan, status, payment_provider, payment_subscription_id, current_period_start, current_period_end, cancel_at_period_end, created_at, custom_entitlements, billing_interval, price_display, currency, updated_at"
+            )
+            .eq("organization_id", profile.organization_id)
+            .maybeSingle();
+
+          if (subData && predicate(subData as Record<string, unknown>)) {
+            console.log("[BILLING_ACTION] 🎯 FastSpring webhook update confirmed via polling:", subData);
+            return true;
+          }
+        } catch (err) {
+          console.warn("[BILLING_ACTION] ⚠️ Polling error checking subscription:", err);
+        }
+        return false;
+      };
+
+      return new Promise<void>((resolve) => {
+        activePollingRef.current = setInterval(async () => {
+          attempt++;
+          const progressPct = Math.min(Math.round((attempt / maxAttempts) * 100), 95);
+          setPendingSync((prev) => (prev ? { ...prev, progress: progressPct } : null));
+
+          const matched = await checkCondition();
+          if (matched) {
+            if (activePollingRef.current) clearInterval(activePollingRef.current);
+            activePollingRef.current = null;
+            setPendingSync(null);
+            setSuccessMessage(options.successMessage);
+            scrollToTop();
+            setTimeout(() => setSuccessMessage(null), 8000);
+            await loadBillingData();
+            resolve();
+            return;
+          }
+
+          if (attempt >= maxAttempts) {
+            if (activePollingRef.current) clearInterval(activePollingRef.current);
+            activePollingRef.current = null;
+            setPendingSync(null);
+            setSuccessMessage(
+              options.timeoutMessage ||
+                "Your request has been received by FastSpring and will reflect on your workspace in a few moments."
+            );
+            scrollToTop();
+            setTimeout(() => setSuccessMessage(null), 8000);
+            await loadBillingData();
+            resolve();
+          }
+        }, intervalMs);
+      });
+    },
+    [loadBillingData]
+  );
+
   const handlePopupClosed = useCallback(
     async (data: Record<string, unknown> | null) => {
       console.log("[BILLING_ACTION] 🚪 FastSpring popup modal closed with payload:", data);
       scrollToTop();
       if (data && (data.id || data.reference)) {
         console.log("[BILLING_ACTION] ✅ FastSpring order completed successfully. Order ref:", data.id || data.reference);
-        setSuccessMessage("🎉 Order completed! Syncing subscription...");
-        setTimeout(() => setSuccessMessage(null), 8000);
-
-        // Immediate client fallback sync to ensure DB & UI update even if local webhook tunnel is offline
-        try {
-          const supabase = createBrowserSupabaseClient();
-          const {
-            data: { user },
-          } = await supabase.auth.getUser();
-
-          if (user) {
-            const { data: profile } = await supabase
-              .from("profiles")
-              .select("organization_id")
-              .eq("id", user.id)
-              .single();
-
-            if (profile?.organization_id) {
-              const now = new Date();
-              const nextMonth = new Date(now);
-              nextMonth.setMonth(nextMonth.getMonth() + 1);
-
-              console.log("[BILLING_ACTION] 🔄 Triggering client fallback DB sync for org:", profile.organization_id);
-
-              await supabase.from("subscriptions").upsert(
-                {
-                  organization_id: profile.organization_id,
-                  payment_provider: "fastspring",
-                  status: "active",
-                  current_period_start: now.toISOString(),
-                  current_period_end: nextMonth.toISOString(),
-                  updated_at: now.toISOString(),
-                },
-                { onConflict: "organization_id" }
-              );
-              console.log("[BILLING_ACTION] 🌟 Client fallback subscription sync successful");
-            }
+        // Industry Standard: Webhook is single source of truth. Use short polling for UI synchronization.
+        await pollSubscriptionForChange(
+          (sub) => sub.status === "active" && sub.payment_provider === "fastspring" && sub.plan !== "free",
+          {
+            title: "Confirming Order with FastSpring",
+            message: "FastSpring is finalizing payment and dispatching the signed webhook confirmation...",
+            successMessage: "🎉 Payment confirmed! Your workspace subscription is now active.",
+            timeoutMessage: "🎉 Order completed! FastSpring is processing your subscription in the background.",
           }
-        } catch (err) {
-          console.error("[BILLING_ACTION] ❌ Error in client-side payment sync fallback:", err);
-        }
-
-        setTimeout(() => {
-          loadBillingData();
-        }, 1000);
+        );
       } else {
         console.log("[BILLING_ACTION] ℹ️ Popup closed without order completion.");
         loadBillingData();
       }
     },
-    [loadBillingData]
+    [loadBillingData, pollSubscriptionForChange]
   );
 
 
@@ -316,13 +413,18 @@ export default function BillingSettingsPage() {
       if (res?.error) {
         throw new Error(res.error);
       }
-      setSuccessMessage(
-        "Subscription cancellation requested. Your access will remain active until the end of your billing cycle."
-      );
-      scrollToTop();
-      setTimeout(() => setSuccessMessage(null), 8000);
       setShowCancelModal(false);
-      await loadBillingData();
+      await pollSubscriptionForChange(
+        (sub) => sub.cancel_at_period_end === true || sub.status === "canceled",
+        {
+          title: "Scheduling Cancellation",
+          message: "FastSpring is scheduling cancellation at the end of your billing period...",
+          successMessage: `Subscription cancellation scheduled. Access remains fully active until ${formatDate(
+            org?.current_period_end
+          )}, after which your account will revert to the Free tier.`,
+          timeoutMessage: "Cancellation scheduled with FastSpring. Your workspace will update shortly.",
+        }
+      );
     } catch (err: any) {
       console.error("[BILLING_ACTION] ❌ Error canceling subscription:", err);
       alert(err?.message || "Failed to cancel subscription. Please try again or manage directly on FastSpring.");
@@ -403,11 +505,16 @@ export default function BillingSettingsPage() {
       if (res?.error) {
         throw new Error(res.error);
       }
-      setSuccessMessage("🎉 Subscription auto-renewal has been successfully resumed!");
-      scrollToTop();
-      setTimeout(() => setSuccessMessage(null), 8000);
       setShowResumeModal(false);
-      await loadBillingData();
+      await pollSubscriptionForChange(
+        (sub) => sub.cancel_at_period_end === false && sub.status === "active",
+        {
+          title: "Resuming Auto-Renewal",
+          message: "FastSpring is resuming subscription auto-renewal...",
+          successMessage: "🎉 Subscription auto-renewal has been successfully resumed!",
+          timeoutMessage: "Auto-renewal resumed with FastSpring. Your status will update shortly.",
+        }
+      );
     } catch (err: any) {
       console.error("[BILLING_ACTION] ❌ Error resuming subscription:", err);
       alert(err?.message || "Failed to resume subscription. Please try again or manage directly on FastSpring.");
@@ -447,13 +554,16 @@ export default function BillingSettingsPage() {
         console.log(`[BILLING_ACTION] 1️⃣ Updating active FastSpring subscription (${org.payment_subscription_id}) in-place...`);
         try {
           await changeActiveFastSpringSubscription(targetPlan, billingInterval, true);
-          setSuccessMessage(
-            `🎉 Successfully upgraded to ${PLAN_DEFINITIONS[targetPlan].name}! Your subscription has been updated.`
-          );
-          scrollToTop();
-          setTimeout(() => setSuccessMessage(null), 8000);
           setSelectedUpgradePlan(null);
-          await loadBillingData();
+          await pollSubscriptionForChange(
+            (sub) => sub.plan === targetPlan,
+            {
+              title: `Switching Plan to ${PLAN_DEFINITIONS[targetPlan].name}`,
+              message: "FastSpring is processing your plan switch and dispatching webhook confirmation...",
+              successMessage: `🎉 Successfully upgraded to ${PLAN_DEFINITIONS[targetPlan].name}! Your subscription is updated.`,
+              timeoutMessage: `Plan upgrade to ${PLAN_DEFINITIONS[targetPlan].name} submitted. FastSpring will update your workspace shortly.`,
+            }
+          );
           return;
         } catch (apiErr: any) {
           console.warn("[BILLING_ACTION] ⚠️ In-place subscription update failed, falling back to checkout popup:", apiErr);
@@ -484,6 +594,7 @@ export default function BillingSettingsPage() {
 
     try {
       const isFree = selectedDowngradePlan === "free";
+      const targetPlan = selectedDowngradePlan;
 
       if (isFree) {
         if (org.payment_provider === "fastspring" && org.payment_subscription_id) {
@@ -492,51 +603,46 @@ export default function BillingSettingsPage() {
             console.log("[BILLING_ACTION] 1️⃣ Canceling active FastSpring subscription at period end...");
             await cancelActiveFastSpringSubscription();
           }
-          setSuccessMessage(
-            `Subscription cancellation scheduled. Access remains fully active until ${formatDate(
-              org.current_period_end
-            )}, after which your account will revert to the Free tier.`
+          setSelectedDowngradePlan(null);
+          await pollSubscriptionForChange(
+            (sub) => sub.cancel_at_period_end === true || sub.status === "canceled" || sub.plan === "free",
+            {
+              title: "Scheduling Downgrade to Free Tier",
+              message: "FastSpring is scheduling cancellation at period end...",
+              successMessage: `Subscription cancellation scheduled. Access remains fully active until ${formatDate(
+                org.current_period_end
+              )}, after which your account will revert to the Free tier.`,
+              timeoutMessage: "Cancellation scheduled with FastSpring. Your status will update shortly.",
+            }
           );
         } else {
-          const supabase = createBrowserSupabaseClient();
-          await supabase
-            .from("subscriptions")
-            .update({
-              plan: "free",
-              status: "active",
-              payment_provider: "none",
-              cancel_at_period_end: false,
-              updated_at: new Date().toISOString(),
-            })
-            .eq("organization_id", org.id);
-          setSuccessMessage("Workspace successfully switched to the Free Plan.");
+          setSelectedDowngradePlan(null);
+          setSuccessMessage("Workspace is already on the Free tier.");
+          setTimeout(() => setSuccessMessage(null), 5000);
         }
       } else {
         // Downgrade to lower paid tier using existing FastSpring subscription ID
         if (org.payment_provider === "fastspring" && org.payment_subscription_id) {
-          setPlanChangeStatusText(`Updating subscription to ${PLAN_DEFINITIONS[selectedDowngradePlan].name}...`);
-          console.log(`[BILLING_ACTION] 1️⃣ Updating active FastSpring subscription (${org.payment_subscription_id}) to ${selectedDowngradePlan}...`);
-          await changeActiveFastSpringSubscription(selectedDowngradePlan, billingInterval, false);
-          setSuccessMessage(
-            `🎉 Workspace plan successfully changed to ${PLAN_DEFINITIONS[selectedDowngradePlan].name}.`
+          setPlanChangeStatusText(`Updating subscription to ${PLAN_DEFINITIONS[targetPlan].name}...`);
+          console.log(`[BILLING_ACTION] 1️⃣ Updating active FastSpring subscription (${org.payment_subscription_id}) to ${targetPlan}...`);
+          await changeActiveFastSpringSubscription(targetPlan, billingInterval, false);
+          setSelectedDowngradePlan(null);
+          await pollSubscriptionForChange(
+            (sub) => sub.plan === targetPlan,
+            {
+              title: `Switching to ${PLAN_DEFINITIONS[targetPlan].name}`,
+              message: "FastSpring is processing your tier change...",
+              successMessage: `🎉 Workspace plan successfully changed to ${PLAN_DEFINITIONS[targetPlan].name}.`,
+              timeoutMessage: `Plan switch to ${PLAN_DEFINITIONS[targetPlan].name} requested. FastSpring will update your workspace shortly.`,
+            }
           );
         } else {
-          const supabase = createBrowserSupabaseClient();
-          await supabase
-            .from("subscriptions")
-            .update({
-              plan: selectedDowngradePlan,
-              updated_at: new Date().toISOString(),
-            })
-            .eq("organization_id", org.id);
-          setSuccessMessage(`Workspace plan updated to ${PLAN_DEFINITIONS[selectedDowngradePlan].name}.`);
+          setSelectedDowngradePlan(null);
+          executeFastSpringCheckout(targetPlan);
         }
       }
 
       scrollToTop();
-      setTimeout(() => setSuccessMessage(null), 8000);
-      setSelectedDowngradePlan(null);
-      await loadBillingData();
     } catch (err: any) {
       console.error("[BILLING_ACTION] ❌ Error during plan downgrade:", err);
       alert(err?.message || "Failed to downgrade plan. Please try again.");
@@ -566,6 +672,34 @@ export default function BillingSettingsPage() {
   return (
     <div className="max-w-5xl w-full mx-auto space-y-8 pb-16 min-w-0">
       <FastSpringScript onPopupClosed={handlePopupClosed} />
+
+      {/* Short Polling / Webhook Processing Pending State Banner */}
+      {pendingSync?.isSyncing && (
+        <div className="bg-brand-500/10 border border-brand-500/30 text-brand-950 dark:text-brand-100 p-4 sm:p-5 rounded-2xl shadow-sm animate-fade-in space-y-3">
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center space-x-3 min-w-0">
+              <div className="h-6 w-6 rounded-full border-2 border-brand-600 dark:border-brand-400 border-t-transparent animate-spin shrink-0" />
+              <div className="min-w-0">
+                <h4 className="font-bold text-xs sm:text-sm text-brand-900 dark:text-brand-200">
+                  {pendingSync.title}
+                </h4>
+                <p className="text-[11px] sm:text-xs text-brand-700/80 dark:text-brand-300/80 mt-0.5">
+                  {pendingSync.message}
+                </p>
+              </div>
+            </div>
+            <span className="text-xs font-mono font-bold text-brand-600 dark:text-brand-400 shrink-0">
+              {pendingSync.progress ?? 0}%
+            </span>
+          </div>
+          <div className="h-1.5 w-full bg-brand-500/20 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-brand-600 dark:bg-brand-400 transition-all duration-300 ease-out"
+              style={{ width: `${pendingSync.progress ?? 0}%` }}
+            />
+          </div>
+        </div>
+      )}
 
       {/* Success Notification */}
       {successMessage && (

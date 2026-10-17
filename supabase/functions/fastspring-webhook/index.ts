@@ -147,7 +147,7 @@ serve(async (req: Request) => {
       const rawStart = data.begin || data.started || data.currentPeriodStart || data.beginInflowDate || data.created;
       const periodStart = rawStart ? new Date(rawStart).toISOString() : new Date().toISOString();
 
-      const rawEnd = data.nextChargeDate || data.next || data.nextValue || data.nextInflowDate || data.end || data.currentPeriodEnd || data.nextInflow;
+      const rawEnd = data.nextChargeDate || data.next || data.nextValue || data.nextInflowDate || data.end || data.currentPeriodEnd || data.nextInflow || data.deactivation;
       const periodEnd = rawEnd ? new Date(rawEnd).toISOString() : null;
 
       console.log(`Processing event: ${eventType}, org: ${organizationId}, sub: ${subscriptionId}, plan: ${targetPlan}, interval: ${billingInterval}`);
@@ -232,6 +232,7 @@ serve(async (req: Request) => {
           await upsertSubscription({
             status: "canceled",
             cancel_at_period_end: true,
+            ...(periodEnd ? { current_period_end: periodEnd } : {}),
           });
           break;
 

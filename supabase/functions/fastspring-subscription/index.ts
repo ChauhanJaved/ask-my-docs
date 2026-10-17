@@ -216,45 +216,18 @@ serve(async (req: Request) => {
       );
     }
 
-    // Immediately update local database record for instant UI feedback
-    if (isChangePlanAction) {
-      await adminSupabase
-        .from("subscriptions")
-        .update({
-          plan: body.targetPlan,
-          ...(body.billingInterval ? { billing_interval: body.billingInterval } : {}),
-          cancel_at_period_end: false,
-          status: "active",
-          updated_at: new Date().toISOString(),
-        })
-        .eq("organization_id", profile.organization_id);
-    } else if (isResumeAction) {
-      await adminSupabase
-        .from("subscriptions")
-        .update({
-          cancel_at_period_end: false,
-          status: "active",
-          updated_at: new Date().toISOString(),
-        })
-        .eq("organization_id", profile.organization_id);
-    } else {
-      await adminSupabase
-        .from("subscriptions")
-        .update({
-          cancel_at_period_end: true,
-          status: "canceled",
-          updated_at: new Date().toISOString(),
-        })
-        .eq("organization_id", profile.organization_id);
-    }
+    // Note: Database subscription record is NOT updated here directly.
+    // As per industry standards, FastSpring will dispatch a signed webhook event
+    // (e.g. subscription.updated, subscription.canceled), which is authoritatively processed
+    // by the fastspring-webhook Edge Function. The client uses short polling to observe this update.
 
     let responseMessage = "Operation completed successfully.";
     if (isChangePlanAction) {
-      responseMessage = `Subscription plan successfully updated to ${body.targetPlan}.`;
+      responseMessage = `Subscription plan change to ${body.targetPlan} requested. Awaiting FastSpring webhook confirmation.`;
     } else if (isResumeAction) {
-      responseMessage = "Subscription auto-renewal request sent to FastSpring. Auto-renewal has been resumed.";
+      responseMessage = "Subscription auto-renewal request sent to FastSpring. Awaiting FastSpring webhook confirmation.";
     } else {
-      responseMessage = "Subscription cancellation request sent to FastSpring. Access remains active until billing period ends.";
+      responseMessage = "Subscription cancellation request sent to FastSpring. Awaiting FastSpring webhook confirmation.";
     }
 
     return new Response(
