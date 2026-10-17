@@ -357,6 +357,44 @@ export default function BillingSettingsPage() {
     }
   };
 
+  const changeActiveFastSpringSubscription = async (
+    targetPlan: PlanId,
+    interval: BillingInterval,
+    prorate: boolean = true
+  ) => {
+    console.log(`[BILLING_ACTION] 🔄 Invoking Edge Function fastspring-subscription (action: change-plan, target: ${targetPlan}, interval: ${interval})...`);
+    try {
+      const supabase = createBrowserSupabaseClient();
+      const { data: { session } } = await supabase.auth.getSession();
+      const headers: Record<string, string> = session?.access_token
+        ? { Authorization: `Bearer ${session.access_token}` }
+        : {};
+
+      const { data, error } = await supabase.functions.invoke("fastspring-subscription", {
+        body: {
+          action: "change-plan",
+          targetPlan,
+          billingInterval: interval,
+          prorate,
+        },
+        headers,
+      });
+
+      if (error) {
+        console.warn("[BILLING_ACTION] ⚠️ Edge function plan change error:", error);
+        throw new Error(error.message || "Failed to change subscription plan via FastSpring.");
+      }
+      if (data?.error) {
+        throw new Error(data.error);
+      }
+      console.log("[BILLING_ACTION] ✅ Edge function plan change response:", data);
+      return data;
+    } catch (err: any) {
+      console.error("[BILLING_ACTION] ❌ Error invoking fastspring-subscription edge function (change-plan):", err);
+      throw err;
+    }
+  };
+
   const handleConfirmResume = async () => {
     console.log("[BILLING_ACTION] ▶️ User confirmed resuming subscription auto-renewal");
     setResuming(true);
@@ -382,10 +420,10 @@ export default function BillingSettingsPage() {
     if (!org) return;
     console.log(`[BILLING_ACTION] ⬆️ Upgrade clicked | Target Plan: ${planId} | Current Plan: ${org.plan}`);
     if (org.plan !== "free" && org.payment_provider === "fastspring" && org.payment_subscription_id) {
-      console.log("[BILLING_ACTION] ℹ️ Active FastSpring subscription detected. Showing upgrade confirmation modal to handle cancellation first.");
+      console.log("[BILLING_ACTION] ℹ️ Active FastSpring subscription detected. Showing upgrade confirmation modal to update plan in-place.");
       setSelectedUpgradePlan(planId);
     } else {
-      console.log("[BILLING_ACTION] ℹ️ No existing FastSpring subscription to cancel. Launching checkout directly.");
+      console.log("[BILLING_ACTION] ℹ️ No existing FastSpring subscription. Launching checkout directly.");
       executeFastSpringCheckout(planId);
     }
   };
@@ -399,21 +437,40 @@ export default function BillingSettingsPage() {
 
   const handleConfirmUpgrade = async () => {
     if (!org || !selectedUpgradePlan) return;
-    console.log(`[BILLING_ACTION] ⚡ Confirming plan upgrade to ${selectedUpgradePlan}`);
+    const targetPlan = selectedUpgradePlan;
+    console.log(`[BILLING_ACTION] ⚡ Confirming plan upgrade to ${targetPlan}`);
     setUpgrading(true);
-    setPlanChangeStatusText("Canceling current FastSpring subscription...");
 
     try {
-      console.log("[BILLING_ACTION] 1️⃣ Step 1: Canceling active FastSpring subscription before starting new checkout...");
-      await cancelActiveFastSpringSubscription();
-      setPlanChangeStatusText("Opening FastSpring checkout window...");
-      const targetPlan = selectedUpgradePlan;
-      setSelectedUpgradePlan(null);
-      console.log(`[BILLING_ACTION] 2️⃣ Step 2: Opening checkout for target plan: ${targetPlan}`);
-      executeFastSpringCheckout(targetPlan);
-    } catch (err) {
+      if (org.payment_provider === "fastspring" && org.payment_subscription_id) {
+        setPlanChangeStatusText(`Upgrading subscription to ${PLAN_DEFINITIONS[targetPlan].name} via FastSpring...`);
+        console.log(`[BILLING_ACTION] 1️⃣ Updating active FastSpring subscription (${org.payment_subscription_id}) in-place...`);
+        try {
+          await changeActiveFastSpringSubscription(targetPlan, billingInterval, true);
+          setSuccessMessage(
+            `🎉 Successfully upgraded to ${PLAN_DEFINITIONS[targetPlan].name}! Your subscription has been updated.`
+          );
+          scrollToTop();
+          setTimeout(() => setSuccessMessage(null), 8000);
+          setSelectedUpgradePlan(null);
+          await loadBillingData();
+          return;
+        } catch (apiErr: any) {
+          console.warn("[BILLING_ACTION] ⚠️ In-place subscription update failed, falling back to checkout popup:", apiErr);
+          setPlanChangeStatusText("Opening FastSpring checkout window...");
+          await cancelActiveFastSpringSubscription();
+          setSelectedUpgradePlan(null);
+          executeFastSpringCheckout(targetPlan);
+          return;
+        }
+      } else {
+        setPlanChangeStatusText("Opening FastSpring checkout window...");
+        setSelectedUpgradePlan(null);
+        executeFastSpringCheckout(targetPlan);
+      }
+    } catch (err: any) {
       console.error("[BILLING_ACTION] ❌ Error upgrading plan:", err);
-      alert("An error occurred while switching plans. Please try again.");
+      alert(err?.message || "An error occurred while switching plans. Please try again.");
     } finally {
       setUpgrading(false);
       setPlanChangeStatusText(null);
@@ -424,47 +481,65 @@ export default function BillingSettingsPage() {
     if (!org || !selectedDowngradePlan) return;
     console.log(`[BILLING_ACTION] ⬇️ Confirming plan downgrade to ${selectedDowngradePlan}`);
     setDowngrading(true);
-    setPlanChangeStatusText("Canceling active FastSpring subscription...");
-    try {
-      if (org.payment_provider === "fastspring" && org.payment_subscription_id) {
-        console.log("[BILLING_ACTION] 1️⃣ Step 1: Canceling active FastSpring subscription before downgrading...");
-        await cancelActiveFastSpringSubscription();
-      }
 
-      const supabase = createBrowserSupabaseClient();
+    try {
       const isFree = selectedDowngradePlan === "free";
 
-      console.log(`[BILLING_ACTION] 2️⃣ Step 2: Updating local database subscription to plan: ${selectedDowngradePlan}`);
-
-      const { error } = await supabase
-        .from("subscriptions")
-        .update({
-          plan: selectedDowngradePlan,
-          status: isFree ? "active" : org.subscription_status,
-          payment_provider: isFree ? "none" : org.payment_provider,
-          cancel_at_period_end: isFree ? false : org.cancel_at_period_end,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("organization_id", org.id);
-
-      if (error) {
-        console.error("[BILLING_ACTION] ❌ Error performing plan downgrade:", error);
-        alert("Failed to downgrade plan. Please try again or contact support.");
+      if (isFree) {
+        if (org.payment_provider === "fastspring" && org.payment_subscription_id) {
+          if (!org.cancel_at_period_end) {
+            setPlanChangeStatusText("Scheduling subscription cancellation in FastSpring...");
+            console.log("[BILLING_ACTION] 1️⃣ Canceling active FastSpring subscription at period end...");
+            await cancelActiveFastSpringSubscription();
+          }
+          setSuccessMessage(
+            `Subscription cancellation scheduled. Access remains fully active until ${formatDate(
+              org.current_period_end
+            )}, after which your account will revert to the Free tier.`
+          );
+        } else {
+          const supabase = createBrowserSupabaseClient();
+          await supabase
+            .from("subscriptions")
+            .update({
+              plan: "free",
+              status: "active",
+              payment_provider: "none",
+              cancel_at_period_end: false,
+              updated_at: new Date().toISOString(),
+            })
+            .eq("organization_id", org.id);
+          setSuccessMessage("Workspace successfully switched to the Free Plan.");
+        }
       } else {
-        const targetName = PLAN_DEFINITIONS[selectedDowngradePlan].name;
-        console.log(`[BILLING_ACTION] 🎉 Downgrade successful! Workspace is now on ${targetName}`);
-        setSuccessMessage(
-          isFree
-            ? "Workspace successfully switched to the Free Plan."
-            : `Workspace plan updated to ${targetName}.`
-        );
-        scrollToTop();
-        setTimeout(() => setSuccessMessage(null), 8000);
-        setSelectedDowngradePlan(null);
-        await loadBillingData();
+        // Downgrade to lower paid tier using existing FastSpring subscription ID
+        if (org.payment_provider === "fastspring" && org.payment_subscription_id) {
+          setPlanChangeStatusText(`Updating subscription to ${PLAN_DEFINITIONS[selectedDowngradePlan].name}...`);
+          console.log(`[BILLING_ACTION] 1️⃣ Updating active FastSpring subscription (${org.payment_subscription_id}) to ${selectedDowngradePlan}...`);
+          await changeActiveFastSpringSubscription(selectedDowngradePlan, billingInterval, false);
+          setSuccessMessage(
+            `🎉 Workspace plan successfully changed to ${PLAN_DEFINITIONS[selectedDowngradePlan].name}.`
+          );
+        } else {
+          const supabase = createBrowserSupabaseClient();
+          await supabase
+            .from("subscriptions")
+            .update({
+              plan: selectedDowngradePlan,
+              updated_at: new Date().toISOString(),
+            })
+            .eq("organization_id", org.id);
+          setSuccessMessage(`Workspace plan updated to ${PLAN_DEFINITIONS[selectedDowngradePlan].name}.`);
+        }
       }
-    } catch (err) {
+
+      scrollToTop();
+      setTimeout(() => setSuccessMessage(null), 8000);
+      setSelectedDowngradePlan(null);
+      await loadBillingData();
+    } catch (err: any) {
       console.error("[BILLING_ACTION] ❌ Error during plan downgrade:", err);
+      alert(err?.message || "Failed to downgrade plan. Please try again.");
     } finally {
       setDowngrading(false);
       setPlanChangeStatusText(null);
@@ -898,32 +973,49 @@ export default function BillingSettingsPage() {
                 </div>
 
                 <div className="mt-auto pt-4 border-t border-neutral-100 dark:border-neutral-800/60">
-                  <Button
-                    onClick={() => {
-                      if (isCurrent) return;
-                      if (isDowngrade) {
-                        setSelectedDowngradePlan(planId);
-                      } else {
-                        handleUpgradeClick(planId);
-                      }
-                    }}
-                    disabled={isCurrent}
-                    className={`w-full text-xs min-h-[42px] py-2.5 px-3 rounded-xl font-semibold transition-all whitespace-normal text-center leading-tight flex items-center justify-center ${
-                      isCurrent
-                        ? "bg-neutral-100 dark:bg-neutral-800 text-neutral-400 cursor-not-allowed border border-neutral-200 dark:border-neutral-700"
+                  {isCurrent && org?.cancel_at_period_end ? (
+                    <Button
+                      onClick={() => setShowResumeModal(true)}
+                      className="w-full text-xs min-h-[42px] py-2.5 px-3 rounded-xl font-semibold bg-brand-600 hover:bg-brand-700 text-white shadow-md hover:shadow-brand-500/20 transition-all flex items-center justify-center gap-1.5"
+                    >
+                      <span>🔄</span>
+                      <span>Resume Auto-Renewal</span>
+                    </Button>
+                  ) : planId === "free" && org?.cancel_at_period_end ? (
+                    <Button
+                      disabled
+                      className="w-full text-xs min-h-[42px] py-2.5 px-3 rounded-xl font-semibold bg-neutral-100 dark:bg-neutral-800 text-neutral-400 cursor-not-allowed border border-neutral-200 dark:border-neutral-700 leading-tight text-center"
+                    >
+                      Reverting on {formatDate(org?.current_period_end)}
+                    </Button>
+                  ) : (
+                    <Button
+                      onClick={() => {
+                        if (isCurrent) return;
+                        if (isDowngrade) {
+                          setSelectedDowngradePlan(planId);
+                        } else {
+                          handleUpgradeClick(planId);
+                        }
+                      }}
+                      disabled={isCurrent}
+                      className={`w-full text-xs min-h-[42px] py-2.5 px-3 rounded-xl font-semibold transition-all whitespace-normal text-center leading-tight flex items-center justify-center ${
+                        isCurrent
+                          ? "bg-neutral-100 dark:bg-neutral-800 text-neutral-400 cursor-not-allowed border border-neutral-200 dark:border-neutral-700"
+                          : isDowngrade
+                          ? "bg-transparent border border-neutral-300 dark:border-neutral-700 text-neutral-700 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800"
+                          : plan.badge
+                          ? "bg-brand-600 hover:bg-brand-700 text-white shadow-md hover:shadow-brand-500/20"
+                          : "bg-neutral-900 hover:bg-neutral-800 text-white dark:bg-neutral-100 dark:hover:bg-white dark:text-neutral-900"
+                      }`}
+                    >
+                      {isCurrent
+                        ? "Current Active Plan"
                         : isDowngrade
-                        ? "bg-transparent border border-neutral-300 dark:border-neutral-700 text-neutral-700 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800"
-                        : plan.badge
-                        ? "bg-brand-600 hover:bg-brand-700 text-white shadow-md hover:shadow-brand-500/20"
-                        : "bg-neutral-900 hover:bg-neutral-800 text-white dark:bg-neutral-100 dark:hover:bg-white dark:text-neutral-900"
-                    }`}
-                  >
-                    {isCurrent
-                      ? "Current Active Plan"
-                      : isDowngrade
-                      ? `Downgrade to ${plan.name}`
-                      : `Upgrade to ${plan.name}`}
-                  </Button>
+                        ? `Downgrade to ${plan.name}`
+                        : `Upgrade to ${plan.name}`}
+                    </Button>
+                  )}
                 </div>
               </div>
             );
@@ -959,10 +1051,12 @@ export default function BillingSettingsPage() {
               </p>
               <div className="bg-brand-500/10 border border-brand-500/20 text-brand-900 dark:text-brand-200 p-3 rounded-xl space-y-1">
                 <span className="font-bold flex items-center gap-1">
-                  ℹ️ Active Subscription Notice
+                  ℹ️ Plan Change Notice
                 </span>
                 <p className="leading-relaxed">
-                  Your current FastSpring subscription will be automatically canceled before launching the new checkout popup.
+                  {org?.payment_provider === "fastspring" && org?.payment_subscription_id
+                    ? "Your active FastSpring subscription will be updated immediately using your current payment method, with prorated billing for this cycle."
+                    : "You will be redirected to FastSpring checkout to complete your subscription."}
                 </p>
               </div>
 
@@ -987,7 +1081,11 @@ export default function BillingSettingsPage() {
                 disabled={upgrading}
                 className="w-full sm:w-auto bg-brand-600 hover:bg-brand-700 text-white text-xs min-h-[40px] rounded-xl px-5 font-semibold whitespace-normal sm:whitespace-nowrap text-center leading-tight"
               >
-                {upgrading ? planChangeStatusText || "Processing..." : `Proceed to Checkout`}
+                {upgrading
+                  ? planChangeStatusText || "Processing..."
+                  : org?.payment_provider === "fastspring" && org?.payment_subscription_id
+                  ? `Confirm Upgrade`
+                  : `Proceed to Checkout`}
               </Button>
             </div>
           </div>

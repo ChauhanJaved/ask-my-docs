@@ -116,13 +116,39 @@ serve(async (req: Request) => {
 
     const credentials = btoa(`${fsUsername}:${fsPassword}`);
     const isResumeAction = action === "resume" || action === "uncancel" || action === "reactivate";
+    const isChangePlanAction = action === "change-plan" || action === "upgrade" || action === "downgrade";
 
     // FastSpring Official Subscription API endpoint
     let fsUrl = `https://api.fastspring.com/subscriptions`;
     let fsMethod = "POST";
     let fsBody: string | undefined = undefined;
 
-    if (isResumeAction) {
+    if (isChangePlanAction) {
+      if (!body.targetPlan) {
+        return new Response(JSON.stringify({ error: "Missing targetPlan for change-plan action." }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      const targetInterval = body.billingInterval || "monthly";
+      const targetProduct = body.product || `ftchat-${body.targetPlan}-${targetInterval}`;
+
+      // Official FastSpring payload to update subscription product in-place:
+      // POST https://api.fastspring.com/subscriptions with { subscriptions: [{ subscription: id, product: path, quantity: 1, prorate: boolean, deactivation: null }] }
+      fsUrl = `https://api.fastspring.com/subscriptions`;
+      fsMethod = "POST";
+      fsBody = JSON.stringify({
+        subscriptions: [
+          {
+            subscription: sub.payment_subscription_id,
+            product: targetProduct,
+            quantity: 1,
+            prorate: body.prorate ?? true,
+            deactivation: null, // Clear any pending cancellation
+          },
+        ],
+      });
+    } else if (isResumeAction) {
       // Official FastSpring payload to resume a canceled subscription:
       // POST https://api.fastspring.com/subscriptions with { subscriptions: [{ subscription: id, deactivation: null }] }
       fsUrl = `https://api.fastspring.com/subscriptions`;
@@ -191,7 +217,18 @@ serve(async (req: Request) => {
     }
 
     // Immediately update local database record for instant UI feedback
-    if (isResumeAction) {
+    if (isChangePlanAction) {
+      await adminSupabase
+        .from("subscriptions")
+        .update({
+          plan: body.targetPlan,
+          ...(body.billingInterval ? { billing_interval: body.billingInterval } : {}),
+          cancel_at_period_end: false,
+          status: "active",
+          updated_at: new Date().toISOString(),
+        })
+        .eq("organization_id", profile.organization_id);
+    } else if (isResumeAction) {
       await adminSupabase
         .from("subscriptions")
         .update({
@@ -211,15 +248,22 @@ serve(async (req: Request) => {
         .eq("organization_id", profile.organization_id);
     }
 
+    let responseMessage = "Operation completed successfully.";
+    if (isChangePlanAction) {
+      responseMessage = `Subscription plan successfully updated to ${body.targetPlan}.`;
+    } else if (isResumeAction) {
+      responseMessage = "Subscription auto-renewal request sent to FastSpring. Auto-renewal has been resumed.";
+    } else {
+      responseMessage = "Subscription cancellation request sent to FastSpring. Access remains active until billing period ends.";
+    }
+
     return new Response(
       JSON.stringify({
         success: true,
-        action: isResumeAction ? "resume" : "cancel",
+        action,
         subscriptionId: sub.payment_subscription_id,
         fastSpringResponse: responsePayload,
-        message: isResumeAction
-          ? "Subscription auto-renewal request sent to FastSpring. Auto-renewal has been resumed."
-          : "Subscription cancellation request sent to FastSpring. Access remains active until billing period ends.",
+        message: responseMessage,
       }),
       {
         status: 200,
