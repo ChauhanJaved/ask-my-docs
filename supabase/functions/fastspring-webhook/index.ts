@@ -216,6 +216,7 @@ serve(async (req: Request) => {
             ...(priceDisplay ? { price_display: priceDisplay } : {}),
             ...(currency ? { currency } : {}),
             status: "active",
+            cancel_at_period_end: false,
             current_period_start: periodStart,
             ...(periodEnd ? { current_period_end: periodEnd } : {}),
           });
@@ -253,6 +254,7 @@ serve(async (req: Request) => {
           await upsertSubscription({
             plan: "free",
             status: "deactivated",
+            cancel_at_period_end: false,
           });
           break;
 

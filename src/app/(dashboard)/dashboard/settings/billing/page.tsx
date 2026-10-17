@@ -670,7 +670,7 @@ export default function BillingSettingsPage() {
               </div>
               <span
                 className={`text-[10px] font-semibold px-2.5 py-1 rounded-full border capitalize shrink-0 text-center ${
-                  org?.cancel_at_period_end
+                  org?.cancel_at_period_end && org?.plan !== "free"
                     ? "bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border-amber-200 dark:border-amber-800"
                     : org?.subscription_status === "active"
                     ? "bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800"
@@ -679,7 +679,7 @@ export default function BillingSettingsPage() {
                     : "bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border-amber-200 dark:border-amber-800"
                 }`}
               >
-                {org?.cancel_at_period_end ? "Pending Cancellation" : org?.subscription_status || "Active"}
+                {org?.cancel_at_period_end && org?.plan !== "free" ? "Pending Cancellation" : org?.subscription_status || "Active"}
               </span>
             </div>
             <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-2 leading-relaxed">
@@ -1119,9 +1119,30 @@ export default function BillingSettingsPage() {
                 <strong>{targetDowngradePlan.name}</strong>.
               </p>
 
+              {selectedDowngradePlan === "free" ? (
+                <div className="bg-amber-500/10 border border-amber-500/20 text-amber-900 dark:text-amber-200 p-3 rounded-xl space-y-1">
+                  <span className="font-bold flex items-center gap-1">
+                    ⏳ Full Access Preserved Until Period End
+                  </span>
+                  <p className="leading-relaxed">
+                    Your current <strong>{currentPlan.name}</strong> quotas and features will remain active until{" "}
+                    <strong>{formatDate(org?.current_period_end)}</strong>. You will not be charged again, and your workspace will automatically revert to the Free tier after that date.
+                  </p>
+                </div>
+              ) : (
+                <div className="bg-brand-500/10 border border-brand-500/20 text-brand-900 dark:text-brand-200 p-3 rounded-xl space-y-1">
+                  <span className="font-bold flex items-center gap-1">
+                    ℹ️ Plan Change Notice
+                  </span>
+                  <p className="leading-relaxed">
+                    Your active FastSpring subscription will be updated to <strong>{targetDowngradePlan.name}</strong> without interrupting your service. The updated rate will apply on your next renewal date.
+                  </p>
+                </div>
+              )}
+
               <div className="bg-neutral-50 dark:bg-neutral-800/60 p-3 rounded-xl border border-neutral-200 dark:border-neutral-700 space-y-1.5">
                 <span className="font-semibold text-neutral-900 dark:text-white">
-                  New Quota Limits:
+                  New Quota Limits ({targetDowngradePlan.name}):
                 </span>
                 <ul className="list-disc list-inside space-y-1 text-neutral-500 dark:text-neutral-400">
                   <li>
@@ -1177,7 +1198,11 @@ export default function BillingSettingsPage() {
                 disabled={downgrading}
                 className="w-full sm:w-auto bg-amber-600 hover:bg-amber-700 text-white text-xs min-h-[40px] rounded-xl px-5 font-semibold whitespace-normal sm:whitespace-nowrap text-center leading-tight"
               >
-                {downgrading ? planChangeStatusText || "Downgrading..." : `Confirm Downgrade to ${targetDowngradePlan.name}`}
+                {downgrading
+                  ? planChangeStatusText || "Downgrading..."
+                  : selectedDowngradePlan === "free"
+                  ? `Confirm Downgrade to Free`
+                  : `Confirm Switch to ${targetDowngradePlan.name}`}
               </Button>
             </div>
           </div>
