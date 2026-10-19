@@ -16,11 +16,67 @@ const PRODUCT_TO_PLAN: Record<string, string> = {
 };
 
 /**
+ * Extracts product path string from various FastSpring payload locations
+ * (handles strings or expanded objects with .product, .path, or .sku)
+ */
+function extractProductPath(data: any): string | undefined {
+  if (!data) return undefined;
+
+  // Direct product property (string or object)
+  if (typeof data.product === "string") return data.product;
+  if (data.product && typeof data.product === "object") {
+    const p = data.product.product || data.product.path || data.product.sku;
+    if (typeof p === "string") return p;
+  }
+
+  // Items array (e.g. order.completed)
+  if (Array.isArray(data.items) && data.items.length > 0) {
+    const item = data.items[0];
+    if (typeof item === "string") return item;
+    if (typeof item.product === "string") return item.product;
+    if (typeof item.path === "string") return item.path;
+    if (typeof item.sku === "string") return item.sku;
+    if (item.product && typeof item.product === "object") {
+      const p = item.product.product || item.product.path || item.product.sku;
+      if (typeof p === "string") return p;
+    }
+  }
+
+  // Subscriptions array
+  if (Array.isArray(data.subscriptions) && data.subscriptions.length > 0) {
+    const sub = data.subscriptions[0];
+    if (typeof sub === "object") {
+      const subProduct = extractProductPath(sub);
+      if (subProduct) return subProduct;
+    }
+  }
+
+  // Nested subscription object
+  if (data.subscription && typeof data.subscription === "object") {
+    const subProduct = extractProductPath(data.subscription);
+    if (subProduct) return subProduct;
+  }
+
+  // Order object
+  if (data.order && typeof data.order === "object") {
+    const orderProduct = extractProductPath(data.order);
+    if (orderProduct) return orderProduct;
+  }
+
+  return undefined;
+}
+
+/**
  * Resolves plan ID from product path or sku string
  */
-function resolvePlanId(productPath?: string | null): string | undefined {
+function resolvePlanId(productPath?: any): string | undefined {
   if (!productPath) return undefined;
-  const lower = productPath.toLowerCase();
+  const pathStr =
+    typeof productPath === "string"
+      ? productPath
+      : productPath.product || productPath.path || productPath.sku || "";
+  if (!pathStr || typeof pathStr !== "string") return undefined;
+  const lower = pathStr.toLowerCase();
   if (PRODUCT_TO_PLAN[lower]) return PRODUCT_TO_PLAN[lower];
   if (lower.includes("business")) return "business";
   if (lower.includes("pro")) return "pro";
@@ -124,65 +180,142 @@ serve(async (req: Request) => {
         (typeof data.customer === "string" ? data.customer : data.customer?.id) ||
         data.subscriptions?.[0]?.customer;
 
-      let productPath = data.product;
-      if (!productPath && data.items && data.items.length > 0) {
-        productPath = data.items[0].product || data.items[0].path || data.items[0].sku;
-      }
-
+      const productPath = extractProductPath(data);
       const targetPlan = resolvePlanId(productPath);
+
+      // Extract period start and end dates (support timestamp numbers or ISO strings)
+      const rawStart =
+        data.begin ||
+        data.started ||
+        data.currentPeriodStart ||
+        data.beginInflowDate ||
+        data.created;
+      const periodStart = rawStart ? new Date(rawStart).toISOString() : new Date().toISOString();
+
+      const rawEnd =
+        data.nextChargeDate ||
+        data.next ||
+        data.nextValue ||
+        data.nextInflowDate ||
+        data.end ||
+        data.currentPeriodEnd ||
+        data.nextInflow ||
+        data.deactivation;
+      const periodEnd = rawEnd ? new Date(rawEnd).toISOString() : null;
 
       // Extract billing interval (monthly vs yearly)
       let billingInterval: string | undefined = undefined;
-      if (data.intervalUnit === "year" || productPath?.toLowerCase().includes("yearly")) {
+      const intervalUnit =
+        data.intervalUnit ||
+        data.subscription?.intervalUnit ||
+        data.subscriptions?.[0]?.intervalUnit;
+      const pathLower = (productPath || "").toLowerCase();
+
+      if (intervalUnit === "year" || pathLower.includes("yearly") || pathLower.includes("annual")) {
         billingInterval = "yearly";
-      } else if (data.intervalUnit === "month" || productPath?.toLowerCase().includes("monthly")) {
+      } else if (intervalUnit === "month" || pathLower.includes("monthly")) {
         billingInterval = "monthly";
       }
 
+      // If intervalUnit is not provided directly (e.g. in subscription.charge.completed),
+      // determine interval dynamically from period duration (>60 days is yearly, ~30 days is monthly)
+      if (!billingInterval && periodStart && periodEnd) {
+        const startMs = new Date(periodStart).getTime();
+        const endMs = new Date(periodEnd).getTime();
+        const diffDays = Math.round((endMs - startMs) / (1000 * 60 * 60 * 24));
+        if (diffDays > 60) {
+          billingInterval = "yearly";
+        } else if (diffDays > 10) {
+          billingInterval = "monthly";
+        }
+      }
+
       // Extract price display and currency
-      const priceDisplay = data.nextChargeTotalDisplay || data.priceDisplay || data.subtotalDisplay || null;
+      const priceDisplay =
+        data.nextChargeTotalDisplay ||
+        data.priceDisplay ||
+        data.subtotalDisplay ||
+        data.totalDisplay ||
+        null;
       const currency = data.nextChargeCurrency || data.currency || null;
 
-      // Extract period start and end dates (support timestamp numbers or ISO strings)
-      const rawStart = data.begin || data.started || data.currentPeriodStart || data.beginInflowDate || data.created;
-      const periodStart = rawStart ? new Date(rawStart).toISOString() : new Date().toISOString();
-
-      const rawEnd = data.nextChargeDate || data.next || data.nextValue || data.nextInflowDate || data.end || data.currentPeriodEnd || data.nextInflow || data.deactivation;
-      const periodEnd = rawEnd ? new Date(rawEnd).toISOString() : null;
-
-      console.log(`Processing event: ${eventType}, org: ${organizationId}, sub: ${subscriptionId}, plan: ${targetPlan}, interval: ${billingInterval}`);
+      console.log(
+        `Processing event: ${eventType}, org: ${organizationId}, sub: ${subscriptionId}, plan: ${targetPlan}, interval: ${billingInterval}`
+      );
 
       const upsertSubscription = async (updateData: Record<string, any>) => {
         updateData.updated_at = new Date().toISOString();
 
         let targetOrgId = organizationId;
+        let existingSub: any = null;
 
-        // If organizationId is missing in payload tags, lookup existing row by payment_subscription_id
-        if (!targetOrgId && subscriptionId) {
-          const { data: existingSub } = await supabase
+        // Lookup existing record by org ID or subscription ID
+        if (targetOrgId) {
+          const { data: byOrg } = await supabase
             .from("subscriptions")
-            .select("organization_id")
+            .select("*")
+            .eq("organization_id", targetOrgId)
+            .maybeSingle();
+          existingSub = byOrg;
+        }
+
+        if (!existingSub && subscriptionId) {
+          const { data: bySub } = await supabase
+            .from("subscriptions")
+            .select("*")
             .eq("payment_subscription_id", subscriptionId)
             .maybeSingle();
+          existingSub = bySub;
+        }
 
-          if (existingSub?.organization_id) {
-            targetOrgId = existingSub.organization_id;
-          }
+        if (existingSub?.organization_id) {
+          targetOrgId = existingSub.organization_id;
         }
 
         if (targetOrgId) {
-          const { error } = await supabase.from("subscriptions").upsert(
-            {
-              organization_id: targetOrgId,
-              ...updateData,
-            },
-            { onConflict: "organization_id" }
-          );
+          if (existingSub) {
+            // CRITICAL: When updating an existing row, never let missing/undefined plan
+            // revert a paid customer back to 'free'. Only explicit deactivation sets 'free'.
+            if (!updateData.plan && existingSub.plan) {
+              updateData.plan = existingSub.plan;
+            }
+            if (!updateData.payment_subscription_id && existingSub.payment_subscription_id) {
+              updateData.payment_subscription_id = existingSub.payment_subscription_id;
+            }
+            if (!updateData.payment_customer_id && existingSub.payment_customer_id) {
+              updateData.payment_customer_id = existingSub.payment_customer_id;
+            }
 
-          if (error) {
-            console.error(`Supabase upsert error for org ${targetOrgId}:`, error);
+            const { error } = await supabase
+              .from("subscriptions")
+              .update(updateData)
+              .eq("organization_id", targetOrgId);
+
+            if (error) {
+              console.error(`Supabase update error for org ${targetOrgId}:`, error);
+            } else {
+              console.log(
+                `Successfully updated subscription for org ${targetOrgId}: plan=${updateData.plan}, interval=${updateData.billing_interval}, status=${updateData.status}`
+              );
+            }
           } else {
-            console.log(`Successfully upserted subscription for org ${targetOrgId}`);
+            // Insert brand new subscription record
+            const newRecord = {
+              organization_id: targetOrgId,
+              plan: updateData.plan || "free",
+              status: updateData.status || "active",
+              ...updateData,
+            };
+
+            const { error } = await supabase
+              .from("subscriptions")
+              .upsert(newRecord, { onConflict: "organization_id" });
+
+            if (error) {
+              console.error(`Supabase insert error for org ${targetOrgId}:`, error);
+            } else {
+              console.log(`Successfully created subscription for org ${targetOrgId}`);
+            }
           }
         } else {
           console.warn("Could not determine organization_id for event:", eventType, data);
@@ -215,6 +348,8 @@ serve(async (req: Request) => {
             ...(billingInterval ? { billing_interval: billingInterval } : {}),
             ...(priceDisplay ? { price_display: priceDisplay } : {}),
             ...(currency ? { currency } : {}),
+            ...(customerId ? { payment_customer_id: customerId } : {}),
+            ...(subscriptionId ? { payment_subscription_id: subscriptionId } : {}),
             status: "active",
             cancel_at_period_end: false,
             current_period_start: periodStart,
@@ -251,12 +386,17 @@ serve(async (req: Request) => {
           break;
 
         case "subscription.deactivated":
-        case "return.created":
           await upsertSubscription({
             plan: "free",
             status: "deactivated",
             cancel_at_period_end: false,
           });
+          break;
+
+        case "return.created":
+          // Prorated refund/return occurs when switching between monthly & yearly cycles
+          // or adjusting tiers. This must NOT deactivate the subscription or revert to 'free'.
+          console.log(`Prorated return/refund registered for sub: ${subscriptionId}, org: ${organizationId || 'lookup'}`);
           break;
 
         default:
