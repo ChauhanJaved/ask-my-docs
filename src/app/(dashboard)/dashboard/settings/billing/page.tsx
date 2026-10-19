@@ -150,6 +150,12 @@ export default function BillingSettingsPage() {
           };
 
           setOrg(loadedOrg);
+          if (loadedOrg.billing_interval) {
+            const normalizedInterval = loadedOrg.billing_interval.toLowerCase();
+            if (normalizedInterval === "yearly" || normalizedInterval === "monthly") {
+              setBillingInterval(normalizedInterval as BillingInterval);
+            }
+          }
           console.log("[BILLING_ACTION] 📊 Loaded billing state:", {
             orgId: loadedOrg.id,
             plan: loadedOrg.plan,
@@ -550,18 +556,29 @@ export default function BillingSettingsPage() {
 
     try {
       if (org.payment_provider === "fastspring" && org.payment_subscription_id) {
-        setPlanChangeStatusText(`Upgrading subscription to ${PLAN_DEFINITIONS[targetPlan].name} via FastSpring...`);
+        const isSamePlanSwitch = org.plan === targetPlan;
+        setPlanChangeStatusText(
+          isSamePlanSwitch
+            ? `Switching billing frequency to ${billingInterval} via FastSpring...`
+            : `Upgrading subscription to ${PLAN_DEFINITIONS[targetPlan].name} via FastSpring...`
+        );
         console.log(`[BILLING_ACTION] 1️⃣ Updating active FastSpring subscription (${org.payment_subscription_id}) in-place...`);
         try {
           await changeActiveFastSpringSubscription(targetPlan, billingInterval, true);
           setSelectedUpgradePlan(null);
           await pollSubscriptionForChange(
-            (sub) => sub.plan === targetPlan,
+            (sub) =>
+              sub.plan === targetPlan &&
+              (sub.billing_interval || "").toLowerCase() === billingInterval.toLowerCase(),
             {
-              title: `Switching Plan to ${PLAN_DEFINITIONS[targetPlan].name}`,
+              title: isSamePlanSwitch
+                ? `Switching to ${billingInterval === "yearly" ? "Yearly" : "Monthly"} Billing`
+                : `Switching Plan to ${PLAN_DEFINITIONS[targetPlan].name}`,
               message: "FastSpring is processing your plan switch and dispatching webhook confirmation...",
-              successMessage: `🎉 Successfully upgraded to ${PLAN_DEFINITIONS[targetPlan].name}! Your subscription is updated.`,
-              timeoutMessage: `Plan upgrade to ${PLAN_DEFINITIONS[targetPlan].name} submitted. FastSpring will update your workspace shortly.`,
+              successMessage: isSamePlanSwitch
+                ? `🎉 Successfully switched to ${billingInterval === "yearly" ? "Yearly" : "Monthly"} Billing! Your subscription is updated.`
+                : `🎉 Successfully upgraded to ${PLAN_DEFINITIONS[targetPlan].name}! Your subscription is updated.`,
+              timeoutMessage: `Subscription update to ${PLAN_DEFINITIONS[targetPlan].name} (${billingInterval}) submitted. FastSpring will update your workspace shortly.`,
             }
           );
           return;
@@ -628,11 +645,13 @@ export default function BillingSettingsPage() {
           await changeActiveFastSpringSubscription(targetPlan, billingInterval, false);
           setSelectedDowngradePlan(null);
           await pollSubscriptionForChange(
-            (sub) => sub.plan === targetPlan,
+            (sub) =>
+              sub.plan === targetPlan &&
+              (sub.billing_interval || "").toLowerCase() === billingInterval.toLowerCase(),
             {
               title: `Switching to ${PLAN_DEFINITIONS[targetPlan].name}`,
               message: "FastSpring is processing your tier change...",
-              successMessage: `🎉 Workspace plan successfully changed to ${PLAN_DEFINITIONS[targetPlan].name}.`,
+              successMessage: `🎉 Workspace plan successfully changed to ${PLAN_DEFINITIONS[targetPlan].name} (${billingInterval}).`,
               timeoutMessage: `Plan switch to ${PLAN_DEFINITIONS[targetPlan].name} requested. FastSpring will update your workspace shortly.`,
             }
           );
@@ -830,9 +849,24 @@ export default function BillingSettingsPage() {
               {org?.billing_interval && org?.plan !== "free" && (
                 <div className="flex justify-between items-center gap-2">
                   <span className="text-neutral-400">Billing Cycle:</span>
-                  <span className="font-medium capitalize text-right">
-                    {org.billing_interval}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium capitalize text-right">
+                      {org.billing_interval}
+                    </span>
+                    {!org.cancel_at_period_end && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const targetInterval = org.billing_interval?.toLowerCase() === "yearly" ? "monthly" : "yearly";
+                          setBillingInterval(targetInterval);
+                          document.getElementById(`plan-card-${org.plan}`)?.scrollIntoView({ behavior: "smooth" });
+                        }}
+                        className="text-[11px] font-semibold text-brand-600 dark:text-brand-400 hover:underline"
+                      >
+                        (Switch to {org.billing_interval?.toLowerCase() === "yearly" ? "Monthly" : "Yearly"})
+                      </button>
+                    )}
+                  </div>
                 </div>
               )}
               <div className="flex justify-between items-center gap-2">
@@ -1054,8 +1088,17 @@ export default function BillingSettingsPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5 items-stretch">
           {(["free", "starter", "pro", "business"] as PlanId[]).map((planId) => {
             const plan = PLAN_DEFINITIONS[planId];
-            const isCurrent = org?.plan === planId;
-            const isDowngrade = isPlanDowngrade(org?.plan, planId);
+            const currentPlanId = org?.plan || "free";
+            const currentInterval = (org?.billing_interval?.toLowerCase() || "monthly") as BillingInterval;
+            
+            // A card is current only if both the plan tier matches AND (for paid plans) the interval matches the current selection
+            const isCurrent =
+              currentPlanId === "free"
+                ? planId === "free"
+                : planId === currentPlanId && billingInterval === currentInterval;
+
+            const isSamePlan = planId === currentPlanId && currentPlanId !== "free";
+            const isDowngradeTier = isPlanDowngrade(currentPlanId, planId);
             const price = billingInterval === "yearly" ? Math.round(plan.priceYearly / 12) : plan.priceMonthly;
 
             return (
@@ -1126,7 +1169,7 @@ export default function BillingSettingsPage() {
                     <Button
                       onClick={() => {
                         if (isCurrent) return;
-                        if (isDowngrade) {
+                        if (isDowngradeTier) {
                           setSelectedDowngradePlan(planId);
                         } else {
                           handleUpgradeClick(planId);
@@ -1136,7 +1179,9 @@ export default function BillingSettingsPage() {
                       className={`w-full text-xs min-h-[42px] py-2.5 px-3 rounded-xl font-semibold transition-all whitespace-normal text-center leading-tight flex items-center justify-center ${
                         isCurrent
                           ? "bg-neutral-100 dark:bg-neutral-800 text-neutral-400 cursor-not-allowed border border-neutral-200 dark:border-neutral-700"
-                          : isDowngrade
+                          : isSamePlan
+                          ? "bg-brand-600 hover:bg-brand-700 text-white shadow-md hover:shadow-brand-500/20"
+                          : isDowngradeTier
                           ? "bg-transparent border border-neutral-300 dark:border-neutral-700 text-neutral-700 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800"
                           : plan.badge
                           ? "bg-brand-600 hover:bg-brand-700 text-white shadow-md hover:shadow-brand-500/20"
@@ -1145,7 +1190,11 @@ export default function BillingSettingsPage() {
                     >
                       {isCurrent
                         ? "Current Active Plan"
-                        : isDowngrade
+                        : isSamePlan
+                        ? billingInterval === "yearly"
+                          ? "Switch to Yearly (Save ~20%)"
+                          : "Switch to Monthly"
+                        : isDowngradeTier
                         ? `Downgrade to ${plan.name}`
                         : `Upgrade to ${plan.name}`}
                     </Button>
@@ -1164,10 +1213,12 @@ export default function BillingSettingsPage() {
             <div className="flex justify-between items-start border-b border-neutral-100 dark:border-neutral-800 pb-3">
               <div>
                 <span className="text-[10px] font-bold text-brand-600 dark:text-brand-400 uppercase tracking-wider">
-                  Switch Plan
+                  {selectedUpgradePlan === org?.plan ? "Billing Frequency" : "Switch Plan"}
                 </span>
                 <h3 className="text-lg font-bold text-neutral-900 dark:text-white font-display">
-                  Upgrade to {PLAN_DEFINITIONS[selectedUpgradePlan].name}
+                  {selectedUpgradePlan === org?.plan
+                    ? `Switch to ${billingInterval === "yearly" ? "Yearly" : "Monthly"} Billing`
+                    : `Upgrade to ${PLAN_DEFINITIONS[selectedUpgradePlan].name}`}
                 </h3>
               </div>
               <button
@@ -1180,8 +1231,20 @@ export default function BillingSettingsPage() {
 
             <div className="space-y-3 text-xs text-neutral-600 dark:text-neutral-300">
               <p>
-                You are switching your workspace plan from <strong>{currentPlan.name}</strong> to{" "}
-                <strong>{PLAN_DEFINITIONS[selectedUpgradePlan].name}</strong> ({billingInterval}).
+                {selectedUpgradePlan === org?.plan ? (
+                  <>
+                    You are switching your <strong>{currentPlan.name}</strong> subscription billing cycle from{" "}
+                    <strong className="capitalize">{org?.billing_interval || "monthly"}</strong> to{" "}
+                    <strong className="capitalize">{billingInterval}</strong> (
+                    ${billingInterval === "yearly" ? currentPlan.priceYearly : currentPlan.priceMonthly}
+                    /{billingInterval === "yearly" ? "year" : "month"}).
+                  </>
+                ) : (
+                  <>
+                    You are switching your workspace plan from <strong>{currentPlan.name}</strong> to{" "}
+                    <strong>{PLAN_DEFINITIONS[selectedUpgradePlan].name}</strong> ({billingInterval}).
+                  </>
+                )}
               </p>
               <div className="bg-brand-500/10 border border-brand-500/20 text-brand-900 dark:text-brand-200 p-3 rounded-xl space-y-1">
                 <span className="font-bold flex items-center gap-1">
@@ -1218,7 +1281,9 @@ export default function BillingSettingsPage() {
                 {upgrading
                   ? planChangeStatusText || "Processing..."
                   : org?.payment_provider === "fastspring" && org?.payment_subscription_id
-                  ? `Confirm Upgrade`
+                  ? selectedUpgradePlan === org?.plan
+                    ? `Confirm Switch to ${billingInterval === "yearly" ? "Yearly" : "Monthly"}`
+                    : `Confirm Upgrade`
                   : `Proceed to Checkout`}
               </Button>
             </div>
