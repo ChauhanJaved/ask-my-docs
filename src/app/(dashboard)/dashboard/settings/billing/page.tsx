@@ -246,17 +246,17 @@ export default function BillingSettingsPage() {
       let attempt = 0;
       let isFinished = false;
 
-      // Show processing modal immediately
-      setProcessingState({
+      // Show processing modal immediately or smoothly update existing state
+      setProcessingState((prev) => ({
         isOpen: true,
         status: "processing",
         title: options.title,
         description: options.message,
-        stepMessage: "Connecting to FastSpring & initializing Realtime sync...",
+        stepMessage: prev?.stepMessage || "Connecting to FastSpring & initializing Realtime sync...",
         successMessage: options.successMessage,
         targetPlanName: options.targetPlanName,
-        progress: 15,
-      });
+        progress: prev?.progress ? Math.max(prev.progress, 35) : 35,
+      }));
 
       const finishSuccess = async (subData: Record<string, unknown>) => {
         if (isFinished) return;
@@ -415,7 +415,10 @@ export default function BillingSettingsPage() {
       activePollingRef.current = setInterval(async () => {
         if (isFinished) return;
         attempt++;
-        const progressPct = Math.min(Math.round((attempt / maxAttempts) * 100), 92);
+        const progressPct = Math.min(
+          Math.max(35, Math.round((attempt / maxAttempts) * 100)),
+          92
+        );
         setProcessingState((prev) =>
           prev && prev.status === "processing"
             ? {
@@ -542,24 +545,50 @@ export default function BillingSettingsPage() {
     console.log("[BILLING_ACTION] 🚫 User confirmed cancellation of active subscription");
     setCanceling(true);
     setShowCancelModal(false);
+
+    const title = "Scheduling Cancellation";
+    const successMessage = `Subscription cancellation scheduled. Access remains fully active until ${formatDate(
+      org?.current_period_end
+    )}, after which your account will revert to the Free tier.`;
+    const timeoutMessage = "Cancellation scheduled with FastSpring. Your workspace will update shortly.";
+
+    // Instantly display processing overlay modal
+    setProcessingState({
+      isOpen: true,
+      status: "processing",
+      title,
+      description: "FastSpring is scheduling cancellation at the end of your billing period...",
+      stepMessage: "Connecting to FastSpring & scheduling cancellation...",
+      successMessage,
+      progress: 20,
+    });
+
     try {
       const res = await cancelActiveFastSpringSubscription();
       if (res?.error) {
         throw new Error(res.error);
       }
+      setProcessingState((prev) =>
+        prev
+          ? {
+              ...prev,
+              stepMessage: "Waiting for FastSpring webhook confirmation...",
+              progress: 40,
+            }
+          : null
+      );
       await syncSubscriptionChange(
         (sub) => sub.cancel_at_period_end === true || sub.status === "canceled",
         {
-          title: "Scheduling Cancellation",
+          title,
           message: "FastSpring is scheduling cancellation at the end of your billing period...",
-          successMessage: `Subscription cancellation scheduled. Access remains fully active until ${formatDate(
-            org?.current_period_end
-          )}, after which your account will revert to the Free tier.`,
-          timeoutMessage: "Cancellation scheduled with FastSpring. Your workspace will update shortly.",
+          successMessage,
+          timeoutMessage,
         }
       );
     } catch (err: any) {
       console.error("[BILLING_ACTION] ❌ Error canceling subscription:", err);
+      setProcessingState(null);
       alert(err?.message || "Failed to cancel subscription. Please try again or manage directly on FastSpring.");
     } finally {
       setCanceling(false);
@@ -634,22 +663,48 @@ export default function BillingSettingsPage() {
     console.log("[BILLING_ACTION] ▶️ User confirmed resuming subscription auto-renewal");
     setResuming(true);
     setShowResumeModal(false);
+
+    const title = "Resuming Auto-Renewal";
+    const successMessage = "🎉 Subscription auto-renewal has been successfully resumed!";
+    const timeoutMessage = "Auto-renewal resumed with FastSpring. Your status will update shortly.";
+
+    // Instantly display processing overlay modal
+    setProcessingState({
+      isOpen: true,
+      status: "processing",
+      title,
+      description: "FastSpring is resuming subscription auto-renewal...",
+      stepMessage: "Connecting to FastSpring & resuming auto-renewal...",
+      successMessage,
+      progress: 20,
+    });
+
     try {
       const res = await resumeActiveFastSpringSubscription();
       if (res?.error) {
         throw new Error(res.error);
       }
+      setProcessingState((prev) =>
+        prev
+          ? {
+              ...prev,
+              stepMessage: "Waiting for FastSpring webhook confirmation...",
+              progress: 40,
+            }
+          : null
+      );
       await syncSubscriptionChange(
         (sub) => sub.cancel_at_period_end === false && sub.status === "active",
         {
-          title: "Resuming Auto-Renewal",
+          title,
           message: "FastSpring is resuming subscription auto-renewal...",
-          successMessage: "🎉 Subscription auto-renewal has been successfully resumed!",
-          timeoutMessage: "Auto-renewal resumed with FastSpring. Your status will update shortly.",
+          successMessage,
+          timeoutMessage,
         }
       );
     } catch (err: any) {
       console.error("[BILLING_ACTION] ❌ Error resuming subscription:", err);
+      setProcessingState(null);
       alert(err?.message || "Failed to resume subscription. Please try again or manage directly on FastSpring.");
     } finally {
       setResuming(false);
@@ -679,35 +734,65 @@ export default function BillingSettingsPage() {
     if (!org || !selectedUpgradePlan) return;
     const targetPlan = selectedUpgradePlan;
     const targetPlanName = PLAN_DEFINITIONS[targetPlan].name;
+    const isSamePlanSwitch = org.plan === targetPlan;
+    const title = isSamePlanSwitch
+      ? `Switching to ${billingInterval === "yearly" ? "Yearly" : "Monthly"} Billing`
+      : `Switching Plan to ${targetPlanName}`;
+    const successMessage = isSamePlanSwitch
+      ? `🎉 Successfully switched to ${billingInterval === "yearly" ? "Yearly" : "Monthly"} Billing! Your subscription is updated.`
+      : `🎉 Successfully upgraded to ${targetPlanName}! Your subscription is updated.`;
+    const timeoutMessage = `Subscription update to ${targetPlanName} (${billingInterval}) submitted. FastSpring will update your workspace shortly.`;
+
     console.log(`[BILLING_ACTION] ⚡ Confirming plan upgrade to ${targetPlan}`);
     setUpgrading(true);
     setSelectedUpgradePlan(null);
 
+    // Instantly display processing overlay modal for in-place FastSpring plan updates
+    if (org.payment_provider === "fastspring" && org.payment_subscription_id) {
+      setProcessingState({
+        isOpen: true,
+        status: "processing",
+        title,
+        description: isSamePlanSwitch
+          ? "FastSpring is updating your billing interval..."
+          : `FastSpring is upgrading your subscription to ${targetPlanName}...`,
+        stepMessage: "Connecting to FastSpring & applying plan changes...",
+        successMessage,
+        targetPlanName,
+        progress: 20,
+      });
+    }
+
     try {
       if (org.payment_provider === "fastspring" && org.payment_subscription_id) {
-        const isSamePlanSwitch = org.plan === targetPlan;
         console.log(`[BILLING_ACTION] 1️⃣ Updating active FastSpring subscription (${org.payment_subscription_id}) in-place...`);
         try {
           await changeActiveFastSpringSubscription(targetPlan, billingInterval, true);
+          setProcessingState((prev) =>
+            prev
+              ? {
+                  ...prev,
+                  stepMessage: "Waiting for FastSpring webhook confirmation...",
+                  progress: 40,
+                }
+              : null
+          );
           await syncSubscriptionChange(
             (sub) =>
               sub.plan === targetPlan &&
               (sub.billing_interval || "").toLowerCase() === billingInterval.toLowerCase(),
             {
-              title: isSamePlanSwitch
-                ? `Switching to ${billingInterval === "yearly" ? "Yearly" : "Monthly"} Billing`
-                : `Switching Plan to ${targetPlanName}`,
+              title,
               message: "FastSpring is processing your plan switch and dispatching webhook confirmation...",
-              successMessage: isSamePlanSwitch
-                ? `🎉 Successfully switched to ${billingInterval === "yearly" ? "Yearly" : "Monthly"} Billing! Your subscription is updated.`
-                : `🎉 Successfully upgraded to ${targetPlanName}! Your subscription is updated.`,
-              timeoutMessage: `Subscription update to ${targetPlanName} (${billingInterval}) submitted. FastSpring will update your workspace shortly.`,
+              successMessage,
+              timeoutMessage,
               targetPlanName,
             }
           );
           return;
         } catch (apiErr: any) {
           console.warn("[BILLING_ACTION] ⚠️ In-place subscription update failed, falling back to checkout popup:", apiErr);
+          setProcessingState(null);
           await cancelActiveFastSpringSubscription();
           executeFastSpringCheckout(targetPlan);
           return;
@@ -717,6 +802,7 @@ export default function BillingSettingsPage() {
       }
     } catch (err: any) {
       console.error("[BILLING_ACTION] ❌ Error upgrading plan:", err);
+      setProcessingState(null);
       alert(err?.message || "An error occurred while switching plans. Please try again.");
     } finally {
       setUpgrading(false);
@@ -732,27 +818,62 @@ export default function BillingSettingsPage() {
     const targetPlanDef = PLAN_DEFINITIONS[targetPlan];
     setSelectedDowngradePlan(null);
 
-    try {
-      const isFree = targetPlan === "free";
+    const isFree = targetPlan === "free";
+    const title = isFree
+      ? "Scheduling Downgrade to Free Tier"
+      : `Switching to ${targetPlanDef.name}`;
+    const successMessage = isFree
+      ? `Subscription cancellation scheduled. Access remains fully active until ${formatDate(
+          org.current_period_end
+        )}, after which your account will revert to the Free tier.`
+      : `🎉 Workspace plan successfully changed to ${targetPlanDef.name} (${billingInterval}).`;
+    const timeoutMessage = isFree
+      ? "Cancellation scheduled with FastSpring. Your status will update shortly."
+      : `Plan switch to ${targetPlanDef.name} requested. FastSpring will update your workspace shortly.`;
 
+    // Instantly display processing overlay modal for FastSpring plan changes
+    if (org.payment_provider === "fastspring" && org.payment_subscription_id) {
+      setProcessingState({
+        isOpen: true,
+        status: "processing",
+        title,
+        description: isFree
+          ? "FastSpring is scheduling cancellation at the end of your billing period..."
+          : `FastSpring is updating your subscription to ${targetPlanDef.name}...`,
+        stepMessage: "Connecting to FastSpring & applying updates...",
+        successMessage,
+        targetPlanName: targetPlanDef.name,
+        progress: 20,
+      });
+    }
+
+    try {
       if (isFree) {
         if (org.payment_provider === "fastspring" && org.payment_subscription_id) {
           if (!org.cancel_at_period_end) {
             console.log("[BILLING_ACTION] 1️⃣ Canceling active FastSpring subscription at period end...");
             await cancelActiveFastSpringSubscription();
           }
+          setProcessingState((prev) =>
+            prev
+              ? {
+                  ...prev,
+                  stepMessage: "Waiting for FastSpring webhook confirmation...",
+                  progress: 40,
+                }
+              : null
+          );
           await syncSubscriptionChange(
             (sub) => sub.cancel_at_period_end === true || sub.status === "canceled" || sub.plan === "free",
             {
-              title: "Scheduling Downgrade to Free Tier",
+              title,
               message: "FastSpring is scheduling cancellation at period end...",
-              successMessage: `Subscription cancellation scheduled. Access remains fully active until ${formatDate(
-                org.current_period_end
-              )}, after which your account will revert to the Free tier.`,
-              timeoutMessage: "Cancellation scheduled with FastSpring. Your status will update shortly.",
+              successMessage,
+              timeoutMessage,
             }
           );
         } else {
+          setProcessingState(null);
           setSuccessMessage("Workspace is already on the Free tier.");
           toast.success("Workspace is already on the Free tier.");
         }
@@ -761,24 +882,35 @@ export default function BillingSettingsPage() {
         if (org.payment_provider === "fastspring" && org.payment_subscription_id) {
           console.log(`[BILLING_ACTION] 1️⃣ Updating active FastSpring subscription (${org.payment_subscription_id}) to ${targetPlan}...`);
           await changeActiveFastSpringSubscription(targetPlan, billingInterval, false);
+          setProcessingState((prev) =>
+            prev
+              ? {
+                  ...prev,
+                  stepMessage: "Waiting for FastSpring webhook confirmation...",
+                  progress: 40,
+                }
+              : null
+          );
           await syncSubscriptionChange(
             (sub) =>
               sub.plan === targetPlan &&
               (sub.billing_interval || "").toLowerCase() === billingInterval.toLowerCase(),
             {
-              title: `Switching to ${targetPlanDef.name}`,
+              title,
               message: "FastSpring is processing your tier change...",
-              successMessage: `🎉 Workspace plan successfully changed to ${targetPlanDef.name} (${billingInterval}).`,
-              timeoutMessage: `Plan switch to ${targetPlanDef.name} requested. FastSpring will update your workspace shortly.`,
+              successMessage,
+              timeoutMessage,
               targetPlanName: targetPlanDef.name,
             }
           );
         } else {
+          setProcessingState(null);
           executeFastSpringCheckout(targetPlan);
         }
       }
     } catch (err: any) {
       console.error("[BILLING_ACTION] ❌ Error during plan downgrade:", err);
+      setProcessingState(null);
       alert(err?.message || "Failed to downgrade plan. Please try again.");
     } finally {
       setDowngrading(false);

@@ -1,0 +1,45 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Next.js: server only",
+      "type": "node-terminal",
+      "request": "launch",
+      "command": "npm run dev"
+    },
+    {
+      "name": "Chrome: client (debug profile)",
+      "type": "chrome",
+      "request": "launch",
+      "url": "http://localhost:3000",
+      "webRoot": "${workspaceFolder}",
+      "userDataDir": "C:/chrome-debug-profile",
+      "runtimeExecutable": "C:/Program Files/Google/Chrome/Application/chrome.exe",
+      "runtimeArgs": [
+        "--profile-directory=Profile 176",
+        "--no-first-run",
+        "--no-default-browser-check"
+      ]
+    },
+    {
+      "name": "Next.js: full stack (debug profile)",
+      "type": "node-terminal",
+      "request": "launch",
+      "command": "npm run dev",
+      "serverReadyAction": {
+        "pattern": "- Local:.+(https?://.+)",
+        "uriFormat": "%s",
+        "action": "startDebugging",
+        "name": "Chrome: client (debug profile)"
+      }
+    },
+    {
+      "name": "Chrome: attach (manual Chrome)",
+      "type": "chrome",
+      "request": "attach",
+      "port": 9222,
+      "urlFilter": "http://localhost:3000/*",
+      "webRoot": "${workspaceFolder}"
+    }
+  ]
+}
