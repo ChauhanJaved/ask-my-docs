@@ -92,8 +92,45 @@ export default function BillingSettingsPage() {
   const [showResumeModal, setShowResumeModal] = useState<boolean>(false);
   const [planChangeStatusText, setPlanChangeStatusText] = useState<string | null>(null);
   const [processingState, setProcessingState] = useState<ProcessingState | null>(null);
+  const [isCardHighlighted, setIsCardHighlighted] = useState<boolean>(false);
+  const highlightTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const activePollingRef = useRef<NodeJS.Timeout | null>(null);
   const activeRealtimeChannelRef = useRef<any>(null);
+
+  const scrollToActiveSubscriptionCard = useCallback(() => {
+    // Delay slightly to ensure DOM has settled and any exit transitions have unmounted
+    setTimeout(() => {
+      const cardEl = document.getElementById("active-subscription-card");
+      if (cardEl) {
+        const prefersReducedMotion =
+          typeof window !== "undefined" &&
+          window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+        cardEl.scrollIntoView({
+          behavior: prefersReducedMotion ? "auto" : "smooth",
+          block: "center",
+        });
+
+        // Trigger visual pulse highlight
+        setIsCardHighlighted(true);
+        if (highlightTimeoutRef.current) {
+          clearTimeout(highlightTimeoutRef.current);
+        }
+        highlightTimeoutRef.current = setTimeout(() => {
+          setIsCardHighlighted(false);
+        }, 3500);
+      }
+    }, 200);
+  }, []);
+
+  const handleModalCloseOrDone = useCallback(() => {
+    const wasCompleted =
+      processingState?.status === "success" || processingState?.status === "timeout";
+    setProcessingState(null);
+    if (wasCompleted) {
+      scrollToActiveSubscriptionCard();
+    }
+  }, [processingState, scrollToActiveSubscriptionCard]);
 
   useEffect(() => {
     return () => {
@@ -103,6 +140,9 @@ export default function BillingSettingsPage() {
       if (activeRealtimeChannelRef.current) {
         const supabase = createBrowserSupabaseClient();
         supabase.removeChannel(activeRealtimeChannelRef.current);
+      }
+      if (highlightTimeoutRef.current) {
+        clearTimeout(highlightTimeoutRef.current);
       }
     };
   }, []);
@@ -287,9 +327,15 @@ export default function BillingSettingsPage() {
         await loadBillingData();
         toast.success(options.successMessage);
 
-        // Auto-dismiss smoothly after 1.8 seconds so user sees confirmation
+        // Auto-dismiss smoothly after 1.8 seconds so user sees confirmation, then scroll to active card
         setTimeout(() => {
-          setProcessingState((curr) => (curr?.status === "success" ? null : curr));
+          setProcessingState((curr) => {
+            if (curr?.status === "success") {
+              scrollToActiveSubscriptionCard();
+              return null;
+            }
+            return curr;
+          });
         }, 1800);
       };
 
@@ -318,6 +364,7 @@ export default function BillingSettingsPage() {
             : null
         );
         await loadBillingData();
+        scrollToActiveSubscriptionCard();
       };
 
       // 1. Supabase Realtime Listener (Instant sub-second event from Postgres)
@@ -949,8 +996,8 @@ export default function BillingSettingsPage() {
         successMessage={processingState?.successMessage}
         targetPlanName={processingState?.targetPlanName}
         progress={processingState?.progress}
-        onClose={() => setProcessingState(null)}
-        onDone={() => setProcessingState(null)}
+        onClose={handleModalCloseOrDone}
+        onDone={handleModalCloseOrDone}
       />
 
       {/* Success Notification */}
@@ -1030,13 +1077,28 @@ export default function BillingSettingsPage() {
       {/* Active Subscription & Quota Usage Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
         {/* Active plan card */}
-        <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-2xl p-5 sm:p-6 shadow-sm flex flex-col justify-between transition-colors h-full">
+        <div
+          id="active-subscription-card"
+          className={`bg-white dark:bg-neutral-900 border rounded-2xl p-5 sm:p-6 shadow-sm flex flex-col justify-between transition-all duration-700 h-full scroll-mt-24 ${
+            isCardHighlighted
+              ? "border-brand-500 dark:border-brand-500 ring-4 ring-brand-500/30 shadow-xl shadow-brand-500/15 scale-[1.01]"
+              : "border-neutral-200 dark:border-neutral-800"
+          }`}
+        >
           <div>
             <div className="flex justify-between items-start gap-3">
               <div className="min-w-0">
-                <span className="text-[10px] font-bold text-brand-600 dark:text-brand-400 uppercase tracking-wider block">
-                  Current Workspace Plan
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-bold text-brand-600 dark:text-brand-400 uppercase tracking-wider block">
+                    Current Workspace Plan
+                  </span>
+                  {isCardHighlighted && (
+                    <span className="animate-pulse bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 text-[9px] font-extrabold px-2 py-0.5 rounded-full flex items-center gap-1">
+                      <span>✨</span>
+                      <span>Active & Updated</span>
+                    </span>
+                  )}
+                </div>
                 <h2 className="text-2xl font-extrabold text-neutral-900 dark:text-white font-display mt-0.5 flex flex-wrap items-center gap-2">
                   <span>{currentPlan.name}</span>
                   {org?.billing_interval && org?.plan !== "free" && (
