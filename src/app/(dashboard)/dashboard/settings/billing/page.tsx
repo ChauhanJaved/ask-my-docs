@@ -983,7 +983,7 @@ export default function BillingSettingsPage() {
   };
 
   return (
-    <div className="max-w-5xl w-full mx-auto space-y-8 pb-16 min-w-0">
+    <div className="max-w-5xl w-full space-y-8 pb-16 min-w-0">
       <FastSpringScript onPopupClosed={handlePopupClosed} />
 
       {/* Realtime / FastSpring Instant Processing Overlay Modal */}
