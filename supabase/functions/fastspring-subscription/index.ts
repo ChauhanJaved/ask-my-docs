@@ -6,6 +6,41 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// Strict allowlist of recognized actions
+const ALLOWED_ACTIONS = [
+  "cancel",
+  "resume",
+  "uncancel",
+  "reactivate",
+  "change-plan",
+  "upgrade",
+  "downgrade",
+] as const;
+
+type AllowedAction = typeof ALLOWED_ACTIONS[number];
+
+const VALID_PAID_PLANS = ["starter", "pro", "business"] as const;
+type PaidPlan = typeof VALID_PAID_PLANS[number];
+
+const VALID_INTERVALS = ["monthly", "yearly"] as const;
+type ValidInterval = typeof VALID_INTERVALS[number];
+
+// Authoritative FastSpring product catalog map (never trust client-supplied product path)
+const PLAN_PRODUCT_MAP: Record<PaidPlan, Record<ValidInterval, string>> = {
+  starter: {
+    monthly: "ftchat-starter-monthly",
+    yearly: "ftchat-starter-yearly",
+  },
+  pro: {
+    monthly: "ftchat-pro-monthly",
+    yearly: "ftchat-pro-yearly",
+  },
+  business: {
+    monthly: "ftchat-business-monthly",
+    yearly: "ftchat-business-yearly",
+  },
+};
+
 serve(async (req: Request) => {
   // Handle CORS preflight
   if (req.method === "OPTIONS") {
@@ -67,7 +102,22 @@ serve(async (req: Request) => {
     }
 
     const body = await req.json().catch(() => ({}));
-    const action = body.action || "cancel";
+    const rawAction = body?.action;
+
+    // Validate action against strict allowlist (prevents typos from triggering accidental cancellations)
+    if (!rawAction || typeof rawAction !== "string" || !ALLOWED_ACTIONS.includes(rawAction as AllowedAction)) {
+      return new Response(
+        JSON.stringify({
+          error: `Invalid or missing action '${rawAction}'. Allowed actions: cancel, resume, change-plan (or upgrade/downgrade).`,
+        }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    const action = rawAction as AllowedAction;
 
     // Fetch current subscription
     const { data: sub, error: subError } = await adminSupabase
@@ -115,6 +165,7 @@ serve(async (req: Request) => {
     }
 
     const credentials = btoa(`${fsUsername}:${fsPassword}`);
+    const isCancelAction = action === "cancel";
     const isResumeAction = action === "resume" || action === "uncancel" || action === "reactivate";
     const isChangePlanAction = action === "change-plan" || action === "upgrade" || action === "downgrade";
 
@@ -124,14 +175,39 @@ serve(async (req: Request) => {
     let fsBody: string | undefined = undefined;
 
     if (isChangePlanAction) {
-      if (!body.targetPlan) {
-        return new Response(JSON.stringify({ error: "Missing targetPlan for change-plan action." }), {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+      const targetPlan = body.targetPlan ? String(body.targetPlan).toLowerCase().trim() : "";
+      if (!VALID_PAID_PLANS.includes(targetPlan as PaidPlan)) {
+        return new Response(
+          JSON.stringify({
+            error: `Invalid targetPlan '${body.targetPlan}'. Allowed plans: ${VALID_PAID_PLANS.join(", ")}.`,
+          }),
+          {
+            status: 400,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          }
+        );
       }
-      const targetInterval = body.billingInterval || "monthly";
-      const targetProduct = body.product || `ftchat-${body.targetPlan}-${targetInterval}`;
+
+      // Normalize interval (handle both 'yearly' and 'annual')
+      let targetInterval = body.billingInterval ? String(body.billingInterval).toLowerCase().trim() : "monthly";
+      if (targetInterval === "annual") {
+        targetInterval = "yearly";
+      }
+
+      if (!VALID_INTERVALS.includes(targetInterval as ValidInterval)) {
+        return new Response(
+          JSON.stringify({
+            error: `Invalid billingInterval '${body.billingInterval}'. Allowed intervals: monthly, yearly.`,
+          }),
+          {
+            status: 400,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          }
+        );
+      }
+
+      // Derive product exclusively from server-side catalog mapping (disallows arbitrary client product injection)
+      const targetProduct = PLAN_PRODUCT_MAP[targetPlan as PaidPlan][targetInterval as ValidInterval];
 
       // Official FastSpring payload to update subscription product in-place:
       // POST https://api.fastspring.com/subscriptions with { subscriptions: [{ subscription: id, product: path, quantity: 1, prorate: boolean, deactivation: null }] }
@@ -161,12 +237,21 @@ serve(async (req: Request) => {
           },
         ],
       });
-    } else {
+    } else if (isCancelAction) {
       // Official FastSpring endpoint to cancel subscription at the end of billing period:
       // DELETE https://api.fastspring.com/subscriptions/{subscription_id}?billingPeriod=1
       fsUrl = `https://api.fastspring.com/subscriptions/${sub.payment_subscription_id}?billingPeriod=1`;
       fsMethod = "DELETE";
       fsBody = undefined;
+    } else {
+      // Defensive fail-closed branch
+      return new Response(
+        JSON.stringify({ error: `Unsupported subscription action: ${action}` }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
     }
 
     console.log(`Sending ${action} request to FastSpring API (${fsMethod} ${fsUrl}) for sub: ${sub.payment_subscription_id}`);
@@ -219,14 +304,14 @@ serve(async (req: Request) => {
     // Note: Database subscription record is NOT updated here directly.
     // As per industry standards, FastSpring will dispatch a signed webhook event
     // (e.g. subscription.updated, subscription.canceled), which is authoritatively processed
-    // by the fastspring-webhook Edge Function. The client uses short polling to observe this update.
+    // by the fastspring-webhook Edge Function. The client uses Realtime/short-polling to observe this update.
 
     let responseMessage = "Operation completed successfully.";
     if (isChangePlanAction) {
       responseMessage = `Subscription plan change to ${body.targetPlan} requested. Awaiting FastSpring webhook confirmation.`;
     } else if (isResumeAction) {
       responseMessage = "Subscription auto-renewal request sent to FastSpring. Awaiting FastSpring webhook confirmation.";
-    } else {
+    } else if (isCancelAction) {
       responseMessage = "Subscription cancellation request sent to FastSpring. Awaiting FastSpring webhook confirmation.";
     }
 
