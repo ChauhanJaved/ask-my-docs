@@ -223,7 +223,7 @@ serve(async (req: Request) => {
       const targetProduct = PLAN_PRODUCT_MAP[targetPlan as PaidPlan][targetInterval as ValidInterval];
 
       // Official FastSpring payload to update subscription product in-place:
-      // POST https://api.fastspring.com/subscriptions with { subscriptions: [{ subscription: id, product: path, quantity: 1, prorate: boolean, deactivation: null }] }
+      // POST https://api.fastspring.com/subscriptions with { subscriptions: [{ subscription: id, product: path, quantity: 1, prorate: true, deactivation: null }] }
       fsUrl = `https://api.fastspring.com/subscriptions`;
       fsMethod = "POST";
       fsBody = JSON.stringify({
@@ -232,7 +232,7 @@ serve(async (req: Request) => {
             subscription: sub.payment_subscription_id,
             product: targetProduct,
             quantity: 1,
-            prorate: body.prorate ?? true,
+            prorate: true, // Server-enforced: always prorate plan changes; never trust client-supplied proration flag
             deactivation: null, // Clear any pending cancellation
           },
         ],

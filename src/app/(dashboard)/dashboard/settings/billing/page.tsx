@@ -680,8 +680,7 @@ export default function BillingSettingsPage() {
 
   const changeActiveFastSpringSubscription = async (
     targetPlan: PlanId,
-    interval: BillingInterval,
-    prorate: boolean = true
+    interval: BillingInterval
   ) => {
     console.log(`[BILLING_ACTION] 🔄 Invoking Edge Function fastspring-subscription (action: change-plan, target: ${targetPlan}, interval: ${interval})...`);
     try {
@@ -696,7 +695,6 @@ export default function BillingSettingsPage() {
           action: "change-plan",
           targetPlan,
           billingInterval: interval,
-          prorate,
         },
         headers,
       });
@@ -829,7 +827,7 @@ export default function BillingSettingsPage() {
       if (org.payment_provider === "fastspring" && org.payment_subscription_id) {
         console.log(`[BILLING_ACTION] 1️⃣ Updating active FastSpring subscription (${org.payment_subscription_id}) in-place...`);
         try {
-          await changeActiveFastSpringSubscription(targetPlan, billingInterval, true);
+          await changeActiveFastSpringSubscription(targetPlan, billingInterval);
           setProcessingState((prev) =>
             prev
               ? {
@@ -943,7 +941,7 @@ export default function BillingSettingsPage() {
         // Downgrade to lower paid tier using existing FastSpring subscription ID
         if (org.payment_provider === "fastspring" && org.payment_subscription_id) {
           console.log(`[BILLING_ACTION] 1️⃣ Updating active FastSpring subscription (${org.payment_subscription_id}) to ${targetPlan}...`);
-          await changeActiveFastSpringSubscription(targetPlan, billingInterval, false);
+          await changeActiveFastSpringSubscription(targetPlan, billingInterval);
           setProcessingState((prev) =>
             prev
               ? {
