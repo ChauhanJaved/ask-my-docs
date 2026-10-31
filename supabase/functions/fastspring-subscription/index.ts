@@ -363,12 +363,28 @@ serve(async (req: Request) => {
     if (!fsResponse.ok) {
       const errText = await fsResponse.text();
       console.error(`FastSpring API ${action} failed:`, fsResponse.status, errText);
+
+      // Downstream FastSpring 401/403 represents third-party merchant credential/permission failure,
+      // NOT an invalid or expired end-user Supabase session.
+      // Returning 401/403 directly to the frontend causes client-side auth layers to assume the user's
+      // app session expired and trigger unnecessary logouts. Map downstream auth/server errors to 502.
+      const isDownstreamAuthError = fsResponse.status === 401 || fsResponse.status === 403;
+      const clientStatusCode = isDownstreamAuthError
+        ? 502
+        : fsResponse.status >= 500
+        ? 502
+        : fsResponse.status;
+
       return new Response(
         JSON.stringify({
-          error: `FastSpring API error (${fsResponse.status}): ${errText}`,
+          error: isDownstreamAuthError
+            ? `FastSpring gateway authorization failure (${fsResponse.status}): Upstream payment provider rejected merchant API credentials.`
+            : `FastSpring API error (${fsResponse.status}): ${errText}`,
+          providerStatus: fsResponse.status,
+          code: isDownstreamAuthError ? "FASTSPRING_GATEWAY_AUTH_ERROR" : "FASTSPRING_API_ERROR",
         }),
         {
-          status: fsResponse.status,
+          status: clientStatusCode,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         }
       );
