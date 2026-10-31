@@ -577,7 +577,12 @@ export default function BillingSettingsPage() {
       });
       if (error) {
         console.warn("[BILLING_ACTION] ⚠️ Edge function cancellation warning:", error);
-        return { error: error.message };
+        let errorMsg = error.message;
+        try {
+          const errBody = await (error as any).context?.json();
+          if (errBody?.error) errorMsg = errBody.error;
+        } catch {}
+        return { error: errorMsg };
       } else {
         console.log("[BILLING_ACTION] ✅ Edge function cancellation response:", data);
         return data;
@@ -657,7 +662,12 @@ export default function BillingSettingsPage() {
       });
       if (error) {
         console.warn("[BILLING_ACTION] ⚠️ Edge function resume warning:", error);
-        return { error: error.message };
+        let errorMsg = error.message;
+        try {
+          const errBody = await (error as any).context?.json();
+          if (errBody?.error) errorMsg = errBody.error;
+        } catch {}
+        return { error: errorMsg };
       } else {
         console.log("[BILLING_ACTION] ✅ Edge function resume response:", data);
         return data;
@@ -693,7 +703,12 @@ export default function BillingSettingsPage() {
 
       if (error) {
         console.warn("[BILLING_ACTION] ⚠️ Edge function plan change error:", error);
-        throw new Error(error.message || "Failed to change subscription plan via FastSpring.");
+        let errorMsg = error.message || "Failed to change subscription plan via FastSpring.";
+        try {
+          const errBody = await (error as any).context?.json();
+          if (errBody?.error) errorMsg = errBody.error;
+        } catch {}
+        throw new Error(errorMsg);
       }
       if (data?.error) {
         throw new Error(data.error);

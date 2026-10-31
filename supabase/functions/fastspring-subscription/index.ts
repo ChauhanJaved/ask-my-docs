@@ -134,14 +134,27 @@ serve(async (req: Request) => {
     }
 
     if (!sub || sub.plan === "free" || !sub.payment_subscription_id) {
+      if (action === "cancel") {
+        return new Response(
+          JSON.stringify({
+            success: true,
+            message: "No active paid FastSpring subscription found to cancel.",
+            alreadyCanceled: true,
+          }),
+          {
+            status: 200,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          }
+        );
+      }
+
       return new Response(
         JSON.stringify({
-          success: true,
-          message: "No active paid FastSpring subscription found to manage.",
-          alreadyCanceled: true,
+          error: `Cannot perform '${action}': No active paid FastSpring subscription found to manage. Please subscribe via checkout.`,
+          code: "NO_ACTIVE_SUBSCRIPTION",
         }),
         {
-          status: 200,
+          status: 400,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         }
       );
