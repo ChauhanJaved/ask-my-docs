@@ -22,6 +22,13 @@ type AllowedAction = typeof ALLOWED_ACTIONS[number];
 const VALID_PAID_PLANS = ["starter", "pro", "business"] as const;
 type PaidPlan = typeof VALID_PAID_PLANS[number];
 
+// Tier ranking to enforce directionality (starter < pro < business)
+const PLAN_RANK: Record<PaidPlan, number> = {
+  starter: 1,
+  pro: 2,
+  business: 3,
+};
+
 const VALID_INTERVALS = ["monthly", "yearly"] as const;
 type ValidInterval = typeof VALID_INTERVALS[number];
 
@@ -122,7 +129,7 @@ serve(async (req: Request) => {
     // Fetch current subscription
     const { data: sub, error: subError } = await adminSupabase
       .from("subscriptions")
-      .select("payment_subscription_id, payment_provider, status, plan")
+      .select("payment_subscription_id, payment_provider, status, plan, billing_interval")
       .eq("organization_id", profile.organization_id)
       .maybeSingle();
 
@@ -217,6 +224,80 @@ serve(async (req: Request) => {
             headers: { ...corsHeaders, "Content-Type": "application/json" },
           }
         );
+      }
+
+      // Verify plan ranking (starter < pro < business) and validate directional actions / no-ops
+      const currentPlan = (sub.plan || "").toLowerCase().trim() as PaidPlan;
+      const currentRank = PLAN_RANK[currentPlan] ?? 0;
+      const targetRank = PLAN_RANK[targetPlan as PaidPlan];
+
+      const rawCurrentInterval = (sub.billing_interval || "").toLowerCase().trim();
+      const currentInterval = rawCurrentInterval === "annual" ? "yearly" : rawCurrentInterval;
+      const isIntervalChange = Boolean(currentInterval && currentInterval !== targetInterval);
+
+      if (action === "upgrade") {
+        if (targetRank < currentRank) {
+          return new Response(
+            JSON.stringify({
+              error: `Cannot upgrade from '${currentPlan}' to '${targetPlan}' because '${targetPlan}' is a lower tier. Use 'downgrade' or 'change-plan' instead.`,
+              code: "INVALID_PLAN_DIRECTION",
+            }),
+            {
+              status: 400,
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            }
+          );
+        }
+        if (targetRank === currentRank && !isIntervalChange) {
+          return new Response(
+            JSON.stringify({
+              error: `Subscription is already on the '${targetPlan}' plan${currentInterval ? ` (${currentInterval})` : ""}. No upgrade required.`,
+              code: "NO_PLAN_CHANGE",
+            }),
+            {
+              status: 400,
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            }
+          );
+        }
+      } else if (action === "downgrade") {
+        if (targetRank > currentRank) {
+          return new Response(
+            JSON.stringify({
+              error: `Cannot downgrade from '${currentPlan}' to '${targetPlan}' because '${targetPlan}' is a higher tier. Use 'upgrade' or 'change-plan' instead.`,
+              code: "INVALID_PLAN_DIRECTION",
+            }),
+            {
+              status: 400,
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            }
+          );
+        }
+        if (targetRank === currentRank && !isIntervalChange) {
+          return new Response(
+            JSON.stringify({
+              error: `Subscription is already on the '${targetPlan}' plan${currentInterval ? ` (${currentInterval})` : ""}. No downgrade required.`,
+              code: "NO_PLAN_CHANGE",
+            }),
+            {
+              status: 400,
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            }
+          );
+        }
+      } else if (action === "change-plan") {
+        if (targetRank === currentRank && !isIntervalChange) {
+          return new Response(
+            JSON.stringify({
+              error: `Subscription is already on the '${targetPlan}' plan${currentInterval ? ` (${currentInterval})` : ""}. No plan change required.`,
+              code: "NO_PLAN_CHANGE",
+            }),
+            {
+              status: 400,
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            }
+          );
+        }
       }
 
       // Derive product exclusively from server-side catalog mapping (disallows arbitrary client product injection)
@@ -321,7 +402,7 @@ serve(async (req: Request) => {
 
     let responseMessage = "Operation completed successfully.";
     if (isChangePlanAction) {
-      responseMessage = `Subscription plan change to ${body.targetPlan} requested. Awaiting FastSpring webhook confirmation.`;
+      responseMessage = `Subscription ${action === "change-plan" ? "plan change" : action} to ${body.targetPlan} requested. Awaiting FastSpring webhook confirmation.`;
     } else if (isResumeAction) {
       responseMessage = "Subscription auto-renewal request sent to FastSpring. Awaiting FastSpring webhook confirmation.";
     } else if (isCancelAction) {
