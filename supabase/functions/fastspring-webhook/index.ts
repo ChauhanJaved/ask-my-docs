@@ -86,7 +86,7 @@ function resolvePlanId(productPath?: any): string | undefined {
 }
 
 /**
- * Verifies FastSpring HMAC SHA256 base64 signature
+ * Verifies FastSpring HMAC SHA256 base64 signature using constant-time verification
  */
 async function verifyFastSpringSignature(
   rawBody: string,
@@ -105,12 +105,16 @@ async function verifyFastSpringSignature(
       keyData,
       { name: "HMAC", hash: "SHA-256" },
       false,
-      ["sign"]
+      ["verify"]
     );
 
-    const signatureBytes = await crypto.subtle.sign("HMAC", cryptoKey, messageData);
-    const expectedSignature = btoa(String.fromCharCode(...new Uint8Array(signatureBytes)));
-    return expectedSignature === signature;
+    const binarySignature = atob(signature.trim());
+    const signatureBytes = new Uint8Array(binarySignature.length);
+    for (let i = 0; i < binarySignature.length; i++) {
+      signatureBytes[i] = binarySignature.charCodeAt(i);
+    }
+
+    return await crypto.subtle.verify("HMAC", cryptoKey, signatureBytes, messageData);
   } catch (err) {
     console.error("Signature verification error:", err);
     return false;
@@ -135,16 +139,37 @@ serve(async (req: Request) => {
     const signature = req.headers.get("x-fs-signature");
     const hmacSecret = Deno.env.get("FASTSPRING_HMAC_SECRET");
 
-    // Optional HMAC signature check if secret is configured
-    if (hmacSecret) {
-      const isValid = await verifyFastSpringSignature(rawBody, signature, hmacSecret);
-      if (!isValid) {
-        console.warn("Invalid FastSpring HMAC signature detected.");
-        return new Response(JSON.stringify({ error: "Invalid signature" }), {
-          status: 401,
+    // Fail closed: Webhooks must never be processed if HMAC secret is not configured
+    if (!hmacSecret) {
+      console.error(
+        "FASTSPRING_HMAC_SECRET environment variable is missing or empty. FastSpring webhooks are rejected until configured."
+      );
+      return new Response(
+        JSON.stringify({ error: "Server misconfiguration: HMAC secret is required" }),
+        {
+          status: 500,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
+        }
+      );
+    }
+
+    // Fail closed: Reject requests missing the signature header
+    if (!signature) {
+      console.warn("FastSpring webhook rejected: missing x-fs-signature header.");
+      return new Response(JSON.stringify({ error: "Missing signature header" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Verify HMAC signature
+    const isValid = await verifyFastSpringSignature(rawBody, signature, hmacSecret);
+    if (!isValid) {
+      console.warn("Invalid FastSpring HMAC signature detected.");
+      return new Response(JSON.stringify({ error: "Invalid signature" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     const payload = JSON.parse(rawBody);
