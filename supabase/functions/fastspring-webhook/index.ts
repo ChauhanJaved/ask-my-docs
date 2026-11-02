@@ -276,20 +276,30 @@ serve(async (req: Request) => {
 
         // Lookup existing record by org ID or subscription ID
         if (targetOrgId) {
-          const { data: byOrg } = await supabase
+          const { data: byOrg, error: byOrgError } = await supabase
             .from("subscriptions")
             .select("*")
             .eq("organization_id", targetOrgId)
             .maybeSingle();
+
+          if (byOrgError) {
+            console.error(`Supabase select error for org ${targetOrgId}:`, byOrgError);
+            throw byOrgError;
+          }
           existingSub = byOrg;
         }
 
         if (!existingSub && subscriptionId) {
-          const { data: bySub } = await supabase
+          const { data: bySub, error: bySubError } = await supabase
             .from("subscriptions")
             .select("*")
             .eq("payment_subscription_id", subscriptionId)
             .maybeSingle();
+
+          if (bySubError) {
+            console.error(`Supabase select error for sub ${subscriptionId}:`, bySubError);
+            throw bySubError;
+          }
           existingSub = bySub;
         }
 
@@ -297,53 +307,57 @@ serve(async (req: Request) => {
           targetOrgId = existingSub.organization_id;
         }
 
-        if (targetOrgId) {
-          if (existingSub) {
-            // CRITICAL: When updating an existing row, never let missing/undefined plan
-            // revert a paid customer back to 'free'. Only explicit deactivation sets 'free'.
-            if (!updateData.plan && existingSub.plan) {
-              updateData.plan = existingSub.plan;
-            }
-            if (!updateData.payment_subscription_id && existingSub.payment_subscription_id) {
-              updateData.payment_subscription_id = existingSub.payment_subscription_id;
-            }
-            if (!updateData.payment_customer_id && existingSub.payment_customer_id) {
-              updateData.payment_customer_id = existingSub.payment_customer_id;
-            }
+        if (!targetOrgId) {
+          const msg = `Could not determine organization_id for event: ${eventType}`;
+          console.error(msg, data);
+          throw new Error(msg);
+        }
 
-            const { error } = await supabase
-              .from("subscriptions")
-              .update(updateData)
-              .eq("organization_id", targetOrgId);
-
-            if (error) {
-              console.error(`Supabase update error for org ${targetOrgId}:`, error);
-            } else {
-              console.log(
-                `Successfully updated subscription for org ${targetOrgId}: plan=${updateData.plan}, interval=${updateData.billing_interval}, status=${updateData.status}`
-              );
-            }
-          } else {
-            // Insert brand new subscription record
-            const newRecord = {
-              organization_id: targetOrgId,
-              plan: updateData.plan || "free",
-              status: updateData.status || "active",
-              ...updateData,
-            };
-
-            const { error } = await supabase
-              .from("subscriptions")
-              .upsert(newRecord, { onConflict: "organization_id" });
-
-            if (error) {
-              console.error(`Supabase insert error for org ${targetOrgId}:`, error);
-            } else {
-              console.log(`Successfully created subscription for org ${targetOrgId}`);
-            }
+        if (existingSub) {
+          // CRITICAL: When updating an existing row, never let missing/undefined plan
+          // revert a paid customer back to 'free'. Only explicit deactivation sets 'free'.
+          if (!updateData.plan && existingSub.plan) {
+            updateData.plan = existingSub.plan;
           }
+          if (!updateData.payment_subscription_id && existingSub.payment_subscription_id) {
+            updateData.payment_subscription_id = existingSub.payment_subscription_id;
+          }
+          if (!updateData.payment_customer_id && existingSub.payment_customer_id) {
+            updateData.payment_customer_id = existingSub.payment_customer_id;
+          }
+
+          const { error } = await supabase
+            .from("subscriptions")
+            .update(updateData)
+            .eq("organization_id", targetOrgId);
+
+          if (error) {
+            console.error(`Supabase update error for org ${targetOrgId}:`, error);
+            throw error;
+          }
+
+          console.log(
+            `Successfully updated subscription for org ${targetOrgId}: plan=${updateData.plan}, interval=${updateData.billing_interval}, status=${updateData.status}`
+          );
         } else {
-          console.warn("Could not determine organization_id for event:", eventType, data);
+          // Insert brand new subscription record
+          const newRecord = {
+            organization_id: targetOrgId,
+            plan: updateData.plan || "free",
+            status: updateData.status || "active",
+            ...updateData,
+          };
+
+          const { error } = await supabase
+            .from("subscriptions")
+            .upsert(newRecord, { onConflict: "organization_id" });
+
+          if (error) {
+            console.error(`Supabase insert error for org ${targetOrgId}:`, error);
+            throw error;
+          }
+
+          console.log(`Successfully created subscription for org ${targetOrgId}`);
         }
       };
 
