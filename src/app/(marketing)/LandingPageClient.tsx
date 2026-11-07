@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import {
@@ -56,21 +56,9 @@ export function LandingPageClient() {
   ]);
   const [isTyping, setIsTyping] = useState(false);
   const [activePresetIndex, setActivePresetIndex] = useState<number | null>(null);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-
   const [activeStep, setActiveStep] = useState(1);
   const [isYearly, setIsYearly] = useState(false);
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(0);
-
-  const isInitialMount = useRef(true);
-
-  useEffect(() => {
-    if (isInitialMount.current) {
-      isInitialMount.current = false;
-      return;
-    }
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [chatMessages, isTyping]);
 
   const handlePresetClick = (index: number) => {
     if (isTyping) return;
@@ -363,7 +351,6 @@ export function LandingPageClient() {
                   </div>
                 </div>
               )}
-              <div ref={messagesEndRef} />
             </div>
 
             {/* Simulated Inputs */}
